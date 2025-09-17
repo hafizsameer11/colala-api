@@ -42,16 +42,27 @@ class AuthController extends Controller
      *
      * @throws \Exception
      */
-    public function login(LoginRequest $loginRequest){
-        try{
-            $data=$loginRequest->validated();
-            $user=$this->userService->login($data);
-            $activity=ActivityHelper::log($user->id,"user login");
-            return ResponseHelper::success($user,"user login successfully");
-        }catch(\Exception $e){
+    public function login(LoginRequest $loginRequest)
+    {
+        try {
+            $data = $loginRequest->validated();
+            $user = $this->userService->login($data);
+            $activity = ActivityHelper::log($user->id, "user login");
+            return ResponseHelper::success($user, "user login successfully");
+        } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
         }
-
+    }
+    public function forgetPassword(Request $request)
+    {
+        try {
+            $email = $request->email;
+            $user = $this->userService->forgetPassword($email);
+            return ResponseHelper::success($user, "user login successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
     }
 }

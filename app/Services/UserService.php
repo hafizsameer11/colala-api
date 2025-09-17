@@ -4,8 +4,10 @@
 
 namespace App\Services;
 
+use App\Mail\OtpMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 class UserService
 {
@@ -35,5 +37,19 @@ class UserService
         }
         throw new \Exception('Password is incorrect');
         // return User::where('email', $data['email'])->first();
+    }
+    public function forgetPassword($email){
+        $user=User::where('email', $email)->first();
+        if(!$user){
+            throw new \Exception('Email is not registered');
+        }
+        //send otp to email
+        $otp=rand(1000,9999);
+        $user->otp=$otp;
+        $user->save();
+        Mail::to($user->email)->send(new OtpMail($otp));
+        return $user;
+        // return $user;
+        // return User::where('email', $email)->first();
     }
 }
