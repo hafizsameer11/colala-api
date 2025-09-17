@@ -47,8 +47,14 @@ class AuthController extends Controller
         try {
             $data = $loginRequest->validated();
             $user = $this->userService->login($data);
+            $token=$user->createToken('auth_token')->plainTextToken;
             $activity = ActivityHelper::log($user->id, "user login");
-            return ResponseHelper::success($user, "user login successfully");
+            $respone=
+            [
+                'user'=>$user,
+                'token'=>$token
+            ];
+            return ResponseHelper::success($respone, "user login successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
