@@ -52,4 +52,17 @@ class UserService
         // return $user;
         // return User::where('email', $email)->first();
     }
+    public function verifyOtp($email, $otp){
+        $user=User::where('email', $email)->where('otp', $otp)->first();
+        if(!$user){
+            throw new \Exception('Invalid OTP');
+        }
+        return $user;
+    }
+    public function resetPassword($email, $password){
+        $user=User::where('email', $email)->first();
+        $user->password=Hash::make($password);
+        $user->save();
+        return $user;
+    }
 }

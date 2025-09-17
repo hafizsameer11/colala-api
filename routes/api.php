@@ -36,5 +36,7 @@ Route::get('/user', function (Request $request) {
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    // Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
+    Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });

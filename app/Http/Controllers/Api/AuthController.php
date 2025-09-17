@@ -65,4 +65,29 @@ class AuthController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function verifyOtp(Request $request)
+    {
+        try {
+            $email = $request->email;
+            $otp = $request->otp;
+            $user = $this->userService->verifyOtp($email, $otp);
+            return ResponseHelper::success($user, "user login successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+    public function resetPassword(Request $request)
+    {
+        try {
+            $email = $request->email;
+            $password = $request->password;
+            $user = $this->userService->resetPassword($email, $password);
+            return ResponseHelper::success($user, "user login successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }
