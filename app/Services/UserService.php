@@ -43,14 +43,11 @@ class UserService
         if(!$user){
             throw new \Exception('Email is not registered');
         }
-        //send otp to email
         $otp=rand(1000,9999);
         $user->otp=$otp;
         $user->save();
         Mail::to($user->email)->send(new OtpMail($otp));
         return $user;
-        // return $user;
-        // return User::where('email', $email)->first();
     }
     public function verifyOtp($email, $otp){
         $user=User::where('email', $email)->where('otp', $otp)->first();
