@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ActivityHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
@@ -33,7 +34,24 @@ class AuthController extends Controller
             // return ResponseHelper::error($e->getMessage());
         }
     }
+    /**
+     * User login
+     *
+     * @param LoginRequest $loginRequest
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * @throws \Exception
+     */
     public function login(LoginRequest $loginRequest){
+        try{
+            $data=$loginRequest->validated();
+            $user=$this->userService->login($data);
+            $activity=ActivityHelper::log($user->id,"user login");
+            return ResponseHelper::success($user,"user login successfully");
+        }catch(\Exception $e){
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
 
     }
 }
