@@ -35,5 +35,6 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
     // Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
 });

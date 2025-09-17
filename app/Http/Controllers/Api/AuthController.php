@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -31,5 +32,8 @@ class AuthController extends Controller
             return ResponseHelper::error($e->getMessage());
             // return ResponseHelper::error($e->getMessage());
         }
+    }
+    public function login(LoginRequest $loginRequest){
+
     }
 }
