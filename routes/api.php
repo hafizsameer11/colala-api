@@ -62,7 +62,7 @@ Route::post('/deploy', function (Request $request) {
     Log::info("received webhook", ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
     if ($request->header('X-DEPLOY-KEY') !== env('DEPLOY_KEY')) {
         abort(403, 'Unauthorized');
-        Log::info('webhook received but ', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
+        Log::info('webhook received busaasdt ', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
     }
 
     // Run deploy commands
