@@ -8,7 +8,7 @@ class ActivityHelper{
     public static function log($user_id, $activity){
       return  UserActivity::create([
             'user_id' => $user_id,
-            'activity' => $activity
+            'message' => $activity
         ]);
     }
 }
