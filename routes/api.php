@@ -40,3 +40,15 @@ Route::prefix('auth')->group(function () {
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+   Route::get('/categories', [App\Http\Controllers\Api\CategoryController::class, 'getAll']);
+   
+   
+
+
+//admin routes
+Route::post('/create-category', [App\Http\Controllers\Api\CategoryController::class, 'create']);
+Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
+// Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
+});
