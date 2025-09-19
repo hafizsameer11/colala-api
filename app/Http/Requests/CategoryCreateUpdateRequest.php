@@ -24,7 +24,8 @@ class CategoryCreateUpdateRequest extends FormRequest
     {
         return [
             'title'=>'required',
-            'image'=>'nullable'
+            'image'=>'nullable',
+            'color'=>'nullable'
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
