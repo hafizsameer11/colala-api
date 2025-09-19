@@ -61,7 +61,7 @@ Route::post('/deploy', function (Request $request) {
     // ✅ Security: only allow if secret matches
     if ($request->header('X-DEPLOY-KEY') !== env('DEPLOY_KEY')) {
         abort(403, 'Unauthorized');
-        Log::info('webhook received but faioled', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
+        Log::info('webhook received but faioled testing mesting shesting', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
     }
 
     // Run deploy commands
