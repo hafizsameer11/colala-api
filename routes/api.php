@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
+require __DIR__.'/seller.php';    
+
 Route::get('/optimize-app', function () {
     Artisan::call('optimize:clear'); // Clears cache, config, route, and view caches
     Artisan::call('cache:clear');    // Clears application cache
