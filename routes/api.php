@@ -64,7 +64,7 @@ Route::post('/deploy', function (Request $request) {
 
     // Run deploy commands
     $commands = [
-        'cd /var/www/colala-api && git reset --hard && git pull origin main',
+        'cd /var/www/colala-api && git pull origin main',
         'cd /var/www/colala-api && composer install --no-dev --prefer-dist --optimize-autoloader',
         'cd /var/www/colala-api && php artisan migrate --force',
         'cd /var/www/colala-api && php artisan optimize',
