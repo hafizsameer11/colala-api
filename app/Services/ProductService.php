@@ -1,0 +1,72 @@
+<?php 
+
+
+namespace App\Services;
+
+use App\Models\Product;
+use App\Models\ProductImage;
+use Illuminate\Support\Facades\Auth;
+
+class ProductService
+{
+    public function getAll()
+    {
+        return Product::with(['variants.images','images','deliveryOptions'])
+            ->where('store_id', Auth::user()->store->id)
+            ->get();
+    }
+
+    public function create($data)
+    {
+        $data['store_id'] = Auth::user()->store->id;
+
+        $product = Product::create($data);
+
+        // save product images
+        if (isset($data['images'])) {
+            foreach ($data['images'] as $index => $file) {
+                $path = $file->store('products', 'public');
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'path' => $path,
+                    'is_main' => $index === 0
+                ]);
+            }
+        }
+
+        // link delivery options
+        if (isset($data['delivery_option_ids'])) {
+            $product->deliveryOptions()->sync($data['delivery_option_ids']);
+        }
+
+        return $product->load(['images','deliveryOptions']);
+    }
+
+    public function update($id, $data)
+    {
+        $product = Product::where('store_id', Auth::user()->store->id)->findOrFail($id);
+        $product->update($data);
+
+        if (isset($data['images'])) {
+            foreach ($data['images'] as $file) {
+                $path = $file->store('products', 'public');
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'path' => $path
+                ]);
+            }
+        }
+
+        if (isset($data['delivery_option_ids'])) {
+            $product->deliveryOptions()->sync($data['delivery_option_ids']);
+        }
+
+        return $product->load(['images','deliveryOptions']);
+    }
+
+    public function delete($id)
+    {
+        $product = Product::where('store_id', Auth::user()->store->id)->findOrFail($id);
+        return $product->delete();
+    }
+}

@@ -1,0 +1,72 @@
+{
+  "info": {
+    "name": "Colala Seller - Services",
+    "_postman_id": "colala-services-apis",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Services",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }],
+        "url": "{{base_url}}/seller/services"
+      }
+    },
+    {
+      "name": "Create Service",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+          { "key": "Content-Type", "value": "multipart/form-data", "type": "text" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "store_id", "value": "1", "type": "text" },
+            { "key": "category_id", "value": "2", "type": "text" },
+            { "key": "name", "value": "Fashion Designing", "type": "text" },
+            { "key": "short_description", "value": "Best fashion design", "type": "text" },
+            { "key": "full_description", "value": "We provide fashion services", "type": "text" },
+            { "key": "price_from", "value": "1000", "type": "text" },
+            { "key": "price_to", "value": "5000", "type": "text" },
+            { "key": "discount_price", "value": "800", "type": "text" },
+            { "key": "media", "src": [], "type": "file" }
+          ]
+        },
+        "url": "{{base_url}}/seller/services/create"
+      }
+    },
+    {
+      "name": "Update Service",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" },
+          { "key": "Content-Type", "value": "multipart/form-data", "type": "text" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "name", "value": "Updated Service Name", "type": "text" },
+            { "key": "price_from", "value": "1500", "type": "text" }
+          ]
+        },
+        "url": "{{base_url}}/seller/services/update/1"
+      }
+    },
+    {
+      "name": "Delete Service",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }],
+        "url": "{{base_url}}/seller/services/delete/1"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000/api" },
+    { "key": "token", "value": "" }
+  ]
+}
