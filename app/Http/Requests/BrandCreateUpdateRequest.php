@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class ProductDeliveryOptionRequest extends FormRequest
+class BrandCreateUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -15,17 +15,15 @@ class ProductDeliveryOptionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'delivery_option_ids' => 'required|array',
-            'delivery_option_ids.*' => 'exists:store_delivery_pricing,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'logo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'status' => 'in:active,inactive'
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
         throw new HttpResponseException(
-            response()->json([
-                'status' => 'error',
-                'data' => $validator->errors(),
-                'message' => $validator->errors()->first()
-            ], 422)
+            response()->json(['success' => false, 'message' => 'Validation errors','data' => $validator->errors()], 422)
         );
     }
 }

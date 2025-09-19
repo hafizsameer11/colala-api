@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BrandController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -56,30 +57,11 @@ Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryControlle
 // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 });
 
-
-
-
-Route::post('/deploy', function (Request $request) {
-    // ✅ Security: only allow if secret matches
-    Log::info("received webhook", ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
-    if ($request->header('X-DEPLOY-KEY') !== env('DEPLOY_KEY')) {
-        abort(403, 'Unauthorized');
-        Log::info('webhook received busaasdt ', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
-    }
-
-    // Run deploy commands
-    $commands = [
-    'sudo -u root git -C /var/www/colala-api pull origin main',
-    'sudo -u root composer install --working-dir=/var/www/colala-api --no-dev --prefer-dist --optimize-autoloader',
-    'sudo -u root php /var/www/colala-api/artisan migrate --force',
-    'sudo -u root php /var/www/colala-api/artisan optimize',
-];
-
-
-    foreach ($commands as $cmd) {
-        Log::info("running command", ['command' => $cmd]);
-        shell_exec($cmd . ' 2>&1');
-    }
-
-    return response()->json(['status' => 'success', 'message' => 'Deployment completed']);
+Route::prefix('brands')->group(function () {
+    Route::get('/', [BrandController::class, 'getAll']);
+    Route::post('/', [BrandController::class, 'create']);
+    Route::put('{id}', [BrandController::class, 'update']);
+    Route::delete('{id}', [BrandController::class, 'delete']);
 });
+
+

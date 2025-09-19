@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ServiceCreateUpdateRequest extends FormRequest
 {
@@ -31,5 +32,14 @@ class ServiceCreateUpdateRequest extends FormRequest
             'sub_services.*.price_from' => 'nullable|numeric',
             'sub_services.*.price_to' => 'nullable|numeric',
         ];
+    }
+    public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
+        throw new HttpResponseException(
+            response()->json([
+                'status' => 'error',
+                'data' => $validator->errors(),
+                'message' => $validator->errors()->first()
+            ], 422)
+        );
     }
 }
