@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('store_addresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained()->onDelete('cascade');
-            $table->string('state');
-            $table->string('local_government');
-            $table->text('full_address');
+            $table->string('state')->nullable();
+            $table->string('local_government')->nullable();
+            $table->text('full_address')->nullable();
             $table->boolean('is_main')->default(false);
             $table->json('opening_hours')->nullable();
             $table->timestamps();

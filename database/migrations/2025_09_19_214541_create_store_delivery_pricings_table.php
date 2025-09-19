@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('store_delivery_pricing', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained()->onDelete('cascade');
-            $table->string('state');
+            $table->string('state')->nullable();
             $table->string('local_government');
             $table->enum('variant', ['light','medium','heavy']);
             $table->decimal('price', 10, 2)->nullable();

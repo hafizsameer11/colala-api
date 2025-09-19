@@ -35,10 +35,7 @@ class ProductService
         }
 
         // link delivery options
-        if (isset($data['delivery_option_ids'])) {
-            $product->deliveryOptions()->sync($data['delivery_option_ids']);
-        }
-
+      
         return $product->load(['images','deliveryOptions']);
     }
 

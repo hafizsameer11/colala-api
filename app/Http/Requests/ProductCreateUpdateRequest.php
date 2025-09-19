@@ -19,7 +19,7 @@ class ProductCreateUpdateRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-     public function rules(): array
+    public function rules(): array
     {
         return [
             'name' => 'required|string|max:255',
@@ -31,13 +31,7 @@ class ProductCreateUpdateRequest extends FormRequest
             'has_variants' => 'boolean',
             'status' => 'in:draft,active,inactive',
             'video' => 'nullable|string',
-
-            // product images
             'images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-
-            // delivery options
-            'delivery_option_ids' => 'nullable|array',
-            'delivery_option_ids.*' => 'exists:store_delivery_pricing,id'
         ];
     }
 }

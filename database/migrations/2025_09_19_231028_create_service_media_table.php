@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('service_media', function (Blueprint $table) {
        $table->id();
-        $table->unsignedBigInteger('service_id');
-        $table->enum('type', ['image','video']);
-        $table->string('path');
+        $table->unsignedBigInteger('service_id')->nullable();
+        $table->enum('type', ['image','video'])->nullable();
+        $table->string('path')->nullable();
         $table->timestamps();
 
         $table->foreign('service_id')->references('id')->on('services')->cascadeOnDelete();

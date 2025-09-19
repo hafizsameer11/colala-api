@@ -15,7 +15,7 @@ return new class extends Migration
            $table->id();
             $table->foreignId('store_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['whatsapp','instagram','facebook','twitter','tiktok','linkedin']);
-            $table->string('url');
+            $table->string('url')->nullable();
             $table->timestamps();
         });
     }
