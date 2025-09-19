@@ -66,11 +66,12 @@ Route::post('/deploy', function (Request $request) {
 
     // Run deploy commands
     $commands = [
-        'cd /var/www/colala-api && git pull origin main',
-        'cd /var/www/colala-api && composer install --no-dev --prefer-dist --optimize-autoloader',
-        'cd /var/www/colala-api && php artisan migrate --force',
-        'cd /var/www/colala-api && php artisan optimize',
-    ];
+    'sudo -u root git -C /var/www/colala-api pull origin main',
+    'sudo -u root composer install --working-dir=/var/www/colala-api --no-dev --prefer-dist --optimize-autoloader',
+    'sudo -u root php /var/www/colala-api/artisan migrate --force',
+    'sudo -u root php /var/www/colala-api/artisan optimize',
+];
+
 
     foreach ($commands as $cmd) {
         shell_exec($cmd . ' 2>&1');
