@@ -59,6 +59,7 @@ Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryControlle
 
 Route::post('/deploy', function (Request $request) {
     // ✅ Security: only allow if secret matches
+    Log::info("received webhook", ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
     if ($request->header('X-DEPLOY-KEY') !== env('DEPLOY_KEY')) {
         abort(403, 'Unauthorized');
         Log::info('webhook received but ', ['X-DEPLOY-KEY' => $request->header('X-DEPLOY-KEY')]);
@@ -74,6 +75,7 @@ Route::post('/deploy', function (Request $request) {
 
 
     foreach ($commands as $cmd) {
+        Log::info("running command", ['command' => $cmd]);
         shell_exec($cmd . ' 2>&1');
     }
 
