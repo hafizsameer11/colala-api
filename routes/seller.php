@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SellerRegistrationController;
-use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Route;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
