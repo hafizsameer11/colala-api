@@ -26,6 +26,14 @@ class ProductController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function getAllforBuyer(){
+        try {
+            return ResponseHelper::success($this->productService->getAllforBuyer());
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 
     public function create(ProductCreateUpdateRequest $request)
     {

@@ -18,6 +18,10 @@ class ProductService
             ->where('store_id', $storeId)
             ->get();
     }
+    public function getAllforBuyer(){
+        return Product::with(['variants.images','images','store'])
+            ->get();
+    }
 
     public function create($data)
     {

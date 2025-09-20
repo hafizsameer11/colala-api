@@ -2,12 +2,13 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\ProductController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-require __DIR__.'/seller.php';    
+require __DIR__ . '/seller.php';
 
 Route::get('/optimize-app', function () {
     Artisan::call('optimize:clear'); // Clears cache, config, route, and view caches
@@ -26,17 +27,11 @@ Route::get('/migrate', function () {
     Artisan::call('migrate');
     return response()->json(['message' => 'Migration successful'], 200);
 });
-// Route::get('/migrate/rollback', function () {
-//     Artisan::call('migrate:rollback');
-//     return response()->json(['message' => 'Migration rollback successfully'], 200);
-// });
 
-Route::get('/un-auth',function(){
+Route::get('/un-auth', function () {
     return response()->json(['message' => 'Unauthenticated.'], 401);
 })->name('login');
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
@@ -46,22 +41,26 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-   Route::get('/categories', [App\Http\Controllers\Api\CategoryController::class, 'getAll']);
-   
-   
+    Route::get('/categories', [App\Http\Controllers\Api\CategoryController::class, 'getAll']);
 
 
-//admin routes
-Route::post('/create-category', [App\Http\Controllers\Api\CategoryController::class, 'create']);
-Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
-// Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
-});
 
-Route::prefix('brands')->group(function () {
+
+    //admin routes
+    Route::post('/create-category', [App\Http\Controllers\Api\CategoryController::class, 'create']);
+    Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
+
+    Route::prefix('brands')->group(function () {
     Route::get('/', [BrandController::class, 'getAll']);
     Route::post('/', [BrandController::class, 'create']);
     Route::put('{id}', [BrandController::class, 'update']);
     Route::delete('{id}', [BrandController::class, 'delete']);
+
+    //product
+    Route::get('buyer/product/get-all',[ProductController::class,'getAllforBuyer']);
+    
+});
+    // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 });
 
 
