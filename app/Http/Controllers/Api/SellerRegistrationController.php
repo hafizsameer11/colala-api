@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Hash;
 
 class SellerRegistrationController extends Controller
 {
-     public function registerStep1(SellerRegisterStep1Request $request)
+    public function registerStep1(SellerRegisterStep1Request $request)
     {
         $user = User::create([
             'full_name' => $request->store_name,
@@ -36,6 +36,20 @@ class SellerRegistrationController extends Controller
             'referral_code'  => $request->referral_code,
         ]);
 
+        // ✅ Attach categories
+        if ($request->has('categories') && is_array($request->categories)) {
+            $store->categories()->sync($request->categories);
+        }
+        if ($request->has('profile_image')) {
+            $store->profile_image = $request->file('profile_image')->store("stores/{$store->id}", 'public');
+            $store->save();
+        }
+        if ($request->has('banner_image')) {
+            $store->banner_image = $request->file('banner_image')->store("stores/{$store->id}", 'public');
+            $store->save();
+        }
+
+        // ✅ Store social links
         if ($request->has('social_links')) {
             foreach ($request->social_links as $link) {
                 StoreSocialLink::create([
@@ -60,7 +74,7 @@ class SellerRegistrationController extends Controller
         $data = $request->validated();
 
         // handle file uploads
-        foreach (['nin_document','cac_document','utility_bill','store_video'] as $field) {
+        foreach (['nin_document', 'cac_document', 'utility_bill', 'store_video'] as $field) {
             if ($request->hasFile($field)) {
                 $data[$field] = $request->file($field)->store("stores/{$store->id}", 'public');
             }
@@ -87,7 +101,7 @@ class SellerRegistrationController extends Controller
                 StoreAddress::create([
                     'store_id'        => $store->id,
                     'state'           => $addr['state'],
-                    'local_government'=> $addr['local_government'],
+                    'local_government' => $addr['local_government'],
                     'full_address'    => $addr['full_address'],
                     'is_main'         => $addr['is_main'] ?? false,
                     'opening_hours'   => $addr['opening_hours'] ?? []
@@ -100,7 +114,7 @@ class SellerRegistrationController extends Controller
                 StoreDeliveryPricing::create([
                     'store_id'        => $store->id,
                     'state'           => $pricing['state'],
-                    'local_government'=> $pricing['local_government'],
+                    'local_government' => $pricing['local_government'],
                     'variant'         => $pricing['variant'],
                     'price'           => $pricing['price'] ?? null,
                     'is_free'         => $pricing['is_free'] ?? false

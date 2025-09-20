@@ -32,5 +32,10 @@ class Category extends Model
             ? Storage::url($this->image)
             : null;
     }
+    public function stores()
+{
+    return $this->belongsToMany(Store::class, 'store_categories', 'category_id', 'store_id');
+}
+
 }
 

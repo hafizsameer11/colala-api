@@ -30,9 +30,15 @@ class SellerRegisterStep1Request extends FormRequest
             'password'     => 'required|string|min:6',
             'store_location' => 'nullable|string',
             'referral_code'  => 'nullable|string|max:50',
+            'profile_image'  => 'nullable|file|mimes:jpg,jpeg,png,webp',
+            'banner_image'   => 'nullable|file|mimes:jpg,jpeg,png,webp',
             'social_links'   => 'nullable|array',
             'social_links.*.type' => 'in:whatsapp,instagram,facebook,twitter,tiktok,linkedin',
-            'social_links.*.url'  => 'url'
+            'social_links.*.url'  => 'url',
+               
+        // ✅ New
+        'categories'         => 'nullable|array',
+        'categories.*'       => 'exists:categories,id',
         ];
     }
 
