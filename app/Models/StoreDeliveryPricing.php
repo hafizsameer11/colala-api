@@ -11,7 +11,7 @@ class StoreDeliveryPricing extends Model
     public function store() { return $this->belongsTo(Store::class); }
     public function products()
 {
-    return $this->belongsToMany(Product::class);
+    return $this->belongsToMany(Product::class, 'product_delivery_pricing', 'delivery_pricing_id', 'product_id');
 }
 
 

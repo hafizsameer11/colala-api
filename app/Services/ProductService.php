@@ -14,7 +14,7 @@ class ProductService
     public function getAll()
     {
         $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
-        return Product::with(['variants.images','images','deliveryOptions'])
+        return Product::with(['variants.images','images'])
             ->where('store_id', $storeId)
             ->get();
     }
