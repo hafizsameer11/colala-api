@@ -15,7 +15,7 @@ class BrandCreateUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'logo' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
             'status' => 'in:active,inactive'
