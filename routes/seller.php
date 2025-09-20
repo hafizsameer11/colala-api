@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
-    Route::post('register/{store}/step2', [SellerRegistrationController::class, 'registerStep2']);
-    Route::post('register/{store}/step3', [SellerRegistrationController::class, 'registerStep3']);
+    Route::post('register/{storeId}/step2', [SellerRegistrationController::class, 'registerStep2']);
+    Route::post('register/{storeId}/step3', [SellerRegistrationController::class, 'registerStep3']);
 
 
     //product routes

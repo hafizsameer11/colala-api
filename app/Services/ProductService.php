@@ -5,6 +5,8 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\Store;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 
 class ProductService
@@ -18,10 +20,13 @@ class ProductService
 
     public function create($data)
     {
-        $data['store_id'] = Auth::user()->store->id;
-
+        $user=Auth::user();
+        $store=Store::where('user_id',$user->id)->first();
+        if(!$store){
+             throw new Exception('Store not found');
+        }
+        $data['store_id'] = $store->id;
         $product = Product::create($data);
-
         // save product images
         if (isset($data['images'])) {
             foreach ($data['images'] as $index => $file) {
