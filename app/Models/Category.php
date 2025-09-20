@@ -34,9 +34,11 @@ class Category extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image 
+        $storage= $this->image 
             ? Storage::url($this->image)
             : null;
+            $url=asset($storage);
+        return $url;
     }
     public function stores()
 {
