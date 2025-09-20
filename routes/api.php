@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
 use Illuminate\Http\Request;
@@ -63,5 +64,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // routes/api.php
 Route::get('/search', [SearchController::class, 'search']);
 
+      Route::get('/posts', [PostController::class, 'index']);             // list posts
+    Route::post('/posts', [PostController::class, 'store']);            // create post
+    Route::get('/posts/{id}', [PostController::class, 'show']);         // show single post
+    Route::post('/posts/{id}', [PostController::class, 'update']);       // update post
+    Route::delete('/posts/{id}', [PostController::class, 'destroy']);   // delete post
+
+    // ❤️ Likes
+    Route::post('/posts/{id}/like', [PostController::class, 'toggleLike']); 
+
+    // 💬 Comments
+    Route::get('/posts/{id}/comments', [PostController::class, 'comments']); 
+    Route::post('/posts/{id}/comments', [PostController::class, 'addComment']); 
+    Route::delete('/posts/{postId}/comments/{commentId}', [PostController::class, 'deleteComment']); 
+
+    // 📤 Share
+    Route::post('/posts/{id}/share', [PostController::class, 'share']);
     // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 });

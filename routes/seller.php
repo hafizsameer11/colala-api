@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductBulkPriceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductDeliveryOptionController;
@@ -88,4 +89,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('service/create', [ServiceController::class, 'create']);
     Route::post('service/update/{id}', [ServiceController::class, 'update']);
     Route::delete('service/delete/{id}', [ServiceController::class, 'delete']);
+
+
+
 });
