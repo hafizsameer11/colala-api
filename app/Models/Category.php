@@ -10,19 +10,27 @@ class Category extends Model
     protected $fillable = [
         'title',
         'image',
-        'color'
+        'color',
+        'parent_id',
     ];
 
-    // Make sure the custom attribute is added automatically in response
     protected $appends = ['image_url'];
 
-    /**
-     * Accessor for full image URL
-     */
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
+
     public function getImageUrlAttribute()
     {
         return $this->image 
-            ? Storage::url($this->image)  // Generates "/storage/..." URL
+            ? Storage::url($this->image)
             : null;
     }
 }
+

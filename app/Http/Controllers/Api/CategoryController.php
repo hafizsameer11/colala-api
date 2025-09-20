@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryCreateUpdateRequest;
+use App\Models\Category;
 use App\Services\CategoryService;
 use Exception;
 use Illuminate\Http\Request;
@@ -40,13 +41,15 @@ class CategoryController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
-    public function getAll(){
-        try{
-            $categories=$this->categoryService->getAll();
-            return ResponseHelper::success($categories);
-        }catch(Exception $e){
-            Log::error($e->getMessage());
-            return ResponseHelper::error($e->getMessage());
-        }
+   public function getAll()
+{
+    try {
+        $categories = Category::with('children')->whereNull('parent_id')->get();
+        return ResponseHelper::success($categories);
+    } catch(Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage());
     }
+}
+
 }

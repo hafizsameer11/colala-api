@@ -25,7 +25,8 @@ class CategoryCreateUpdateRequest extends FormRequest
         return [
             'title'=>'required',
             'image'=>'nullable',
-            'color'=>'nullable'
+            'color'=>'nullable',
+            'parent_id' => 'nullable|exists:categories,id',
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
