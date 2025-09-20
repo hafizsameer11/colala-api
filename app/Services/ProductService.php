@@ -49,7 +49,8 @@ class ProductService
 
     public function update($id, $data)
     {
-        $product = Product::where('store_id', Auth::user()->store->id)->findOrFail($id);
+        $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update($data);
 
         if (isset($data['images'])) {
@@ -71,7 +72,9 @@ class ProductService
 
     public function delete($id)
     {
-        $product = Product::where('store_id', Auth::user()->store->id)->findOrFail($id);
+                $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
+
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
         return $product->delete();
     }
 }
