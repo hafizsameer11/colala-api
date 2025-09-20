@@ -27,6 +27,10 @@ class Category extends Model
             ->with('children')   // keep nesting
             ->withCount('products'); // include products_count    }
     }
+     public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id'); // << add this
+    }
 
     public function getImageUrlAttribute()
     {
