@@ -87,7 +87,7 @@ class PostController extends Controller
     {
         try {
             $comments = $this->postService->getComments($id);
-            return ResponseHelper::success($comments, "Comments fetched");
+            return ResponseHelper::success($comments, "Comments fetched successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
@@ -97,8 +97,13 @@ class PostController extends Controller
     public function addComment(PostCommentRequest $req, $id)
     {
         try {
-            $comment = $this->postService->addComment($id, $req->user(), $req->validated()['body']);
-            return ResponseHelper::success($comment, "Comment added");
+            $comment = $this->postService->addComment(
+                $id,
+                $req->user(),
+                $req->validated()['body'],
+                $req->validated()['parent_id'] ?? null
+            );
+            return ResponseHelper::success($comment, "Comment added successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
@@ -109,7 +114,7 @@ class PostController extends Controller
     {
         try {
             $this->postService->deleteComment($postId, $commentId, $req->user());
-            return ResponseHelper::success(null, "Comment deleted");
+            return ResponseHelper::success(null, "Comment deleted successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());

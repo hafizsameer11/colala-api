@@ -13,6 +13,6 @@ class PostCommentRequest extends FormRequest
      */
    public function authorize(): bool { return true; }
     public function rules(): array {
-        return ['body' => 'required|string|max:2000'];
+        return ['body' => 'required|string|max:2000','parent_id' => 'nullable|exists:post_comments,id'];
     }
 }
