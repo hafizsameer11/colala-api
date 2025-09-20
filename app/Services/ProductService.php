@@ -38,10 +38,8 @@ class ProductService
                 ]);
             }
         }
-
-        // link delivery options
-      
-        return $product->load(['images','deliveryOptions']);
+        // link delivery options      
+        return $product->load(['images']);
     }
 
     public function update($id, $data)
