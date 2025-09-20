@@ -14,7 +14,7 @@ class Level3PhysicalStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'has_physical_store' => 'required|boolean',
+            'has_physical_store' => 'nullable|boolean',
             'store_video'        => 'nullable|file|mimes:mp4,mov,avi|max:10240',
         ];
     }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\SearchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -59,5 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
         //product
     });
     Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
+    // routes/api.php
+Route::get('/search', [SearchController::class, 'search']);
+
     // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 });
