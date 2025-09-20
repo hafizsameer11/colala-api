@@ -57,6 +57,7 @@ class SellerOnboardingController extends Controller
     /* ---------------- Level 1.1 – PUBLIC start ---------------- */
     public function start(SellerStartRequest $request)
     {
+
         $user = User::create([
             'full_name' => $request->store_name,
             'email'     => $request->store_email,
@@ -113,8 +114,10 @@ class SellerOnboardingController extends Controller
         }
 
         $this->markDone($store, 1, 'level1.basic');
+        $token=$user->createToken('auth_token')->plainTextToken;
 
-        return $this->ok($store, 'Level 1.1 saved', ['store_id'=>$store->id]);
+        return $this->ok($store, 'Level 1.1 saved', ['store_id'=>$store->id,
+'token'=>$token]);
     }
 
     /* ---------------- Level 1.2 ---------------- */
