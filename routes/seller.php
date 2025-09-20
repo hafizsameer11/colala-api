@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ProductBulkPriceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductDeliveryOptionController;
 use App\Http\Controllers\Api\ProductVariantController;
+use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,50 @@ Route::prefix('seller')->group(function () {
 
     //product routes
 
+});
+Route::post('auth/seller/start', [SellerOnboardingController::class, 'start']);
+
+/* Authenticated micro-steps */
+Route::middleware('auth:sanctum')->prefix('seller/onboarding')->group(function () {
+    // ---- Level 1
+    Route::put('level1/profile-media',     [SellerOnboardingController::class, 'level1ProfileMedia']);   // 1.2
+    Route::put('level1/categories-social', [SellerOnboardingController::class, 'level1Categories']);     // 1.3
+
+    // ---- Level 2
+    Route::put('level2/business-details',  [SellerOnboardingController::class, 'level2Business']);       // 2.1
+    Route::put('level2/documents',         [SellerOnboardingController::class, 'level2Documents']);      // 2.2
+
+    // ---- Level 3
+    Route::put('level3/physical-store',    [SellerOnboardingController::class, 'level3Physical']);       // 3.1
+    Route::put('level3/utility-bill',      [SellerOnboardingController::class, 'level3Utility']);        // 3.2
+
+    Route::post('level3/address',          [SellerOnboardingController::class, 'addAddress']);           // 3.3 create
+    Route::delete('level3/address/{id}',   [SellerOnboardingController::class, 'deleteAddress']);        // 3.3 delete
+
+    Route::post('level3/delivery',         [SellerOnboardingController::class, 'addDelivery']);          // 3.4 create
+    Route::delete('level3/delivery/{id}',  [SellerOnboardingController::class, 'deleteDelivery']);       // 3.4 delete
+
+    Route::put('level3/theme',             [SellerOnboardingController::class, 'level3Theme']);          // 3.5
+
+    // ---- Progress / Submit
+    Route::get('progress',                 [SellerOnboardingController::class, 'progress']);
+    Route::post('submit',                  [SellerOnboardingController::class, 'submitForReview']);
+
+
+     Route::get('store/overview',  [SellerOnboardingController::class, 'overview']);   // store + relations + progress
+    Route::get('onboarding/progress', [SellerOnboardingController::class, 'progress']); // already exists
+
+    // Per-level getters (for edit screens)
+    Route::get('onboarding/level/1', [SellerOnboardingController::class, 'level1Data']);
+    Route::get('onboarding/level/2', [SellerOnboardingController::class, 'level2Data']);
+    Route::get('onboarding/level/3', [SellerOnboardingController::class, 'level3Data']);
+
+    // Standalone lists (used by pickers/modals)
+    Route::get('store/addresses',      [SellerOnboardingController::class, 'listAddresses']);
+    Route::get('store/delivery',       [SellerOnboardingController::class, 'listDelivery']);
+    Route::get('store/social-links',   [SellerOnboardingController::class, 'listSocialLinks']);
+    Route::get('store/categories',     [SellerOnboardingController::class, 'listSelectedCategories']); // selected only
+    Route::get('catalog/categories',   [SellerOnboardingController::class, 'listAllCategories']);      // all available
 });
 
 Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
