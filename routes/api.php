@@ -51,16 +51,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
 
     Route::prefix('brands')->group(function () {
-    Route::get('/', [BrandController::class, 'getAll']);
-    Route::post('/', [BrandController::class, 'create']);
-    Route::put('{id}', [BrandController::class, 'update']);
-    Route::delete('{id}', [BrandController::class, 'delete']);
+        Route::get('/', [BrandController::class, 'getAll']);
+        Route::post('/', [BrandController::class, 'create']);
+        Route::put('{id}', [BrandController::class, 'update']);
+        Route::delete('{id}', [BrandController::class, 'delete']);
 
-    //product
-    Route::get('buyer/product/get-all',[ProductController::class,'getAllforBuyer']);
-    
-});
+        //product
+    });
+    Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
     // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 });
-
-
