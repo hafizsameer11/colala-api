@@ -27,7 +27,7 @@ class Product extends Model
     }
 public function deliveryOptions()
 {
-    return $this->belongsToMany(StoreDeliveryPricing::class);
+    return $this->belongsToMany(StoreDeliveryPricing::class, 'product_delivery_pricing', 'product_id', 'delivery_pricing_id');
 }
 
 }
