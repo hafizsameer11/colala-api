@@ -23,16 +23,16 @@ Route::post('auth/seller/start', [SellerOnboardingController::class, 'start']);
 /* Authenticated micro-steps */
 Route::middleware('auth:sanctum')->prefix('seller/onboarding')->group(function () {
     // ---- Level 1
-    Route::put('level1/profile-media',     [SellerOnboardingController::class, 'level1ProfileMedia']);   // 1.2
-    Route::put('level1/categories-social', [SellerOnboardingController::class, 'level1Categories']);     // 1.3
+    Route::post('level1/profile-media',     [SellerOnboardingController::class, 'level1ProfileMedia']);   // 1.2
+    Route::post('level1/categories-social', [SellerOnboardingController::class, 'level1Categories']);     // 1.3
 
     // ---- Level 2
-    Route::put('level2/business-details',  [SellerOnboardingController::class, 'level2Business']);       // 2.1
-    Route::put('level2/documents',         [SellerOnboardingController::class, 'level2Documents']);      // 2.2
+    Route::post('level2/business-details',  [SellerOnboardingController::class, 'level2Business']);       // 2.1
+    Route::post('level2/documents',         [SellerOnboardingController::class, 'level2Documents']);      // 2.2
 
     // ---- Level 3
-    Route::put('level3/physical-store',    [SellerOnboardingController::class, 'level3Physical']);       // 3.1
-    Route::put('level3/utility-bill',      [SellerOnboardingController::class, 'level3Utility']);        // 3.2
+    Route::post('level3/physical-store',    [SellerOnboardingController::class, 'level3Physical']);       // 3.1
+    Route::post('level3/utility-bill',      [SellerOnboardingController::class, 'level3Utility']);        // 3.2
 
     Route::post('level3/address',          [SellerOnboardingController::class, 'addAddress']);           // 3.3 create
     Route::delete('level3/address/{id}',   [SellerOnboardingController::class, 'deleteAddress']);        // 3.3 delete
@@ -40,7 +40,7 @@ Route::middleware('auth:sanctum')->prefix('seller/onboarding')->group(function (
     Route::post('level3/delivery',         [SellerOnboardingController::class, 'addDelivery']);          // 3.4 create
     Route::delete('level3/delivery/{id}',  [SellerOnboardingController::class, 'deleteDelivery']);       // 3.4 delete
 
-    Route::put('level3/theme',             [SellerOnboardingController::class, 'level3Theme']);          // 3.5
+    Route::post('level3/theme',             [SellerOnboardingController::class, 'level3Theme']);          // 3.5
 
     // ---- Progress / Submit
     Route::get('progress',                 [SellerOnboardingController::class, 'progress']);
@@ -76,7 +76,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::delete('products/{productId}/variants/delete/{variantId}', [ProductVariantController::class, 'delete']);
 
     Route::post('products/{id}/bulk-prices', [ProductBulkPriceController::class, 'store']);
-    Route::put('products/{id}/bulk-prices/{priceId}', [ProductBulkPriceController::class, 'update']);
+    Route::post('products/{id}/bulk-prices/{priceId}', [ProductBulkPriceController::class, 'update']);
     Route::delete('products/{id}/bulk-prices/{priceId}', [ProductBulkPriceController::class, 'delete']);
 
 
