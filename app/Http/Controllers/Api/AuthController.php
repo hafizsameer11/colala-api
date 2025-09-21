@@ -65,7 +65,7 @@ class AuthController extends Controller
         try {
             $email = $request->email;
             $user = $this->userService->forgetPassword($email);
-            return ResponseHelper::success($user, "user login successfully");
+            return ResponseHelper::success([], "Email Sent successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
@@ -78,7 +78,7 @@ class AuthController extends Controller
             $email = $request->email;
             $otp = $request->otp;
             $user = $this->userService->verifyOtp($email, $otp);
-            return ResponseHelper::success($user, "user login successfully");
+            return ResponseHelper::success($user, "otp verified successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
@@ -90,7 +90,7 @@ class AuthController extends Controller
             $email = $request->email;
             $password = $request->password;
             $user = $this->userService->resetPassword($email, $password);
-            return ResponseHelper::success($user, "user login successfully");
+            return ResponseHelper::success($user, "Password reset successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
