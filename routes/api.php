@@ -92,6 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
 
         // Cart
+
+        //Deliveraddress on the base of sotreId
+        Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
         Route::get('cart', [CartController::class, 'show']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
