@@ -67,47 +67,47 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
     // routes/api.php
-Route::get('/search', [SearchController::class, 'search']);
+    Route::get('/search', [SearchController::class, 'search']);
 
-      Route::get('/posts', [PostController::class, 'index']);             // list posts
+    Route::get('/posts', [PostController::class, 'index']);             // list posts
     Route::post('/posts', [PostController::class, 'store']);            // create post
     Route::get('/posts/{id}', [PostController::class, 'show']);         // show single post
     Route::post('/posts/{id}', [PostController::class, 'update']);       // update post
     Route::delete('/posts/{id}', [PostController::class, 'destroy']);   // delete post
 
     // ❤️ Likes
-    Route::post('/posts/{id}/like', [PostController::class, 'toggleLike']); 
+    Route::post('/posts/{id}/like', [PostController::class, 'toggleLike']);
 
     // 💬 Comments
-    Route::get('/posts/{id}/comments', [PostController::class, 'comments']); 
-    Route::post('/posts/{id}/comments', [PostController::class, 'addComment']); 
-    Route::delete('/posts/{postId}/comments/{commentId}', [PostController::class, 'deleteComment']); 
+    Route::get('/posts/{id}/comments', [PostController::class, 'comments']);
+    Route::post('/posts/{id}/comments', [PostController::class, 'addComment']);
+    Route::delete('/posts/{postId}/comments/{commentId}', [PostController::class, 'deleteComment']);
 
     // 📤 Share
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
     // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
 
     Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
-    // Browse
-    Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
+        // Browse
+        Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
 
-    // Cart
-    Route::get('cart', [CartController::class, 'show']);
-    Route::post('cart/items', [CartController::class, 'add']);
-    Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
-    Route::delete('cart/items/{id}', [CartController::class, 'remove']);
-    Route::delete('cart/clear', [CartController::class, 'clear']);
+        // Cart
+        Route::get('cart', [CartController::class, 'show']);
+        Route::post('cart/items', [CartController::class, 'add']);
+        Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
+        Route::delete('cart/items/{id}', [CartController::class, 'remove']);
+        Route::delete('cart/clear', [CartController::class, 'clear']);
 
-    // Checkout
-    Route::post('checkout/preview', [CheckoutController::class, 'preview']);
-    Route::post('checkout/place', [CheckoutController::class, 'place']);
+        // Checkout
+        Route::post('checkout/preview', [CheckoutController::class, 'preview']);
+        Route::post('checkout/place', [CheckoutController::class, 'place']);
 
-    // Orders
-    Route::get('orders', [OrderController::class, 'list']);
-    Route::get('orders/{order}', [OrderController::class, 'detail']);
-    Route::post('orders/{storeOrder}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
+        // Orders
+        Route::get('orders', [OrderController::class, 'list']);
+        Route::get('orders/{order}', [OrderController::class, 'detail']);
+        Route::post('orders/{storeOrder}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
 
-    // Reviews
-    Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
-});
+        // Reviews
+        Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
+    });
 });

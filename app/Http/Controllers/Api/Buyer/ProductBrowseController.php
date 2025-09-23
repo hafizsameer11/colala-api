@@ -9,6 +9,11 @@ use App\Services\Buyer\ProductBrowseService;
 class ProductBrowseController extends Controller {
     public function __construct(private ProductBrowseService $svc) {}
     public function byCategory($categoryId) {
-        return ResponseHelper::success($this->svc->byCategory((int)$categoryId));
+       try{
+         return ResponseHelper::success($this->svc->byCategory((int)$categoryId));
+       }
+         catch(\Exception $e){
+          return ResponseHelper::error( $e->getMessage(), 500);
+         }
     }
 }
