@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\Buyer\CartController;
+use App\Http\Controllers\Api\Buyer\CheckoutController;
+use App\Http\Controllers\Api\Buyer\OrderController;
+use App\Http\Controllers\Api\Buyer\ProductBrowseController;
+use App\Http\Controllers\Api\Buyer\ReviewController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
@@ -81,4 +86,28 @@ Route::get('/search', [SearchController::class, 'search']);
     // 📤 Share
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
     // Route::delete('/delete-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'delete']);
+
+    Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
+    // Browse
+    Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
+
+    // Cart
+    Route::get('cart', [CartController::class, 'show']);
+    Route::post('cart/items', [CartController::class, 'add']);
+    Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
+    Route::delete('cart/items/{id}', [CartController::class, 'remove']);
+    Route::delete('cart/clear', [CartController::class, 'clear']);
+
+    // Checkout
+    Route::post('checkout/preview', [CheckoutController::class, 'preview']);
+    Route::post('checkout/place', [CheckoutController::class, 'place']);
+
+    // Orders
+    Route::get('orders', [OrderController::class, 'list']);
+    Route::get('orders/{order}', [OrderController::class, 'detail']);
+    Route::post('orders/{storeOrder}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
+
+    // Reviews
+    Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
+});
 });
