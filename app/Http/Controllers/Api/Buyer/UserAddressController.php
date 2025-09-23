@@ -1,5 +1,5 @@
 <?php
-
+ namespace App\Http\Controllers\Api\Buyer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Buyer\UserAddressRequest;
 use App\Models\UserAddress;

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Buyer\CheckoutController;
 use App\Http\Controllers\Api\Buyer\OrderController;
 use App\Http\Controllers\Api\Buyer\ProductBrowseController;
 use App\Http\Controllers\Api\Buyer\ReviewController;
+use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
