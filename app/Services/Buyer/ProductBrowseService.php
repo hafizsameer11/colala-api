@@ -14,7 +14,7 @@ class ProductBrowseService {
             ->merge($category->children->pluck('id'))
             ->unique()->values();
 
-        return Product::with(['images:id,product_id,image','store:id,store_name'])
+        return Product::with(['images','store'])
             ->whereIn('category_id', $ids)
             ->where('status','active')
             ->paginate(20);
