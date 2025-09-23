@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('order_no')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('delivery_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
             $table->string('payment_method');          // wallet, flutterwave
             $table->string('payment_status')->default('pending'); // pending, paid, failed, refunded
             $table->decimal('items_total', 14, 2);

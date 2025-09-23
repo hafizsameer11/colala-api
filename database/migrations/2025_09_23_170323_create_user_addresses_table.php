@@ -25,6 +25,11 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->timestamps();
         });
+
+        Schema::table('orders', function (Blueprint $table) {
+                        $table->foreignId('delivery_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
+
+        });
     }
 
     /**
