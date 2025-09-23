@@ -16,7 +16,7 @@ return new class extends Migration
 
         });
         Schema::table('store_orders', function (Blueprint $table) {
-                                   $table->foreignId('delivery_pricing_id')->nullable()->constrained('store_delivery_pricings')->nullOnDelete();
+                                   $table->foreignId('delivery_pricing_id')->nullable()->constrained('store_delivery_pricing')->nullOnDelete();
 
 
         });
