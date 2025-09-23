@@ -11,6 +11,12 @@ use App\Services\Buyer\CartService;
 use Illuminate\Http\Request;
 
 class CartController extends Controller {
+    /**
+ * @OA\Tag(
+ *   name="Users",
+ *   description="Operations about users"
+ * )
+ */
     public function __construct(private CartService $svc) {}
 
     public function show(Request $req) {
