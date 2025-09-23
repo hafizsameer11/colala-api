@@ -26,10 +26,10 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('orders', function (Blueprint $table) {
-                        $table->foreignId('delivery_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
+        // Schema::table('orders', function (Blueprint $table) {
+        //                 $table->foreignId('delivery_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
 
-        });
+        // });
     }
 
     /**
