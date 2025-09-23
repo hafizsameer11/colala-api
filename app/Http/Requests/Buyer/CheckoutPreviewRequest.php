@@ -12,12 +12,12 @@ class CheckoutPreviewRequest extends FormRequest
      */
     use ReturnsJsonOnFail;
      public function authorize(): bool { return true; }
-    public function rules(): array {
+     public function rules(): array {
         return [
-            'rating'  => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:2000',
-            'images'  => 'nullable|array|max:5',
-            'images.*'=> 'url'
+            'delivery_address_id'   => 'required|exists:user_addresses,id',
+            'delivery_pricing_ids'  => 'required|array',
+            'delivery_pricing_ids.*'=> 'integer|exists:store_delivery_pricings,id',
+            'payment_method'        => 'required|in:wallet,flutterwave'
         ];
     }
 }
