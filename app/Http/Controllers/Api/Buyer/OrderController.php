@@ -12,7 +12,11 @@ class OrderController extends Controller {
     public function __construct(private OrderService $svc) {}
 
     public function list(Request $req) {
-        return ResponseHelper::success($this->svc->listForUser($req->user()->id));
+      try{
+          return ResponseHelper::success($this->svc->listForUser($req->user()->id));
+      }catch(\Exception $e){
+          return ResponseHelper::error( $e->getMessage(), 500);
+         }
     }
 
     public function detail(Request $req, Order $order) {

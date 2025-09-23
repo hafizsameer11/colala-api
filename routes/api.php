@@ -110,4 +110,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
     });
+    Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
+        Route::get('addresses', [UserAddressController::class, 'index']);
+        Route::post('addresses', [UserAddressController::class, 'store']);
+        Route::get('addresses/{id}', [UserAddressController::class, 'show']);
+        Route::put('addresses/{id}', [UserAddressController::class, 'update']);
+        Route::delete('addresses/{id}', [UserAddressController::class, 'destroy']);
+    });
 });
