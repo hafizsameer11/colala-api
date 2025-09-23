@@ -94,7 +94,6 @@ Route::middleware('auth:sanctum')->group(function () {
         // Cart
 
         //Deliveraddress on the base of sotreId
-        Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
         Route::get('cart', [CartController::class, 'show']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
@@ -112,6 +111,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
+                Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
+
     });
     Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
         Route::get('addresses', [UserAddressController::class, 'index']);
