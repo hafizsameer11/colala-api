@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
             $table->foreignId('store_id')->constrained()->cascadeOnDelete();
             $table->string('status')->default('placed'); // placed, packed, out_for_delivery, delivered, funds_released, completed, cancelled
-            $table->foreignId('delivery_pricing_id')->nullable()->constrained('store_delivery_pricings')->nullOnDelete();
             $table->decimal('shipping_fee', 14, 2)->default(0);
             $table->decimal('items_subtotal', 14, 2);
             $table->decimal('discount', 14, 2)->default(0);

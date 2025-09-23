@@ -30,6 +30,11 @@ return new class extends Migration
         //                 $table->foreignId('delivery_address_id')->nullable()->constrained('user_addresses')->nullOnDelete();
 
         // });
+        // Schema::table('store_orders', function (Blueprint $table) {
+        //                            $table->foreignId('delivery_pricing_id')->nullable()->constrained('store_delivery_pricings')->nullOnDelete();
+
+
+        // });
     }
 
     /**
