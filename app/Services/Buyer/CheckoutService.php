@@ -3,7 +3,7 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Cart, Order, StoreOrder, OrderItem, StoreDeliveryPricing, Wallet};
+use App\Models\{Cart, Chat, Order, StoreOrder, OrderItem, StoreDeliveryPricing, Wallet};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -136,6 +136,12 @@ class CheckoutService
                         'line_total' => $L['line_total'],
                     ]);
                 }
+                // 👇 Auto-create chat for this store order
+            Chat::firstOrCreate([
+                'store_order_id' => $so->id,
+                'user_id' => $cart->user_id,
+                'store_id' => $S['store_id'],
+            ]);
             }
 
             $cart->update(['checked_out' => true]);

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Buyer\ChatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -122,5 +123,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('addresses/{id}', [UserAddressController::class, 'show']);
         Route::put('addresses/{id}', [UserAddressController::class, 'update']);
         Route::delete('addresses/{id}', [UserAddressController::class, 'destroy']);
+
+        //chats
+         Route::get('chats', [ChatController::class, 'list']);
+    Route::get('chats/{id}/messages', [ChatController::class, 'messages']);
+    Route::post('chats/{id}/send', [ChatController::class, 'send']);
     });
 });
