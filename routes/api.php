@@ -104,7 +104,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Checkout
         Route::post('checkout/preview', [CheckoutController::class, 'preview']);
         Route::post('checkout/place', [CheckoutController::class, 'place']);
-
+        // Route::post('checkout')
+        Route::post('payment/confirmation', [CheckoutController::class, 'paymentConfirmation']);
         // Orders
         Route::get('orders', [OrderController::class, 'list']);
         Route::get('orders/{order}', [OrderController::class, 'detail']);
