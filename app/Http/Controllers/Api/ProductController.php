@@ -38,7 +38,9 @@ class ProductController extends Controller
     public function create(ProductCreateUpdateRequest $request)
     {
         try {
-            return ResponseHelper::success($this->productService->create($request->validated()));
+            $data=$request->validated();
+            $product=$this->productService->create($data);
+            return ResponseHelper::success($product);
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
