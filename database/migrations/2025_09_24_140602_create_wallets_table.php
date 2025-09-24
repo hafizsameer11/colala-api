@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('wallets', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->unique();
-            $table->bigInteger('shopping_balance', 10, 2)->default(0);
-            $table->bigInteger('reward_balance', 10, 2)->default(0);
-            $table->bigInteger('loyality_points', 10, 2)->default(0);
+            $table->bigInteger('shopping_balance')->default(0);
+            $table->bigInteger('reward_balance')->default(0);
+            $table->bigInteger('loyality_points')->default(0);
             $table->timestamps();
         });
     }
