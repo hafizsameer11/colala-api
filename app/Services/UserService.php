@@ -33,7 +33,7 @@ class UserService
         }
         //now match password
         if($user && Hash::check($data['password'], $user->password)){
-            return $user;
+            return $user->load('wallet');
         }
         throw new \Exception('Password is incorrect');
         // return User::where('email', $data['email'])->first();

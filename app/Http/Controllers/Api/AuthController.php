@@ -57,6 +57,11 @@ class AuthController extends Controller
                 'user'=>$user,
                 'token'=>$token
             ];
+            //check if user have wallet otherwise creste wallet
+            if(!$user->wallet){
+                $wallet=$this->walletService->create(['user_id'=>$user->id]);
+            }
+            
             return ResponseHelper::success($respone, "user login successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
