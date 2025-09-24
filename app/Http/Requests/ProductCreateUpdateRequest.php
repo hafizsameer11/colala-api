@@ -33,6 +33,9 @@ class ProductCreateUpdateRequest extends FormRequest
             'status' => 'in:draft,active,inactive',
             'video' => 'nullable|string',
             'images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            'coupon_code' => 'nullable|string|max:50',
+            'discount' => 'nullable|string|max:50',
+            'loyality_points_applicable' => 'boolean',
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){

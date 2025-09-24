@@ -8,7 +8,8 @@ class Product extends Model
 {
     protected $fillable = [
         'store_id','name','category_id','brand','description',
-        'price','discount_price','has_variants','video','status'
+        'price','discount_price','has_variants','video','status',
+        'coupon_code','discount','loyality_points_applicable'
     ];
 
     public function store()
