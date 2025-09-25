@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Buyer\ChatController;
 use App\Http\Controllers\Buyer\SavedItemController;
+use App\Http\Controllers\Buyer\StoreFollowController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -133,8 +134,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('chats/{id}/send', [ChatController::class, 'send']);
 
         //saved items
-         Route::get('saved-items', [SavedItemController::class, 'list']);
-    Route::post('saved-items/toggle', [SavedItemController::class, 'toggle']);
-    Route::post('saved-items/check', [SavedItemController::class, 'check']);
+        Route::get('saved-items', [SavedItemController::class, 'list']);
+        Route::post('saved-items/toggle', [SavedItemController::class, 'toggle']);
+        Route::post('saved-items/check', [SavedItemController::class, 'check']);
+        Route::get('followed-stores', [StoreFollowController::class, 'list']);
+    Route::post('followed-stores/toggle', [StoreFollowController::class, 'toggle']);
+    Route::post('followed-stores/check', [StoreFollowController::class, 'check']);
     });
 });
