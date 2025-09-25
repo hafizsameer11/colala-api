@@ -36,7 +36,7 @@ class ChatService {
         $chat = Chat::where('id',$chatId)->where('user_id',$userId)->firstOrFail();
         // mark messages as read
         $chat->messages()->where('sender_type','store')->update(['is_read'=>true]);
-        return $chat->messages()->with('sender:id,name')->orderBy('created_at','asc')->get();
+        return $chat->messages()->with('sender')->orderBy('created_at','asc')->get();
     }
 
     public function sendMessage(int $chatId, int $senderId, string $senderType, ?string $text, $imageFile = null) {

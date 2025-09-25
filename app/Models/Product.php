@@ -7,9 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $fillable = [
-        'store_id','name','category_id','brand','description',
-        'price','discount_price','has_variants','video','status',
-        'coupon_code','discount','loyality_points_applicable'
+        'store_id',
+        'name',
+        'category_id',
+        'brand',
+        'description',
+        'price',
+        'discount_price',
+        'has_variants',
+        'video',
+        'status',
+        'coupon_code',
+        'discount',
+        'loyality_points_applicable'
     ];
 
     public function store()
@@ -26,16 +36,16 @@ class Product extends Model
     {
         return $this->hasMany(ProductImage::class);
     }
-public function deliveryOptions()
-{
-    return $this->belongsToMany(StoreDeliveryPricing::class, 'product_delivery_pricing', 'product_id', 'delivery_pricing_id');
-}
-public function category()
-{
-    return $this->belongsTo(Category::class);   
-}
-public function variations()
-{
-    return $this->hasMany(ProductVariant::class);
-}
+    public function deliveryOptions()
+    {
+        return $this->belongsToMany(StoreDeliveryPricing::class, 'product_delivery_pricing', 'product_id', 'delivery_pricing_id');
+    }
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+    public function variations()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
 }

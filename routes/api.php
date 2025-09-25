@@ -144,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('support/tickets', [SupportController::class, 'createTicket']);
         Route::get('support/tickets/{id}', [SupportController::class, 'getTicket']);
         Route::post('support/messages', [SupportController::class, 'sendMessage']);
+        // Route::get('stores', [StoreController::class, 'getAll']);
     });
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 });
