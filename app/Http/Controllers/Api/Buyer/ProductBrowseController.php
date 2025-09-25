@@ -32,7 +32,7 @@ class ProductBrowseController extends Controller {
     }
     public function productDetails($productId) {
        try{
-        $products=Product::with(['store', 'category', 'images', 'variations', 'deliveryPricings'])->find($productId);
+        $products=Product::with(['store', 'category', 'images', 'variations'])->find($productId);
         if(!$products){
             return ResponseHelper::error('Product not found', 404);
         }

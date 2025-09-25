@@ -33,7 +33,9 @@ public function deliveryOptions()
 public function category()
 {
     return $this->belongsTo(Category::class);   
-
-
+}
+public function variations()
+{
+    return $this->hasMany(ProductVariant::class);
 }
 }
