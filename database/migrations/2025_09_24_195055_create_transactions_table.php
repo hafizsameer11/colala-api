@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('tx_id')->nullable();
             $table->bigInteger('amount')->nullable();
             $table->string('status')->default('pending'); // e.g., pending, completed, failed
-            $table->string('type')->nullable(); // e.g., payment, refund
+            $table->string('type')->nullable(); // e.g., order_payments,withdrawl,deposit
             $table->foreignId('order_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            
+
             $table->timestamps();
         });
     }

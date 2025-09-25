@@ -187,7 +187,7 @@ class CheckoutService
                 'tx_id' => $txId,
                 'amount' => $data['amount'],
                 'status' => 'success',
-                'type' => 'wallet',
+                'type' => 'order_payment',
                 'order_id' => $order->id,
                 'user_id' => $user->id,
             ]);

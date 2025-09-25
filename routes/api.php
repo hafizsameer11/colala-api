@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Buyer\ChatController;
 use App\Http\Controllers\Buyer\SavedItemController;
 use App\Http\Controllers\Buyer\StoreFollowController;
@@ -138,7 +139,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('saved-items/toggle', [SavedItemController::class, 'toggle']);
         Route::post('saved-items/check', [SavedItemController::class, 'check']);
         Route::get('followed-stores', [StoreFollowController::class, 'list']);
-    Route::post('followed-stores/toggle', [StoreFollowController::class, 'toggle']);
-    Route::post('followed-stores/check', [StoreFollowController::class, 'check']);
+        Route::post('followed-stores/toggle', [StoreFollowController::class, 'toggle']);
+        Route::post('followed-stores/check', [StoreFollowController::class, 'check']);
     });
+    Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 });
