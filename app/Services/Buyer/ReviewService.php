@@ -12,12 +12,20 @@ class ReviewService {
         if (!in_array($item->storeOrder->status, ['delivered','funds_released','completed'])) {
             throw ValidationException::withMessages(['status'=>'You can review after delivery.']);
         }
+        //check if have images than store them in storage and get the paths
+        $imagePaths = [];
+        if (!empty($data['images'])) {
+            foreach ($data['images'] as $image) {
+                $path = $image->store('reviews', 'public');
+                $imagePaths[] = $path;
+            }
+        }
         return ProductReview::create([
             'order_item_id'=>$item->id,
             'user_id'=>$userId,
             'rating'=>$data['rating'],
             'comment'=>$data['comment'] ?? null,
-            'images'=>$data['images'] ?? [],
+            'images'=>$imagePaths, //store array of image paths
         ]);
     }
 }
