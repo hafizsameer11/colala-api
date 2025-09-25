@@ -30,5 +30,10 @@ public function deliveryOptions()
 {
     return $this->belongsToMany(StoreDeliveryPricing::class, 'product_delivery_pricing', 'product_id', 'delivery_pricing_id');
 }
+public function category()
+{
+    return $this->belongsTo(Category::class);   
 
+
+}
 }
