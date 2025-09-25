@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Buyer;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\StoreDeliveryPricing;
 use App\Services\Buyer\ProductBrowseService;
 
@@ -24,6 +25,19 @@ class ProductBrowseController extends Controller {
             return ResponseHelper::error('No delivery addresses found for this store', 404);
         }
          return ResponseHelper::success($deliverAddresses);
+       }
+         catch(\Exception $e){
+          return ResponseHelper::error( $e->getMessage(), 500);
+         }
+    }
+    public function productDetails($productId) {
+       try{
+        $products=Product::with(['store', 'category', 'images', 'variations', 'deliveryPricings'])->find($productId);
+        if(!$products){
+            return ResponseHelper::error('Product not found', 404);
+        }
+         return ResponseHelper::success($products);
+        //  return ResponseHelper::success();
        }
          catch(\Exception $e){
           return ResponseHelper::error( $e->getMessage(), 500);
