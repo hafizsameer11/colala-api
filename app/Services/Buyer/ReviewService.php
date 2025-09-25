@@ -10,7 +10,7 @@ class ReviewService {
     public function create(int $userId, OrderItem $item, array $data): ProductReview {
         if ($item->storeOrder->order->user_id !== $userId) abort(403);
         if (!in_array($item->storeOrder->status, ['delivered','funds_released','completed'])) {
-            throw ValidationException::withMessages(['status'=>'You can review after delivery.']);
+            throw new \Exception('You can review after delivery.');
         }
         //check if have images than store them in storage and get the paths
         $imagePaths = [];

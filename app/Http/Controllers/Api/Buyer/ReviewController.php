@@ -12,8 +12,12 @@ class ReviewController extends Controller {
     public function __construct(private ReviewService $svc) {}
 
     public function create(ReviewCreateRequest $req, OrderItem $orderItem) {
-        return ResponseHelper::success(
+       try{
+         return ResponseHelper::success(
             $this->svc->create($req->user()->id, $orderItem, $req->validated())
         );
+       }catch(\Exception $e){
+          return ResponseHelper::error( $e->getMessage(), 500);
+         }
     }
 }
