@@ -37,6 +37,10 @@ class ServiceService
 
         return $service->load('media','subServices');
     }
+    public function getById(int $id)
+    {
+        return Service::with('media','subServices')->findOrFail($id);
+    }
 
     public function update(int $id, array $data)
     {

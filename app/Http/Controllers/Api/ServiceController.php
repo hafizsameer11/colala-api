@@ -52,6 +52,15 @@ class ServiceController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function getById($id)
+    {
+        try {
+            return ResponseHelper::success($this->serviceService->getById($id));
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 
     public function delete($id)
     {

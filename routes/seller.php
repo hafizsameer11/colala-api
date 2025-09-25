@@ -90,6 +90,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('service/update/{id}', [ServiceController::class, 'update']);
     Route::delete('service/delete/{id}', [ServiceController::class, 'delete']);
 
+    Route::get('service/{id}', [ServiceController::class, 'getById']);
 
 
 });

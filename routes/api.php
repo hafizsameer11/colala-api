@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Buyer\ChatController;
@@ -144,7 +145,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('support/tickets', [SupportController::class, 'createTicket']);
         Route::get('support/tickets/{id}', [SupportController::class, 'getTicket']);
         Route::post('support/messages', [SupportController::class, 'sendMessage']);
-        // Route::get('stores', [StoreController::class, 'getAll']);
+        Route::get('stores', [StoreController::class, 'getAll']);
+        Route::get('stores/{id}', [StoreController::class, 'getById']);
+        
     });
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 });
