@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Buyer\ChatController;
+use App\Http\Controllers\Buyer\SavedItemController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -114,8 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
-                Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
-
+        Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
     });
     Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
         Route::get('addresses', [UserAddressController::class, 'index']);
@@ -124,9 +125,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('addresses/{id}', [UserAddressController::class, 'update']);
         Route::delete('addresses/{id}', [UserAddressController::class, 'destroy']);
 
+        //get wallet balance
+        Route::get('getBalance', [WalletController::class, 'getBalance']);
         //chats
-         Route::get('chats', [ChatController::class, 'list']);
-    Route::get('chats/{id}/messages', [ChatController::class, 'messages']);
-    Route::post('chats/{id}/send', [ChatController::class, 'send']);
+        Route::get('chats', [ChatController::class, 'list']);
+        Route::get('chats/{id}/messages', [ChatController::class, 'messages']);
+        Route::post('chats/{id}/send', [ChatController::class, 'send']);
+
+        //saved items
+         Route::get('saved-items', [SavedItemController::class, 'list']);
+    Route::post('saved-items/toggle', [SavedItemController::class, 'toggle']);
+    Route::post('saved-items/check', [SavedItemController::class, 'check']);
     });
 });
