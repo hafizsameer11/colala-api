@@ -23,7 +23,8 @@ class OrderController extends Controller {
         return ResponseHelper::success($this->svc->detailForUser($req->user()->id, $order));
     }
 
-    public function confirmDelivered(Request $req, StoreOrder $storeOrder) {
+    public function confirmDelivered(Request $req, $storeOrderId) {
+        $storeOrder = StoreOrder::findOrFail($storeOrderId);
         return ResponseHelper::success($this->svc->buyerConfirmDelivered($req->user()->id, $storeOrder));
     }
 }
