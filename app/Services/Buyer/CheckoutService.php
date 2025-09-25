@@ -1,16 +1,15 @@
 <?php
 
-
 namespace App\Services\Buyer;
 
-use App\Models\{Cart, Chat, Order, StoreOrder, OrderItem, StoreDeliveryPricing, Wallet};
+use App\Models\{Cart, Chat, Order, StoreOrder, OrderItem, Wallet};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CheckoutService
 {
-    public function preview(Cart $cart, int $addressId, array $deliveryPricingIds, string $paymentMethod): array
+    public function preview(Cart $cart, int $addressId, string $paymentMethod): array
     {
         if ($cart->items()->count() === 0) {
             throw ValidationException::withMessages(['cart' => 'Cart is empty.']);
@@ -21,7 +20,7 @@ class CheckoutService
 
         $summaryStores = [];
         $itemsTotal = 0;
-        $shippingTotal = 0;
+        $shippingTotal = 0;     // no delivery pricing → 0 shipping
         $platformFee = 0;
         $discountTotal = 0;
 
@@ -39,27 +38,17 @@ class CheckoutService
                     'name' => $i->product->name,
                     'qty' => $i->qty,
                     'unit' => $unit,
-                    'line_total' => $lineTotal
+                    'line_total' => $lineTotal,
                 ];
             }
 
-            $deliveryId = $deliveryPricingIds[$storeId] ?? null;
-            if (!$deliveryId) {
-                throw ValidationException::withMessages(['delivery' => "Missing delivery method for store {$storeId}."]);
-            }
-            $delivery = StoreDeliveryPricing::where('store_id', $storeId)->findOrFail($deliveryId);
-            $shipFee = (float)$delivery->price;
-
             $itemsTotal += $itemsSubtotal;
-            $shippingTotal += $shipFee;
 
             $summaryStores[] = [
                 'store_id' => $storeId,
-                'delivery_pricing_id' => $delivery->id,
-                'shipping_fee' => $shipFee,
                 'items_subtotal' => $itemsSubtotal,
-                'subtotal_with_shipping' => $itemsSubtotal + $shipFee,
-                'lines' => $lines
+                'subtotal_with_shipping' => $itemsSubtotal,
+                'lines' => $lines,
             ];
         }
 
@@ -67,14 +56,14 @@ class CheckoutService
         $grand = $itemsTotal + $shippingTotal + $platformFee - $discountTotal;
 
         return [
-            'address_id' => $addressId,
+            'address_id'   => $addressId,
             'payment_method' => $paymentMethod,
-            'items_total' => $itemsTotal,
+            'items_total'  => $itemsTotal,
             'shipping_total' => $shippingTotal,
             'platform_fee' => $platformFee,
             'discount_total' => $discountTotal,
-            'grand_total' => $grand,
-            'stores' => $summaryStores
+            'grand_total'  => $grand,
+            'stores'       => $summaryStores,
         ];
     }
 
@@ -94,31 +83,33 @@ class CheckoutService
                 'grand_total' => $preview['grand_total'],
                 'meta' => [],
             ]);
-            if($preview['payment_method']==='wallet'){
+
+            if ($preview['payment_method'] === 'wallet') {
                 $this->paymentConfirmationWIthShoppingWallet([
-                    'order_id'=>$order->id,
-                    'amount'=>$preview['grand_total'],
-                    'tx_id'=>null
+                    'order_id' => $order->id,
+                    'amount'   => $preview['grand_total'],
+                    'tx_id'    => null,
                 ]);
             }
-            //create order tracking for that 
+
+            // Create order tracking and chat
             $deliveryCode = random_int(1000, 9999);
-            $orderTracking = \App\Models\OrderTracking::create([
+            \App\Models\OrderTracking::create([
                 'order_id' => $order->id,
                 'status' => 'pending',
                 'notes' => 'Order has been placed and is pending processing.',
                 'delivery_code' => $deliveryCode,
             ]);
+
             foreach ($preview['stores'] as $S) {
                 $so = StoreOrder::create([
                     'order_id' => $order->id,
                     'store_id' => $S['store_id'],
-                    'status' => 'placed',
-                    'delivery_pricing_id' => $S['delivery_pricing_id'],
-                    'shipping_fee' => $S['shipping_fee'],
+                    'status'   => 'placed',
+                    'shipping_fee' => 0, // or make column nullable
                     'items_subtotal' => $S['items_subtotal'],
                     'discount' => 0,
-                    'subtotal_with_shipping' => $S['subtotal_with_shipping'],
+                    'subtotal_with_shipping' => $S['items_subtotal'],
                 ]);
 
                 foreach ($S['lines'] as $L) {
@@ -136,12 +127,12 @@ class CheckoutService
                         'line_total' => $L['line_total'],
                     ]);
                 }
-                // 👇 Auto-create chat for this store order
-            Chat::firstOrCreate([
-                'store_order_id' => $so->id,
-                'user_id' => $cart->user_id,
-                'store_id' => $S['store_id'],
-            ]);
+
+                Chat::firstOrCreate([
+                    'store_order_id' => $so->id,
+                    'user_id' => $cart->user_id,
+                    'store_id' => $S['store_id'],
+                ]);
             }
 
             $cart->update(['checked_out' => true]);
@@ -150,11 +141,9 @@ class CheckoutService
             return $order->load('storeOrders.items');
         });
     }
-    public function paymentConfirmationWIthShoppingWallet($data){
-        //check if user have wallet not than create and check shopping_balance
-        //if have balance than deduct balance and update order payment status to paid
-        //if not enough balance than throw error
-        //record transaction
+
+    public function paymentConfirmationWIthShoppingWallet($data)
+    {
         return DB::transaction(function () use ($data) {
             $order = Order::find($data['order_id']);
             if (!$order) {
@@ -163,25 +152,23 @@ class CheckoutService
             if ($order->payment_status === 'paid') {
                 throw ValidationException::withMessages(['order' => 'Order is already paid.']);
             }
-            // Assuming User model has shopping_balance field
-            // $user = $order->user;
-            $user=Auth::user();
-            // $user
-            $wallet=Wallet::firstOrCreate(
+
+            $user = Auth::user();
+            $wallet = Wallet::firstOrCreate(
                 ['user_id' => $user->id],
                 ['balance' => 0, 'shopping_balance' => 0]
             );
-            if ($user->shopping_balance < $data['amount']) {
+
+            if ($wallet->shopping_balance < $data['amount']) {
                 throw ValidationException::withMessages(['wallet' => 'Insufficient wallet balance.']);
             }
-            // Deduct balance
+
             $wallet->shopping_balance -= $data['amount'];
             $wallet->save();
-            // Update order status
+
             $order->payment_status = 'paid';
             $order->save();
-            // Record transaction
-            //generate a tx id wit colala prefix
+
             $txId = 'COLTX-' . now()->format('YmdHis') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT);
             \App\Models\Transaction::create([
                 'tx_id' => $txId,
@@ -191,9 +178,8 @@ class CheckoutService
                 'order_id' => $order->id,
                 'user_id' => $user->id,
             ]);
+
             return $order->load('storeOrders.items');
         });
-
-
     }
 }

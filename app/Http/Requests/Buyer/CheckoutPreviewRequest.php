@@ -13,11 +13,10 @@ class CheckoutPreviewRequest extends FormRequest
     use ReturnsJsonOnFail;
      public function authorize(): bool { return true; }
      public function rules(): array {
-        return [
-            'delivery_address_id'   => 'required|exists:user_addresses,id',
-            'delivery_pricing_ids'  => 'required|array',
-            'delivery_pricing_ids.*'=> 'integer|exists:store_delivery_pricings,id',
-            'payment_method'        => 'required|in:wallet,flutterwave'
+      return [
+            'delivery_address_id' => 'required|exists:user_addresses,id',
+            // delivery_pricing_ids removed
+            'payment_method'      => 'required|in:wallet,flutterwave',
         ];
     }
 }

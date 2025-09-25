@@ -98,14 +98,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
         Route::get('product-details/{id}', [ProductBrowseController::class, 'productDetails']);
         // Cart
-
         //Deliveraddress on the base of sotreId
         Route::get('cart', [CartController::class, 'show']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
         Route::delete('cart/items/{id}', [CartController::class, 'remove']);
         Route::delete('cart/clear', [CartController::class, 'clear']);
-
         // Checkout
         Route::post('checkout/preview', [CheckoutController::class, 'preview']);
         Route::post('checkout/place', [CheckoutController::class, 'place']);
@@ -115,7 +113,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('orders', [OrderController::class, 'list']);
         Route::get('orders/{orderId}', [OrderController::class, 'detail']);
         Route::post('orders/{storeOrderId}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
-
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
         Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
