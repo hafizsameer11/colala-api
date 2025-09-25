@@ -19,7 +19,8 @@ class OrderController extends Controller {
          }
     }
 
-    public function detail(Request $req, Order $order) {
+    public function detail(Request $req, $orderId) {
+        $order = Order::findOrFail($orderId);
         return ResponseHelper::success($this->svc->detailForUser($req->user()->id, $order));
     }
 

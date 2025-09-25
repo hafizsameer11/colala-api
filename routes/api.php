@@ -113,7 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('payment/confirmation', [CheckoutController::class, 'paymentConfirmation']);
         // Orders
         Route::get('orders', [OrderController::class, 'list']);
-        Route::get('orders/{order}', [OrderController::class, 'detail']);
+        Route::get('orders/{orderId}', [OrderController::class, 'detail']);
         Route::post('orders/{storeOrderId}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
 
         // Reviews
