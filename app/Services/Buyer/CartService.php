@@ -26,6 +26,7 @@ class CartService {
                     'img'=>$i->product->images->first()->image ?? null,
                     'color'=>$i->variant->color ?? null,
                     'size'=>$i->variant->size ?? null,
+                    'store_id'=>$i->store_id,
                     'unit_price'=>$price,
                     'qty'=>$i->qty,
                     'line_total'=>$lineTotal,
