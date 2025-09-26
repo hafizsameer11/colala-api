@@ -62,4 +62,15 @@ class UserService
         $user->save();
         return $user;
     }
+    public function update($data,$userId){
+
+        $user=User::findOrFail($userId);
+        if (isset($data['profile_picture']) && $data['profile_picture']) {
+            $path = $data['profile_picture']->store('profile_picture', 'public');
+            $data['profile_picture'] = $path;
+        }
+       $user=User::update($data);
+        //$user->save() ;
+        return $user;
+    }
 }

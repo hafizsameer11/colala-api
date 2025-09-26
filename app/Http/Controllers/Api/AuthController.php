@@ -104,4 +104,17 @@ class AuthController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function editProfile(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $data = $request->only(['full_name', 'email', 'phone', 'user_name','profile_picture', 'country', 'state']);
+           
+            $updatedUser = $this->userService->update( $data,$user->id);
+            return ResponseHelper::success($updatedUser, "Profile updated successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

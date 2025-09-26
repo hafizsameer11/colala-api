@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Chat extends Model
 {
     protected $table = 'chats';
-      protected $fillable = ['store_order_id','user_id','store_id'];
+      protected $fillable = ['store_order_id','user_id','store_id','service_id','type'];
 
     public function storeOrder(){ return $this->belongsTo(StoreOrder::class); }
     public function user(){ return $this->belongsTo(User::class); }
@@ -17,4 +17,5 @@ class Chat extends Model
     public function lastMessage() {
         return $this->hasOne(ChatMessage::class)->latestOfMany();
     }
+    public function service(){ return $this->belongsTo(Service::class); }
 }

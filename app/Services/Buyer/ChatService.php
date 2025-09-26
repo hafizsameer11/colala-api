@@ -56,4 +56,46 @@ class ChatService {
             'is_read'=>false
         ]);
     }
+    public function startChatWithStore(int $userId, int $storeId): Chat {
+        // Check if a general chat already exists between the user and store
+        $existingChat = Chat::where('user_id', $userId)
+            ->where('store_id', $storeId)
+            ->whereNull('store_order_id')
+            ->where('type', 'general')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat;
+        }
+
+        // Create a new general chat
+        return Chat::create([
+            'user_id' => $userId,
+            'store_id' => $storeId,
+            'type' => 'general',
+            'store_order_id' => null,
+            'service_id' => null,
+        ]);
+    }
+    public function startChatForService(int $userId, int $storeId, int $serviceId): Chat {
+        // Check if a service chat already exists between the user and store for the given service
+        $existingChat = Chat::where('user_id', $userId)
+            ->where('store_id', $storeId)
+            ->where('service_id', $serviceId)
+            ->where('type', 'service')
+            ->first();
+
+        if ($existingChat) {
+            return $existingChat;
+        }
+
+        // Create a new service chat
+        return Chat::create([
+            'user_id' => $userId,
+            'store_id' => $storeId,
+            'service_id' => $serviceId,
+            'type' => 'service',
+            'store_order_id' => null,
+        ]);
+    }
 }

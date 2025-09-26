@@ -57,10 +57,6 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/categories', [App\Http\Controllers\Api\CategoryController::class, 'getAll']);
-
-
-
-
     //admin routes
     Route::post('/create-category', [App\Http\Controllers\Api\CategoryController::class, 'create']);
     Route::post('/update-category/{id}', [App\Http\Controllers\Api\CategoryController::class, 'update']);
@@ -147,7 +143,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('support/messages', [SupportController::class, 'sendMessage']);
         Route::get('stores', [StoreController::class, 'getAll']);
         Route::get('stores/{id}', [StoreController::class, 'getById']);
+
+        //Start chat with store without order
+        Route::post('chats/start/{store_id}', [ChatController::class, 'startChatWithStore']);
+        Route::post('chats/start-service/{store_id}', [ChatController::class, 'startChatWithStoreForService']); // it requires service_id in body
         
     });
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
+
+    //edit profile 
+    Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 });
