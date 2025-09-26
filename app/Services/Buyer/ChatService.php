@@ -16,14 +16,13 @@ class ChatService {
     }
 
     public function fetchChatList(int $userId) {
-        return Chat::with(['store:id,store_name','lastMessage'])
+        return Chat::with(['store','lastMessage','service'])
             ->where('user_id',$userId)
             ->get()
             ->map(function($chat){
                 $unread = $chat->messages()->where('is_read',false)->count();
                 return [
                     'chat_id'=>$chat->id,
-                    'store_order_id'=>$chat->store_order_id,
                     'store'=>$chat->store->store_name,
                     'last_message'=>$chat->lastMessage?->message,
                     'last_message_at'=>$chat->lastMessage?->created_at,
