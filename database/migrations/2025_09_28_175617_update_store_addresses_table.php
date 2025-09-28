@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('store_addresses', function (Blueprint $table) {
-             $table->dropColumn(['state', 'local_government', 'variant','price', 'is_free']);
+        // Schema::table('store_addresses', function (Blueprint $table) {
+        //      $table->dropColumn(['state', 'local_government', 'variant','price', 'is_free']);
 
-            // Add the correct columns
-            $table->string('full_address')->after('local_government');
-            $table->boolean('is_main')->default(false)->after('full_address');
-            $table->json('opening_hours')->nullable()->after('is_main');
-        });
+        //     // Add the correct columns
+        //     $table->string('full_address')->after('local_government');
+        //     $table->boolean('is_main')->default(false)->after('full_address');
+        //     $table->json('opening_hours')->nullable()->after('is_main');
+        // });
     }
 
     /**
