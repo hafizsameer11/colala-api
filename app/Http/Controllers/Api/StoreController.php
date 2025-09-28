@@ -20,7 +20,7 @@ class StoreController extends Controller
     }
     public function getById(Request $req, $storeId) {
         try{
-            $store=Store::with('user','socialLinks','businessDetails','addresses','deliveryPricing','categories')->findOrFail($storeId);
+            $store=Store::with('user','socialLinks','businessDetails','addresses','deliveryPricing','categories','products.orderItems')->findOrFail($storeId);
             return ResponseHelper::success($store);
         }catch(\Exception $e){
             return ResponseHelper::error( $e->getMessage(), 500);

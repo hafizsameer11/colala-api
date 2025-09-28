@@ -22,5 +22,12 @@ class Store extends Model
 {
     return $this->belongsToMany(Category::class, 'store_categories', 'store_id', 'category_id');
 }
+public function products() { return $this->hasMany(Product::class); }
+    public function services() { return $this->hasMany(Service::class); }
+    public function orders() { return $this->hasMany(StoreOrder::class); }
+    // public function reviews() { return $this->hasMany(StoreReview::class); }
+    // public function posts() { return $this->hasMany(StorePost::class); }
+    public function chats() { return $this->hasMany(Chat::class); }
+    public function supportTickets() { return $this->hasMany(SupportTicket::class); }
 
 }
