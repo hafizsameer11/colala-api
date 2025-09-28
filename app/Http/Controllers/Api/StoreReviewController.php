@@ -16,7 +16,7 @@ class StoreReviewController extends Controller
         $store = Store::findOrFail($storeId);
 
         $reviews = $store->storeReveiews()
-            ->with('user:id,name,email')
+            ->with('user')
             ->latest()
             ->get();
 
@@ -55,7 +55,7 @@ class StoreReviewController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => 'Review added successfully.',
-            'data'    => $review->load('user:id,name,email')
+            'data'    => $review->load('user')
         ], 201);
     }
 
