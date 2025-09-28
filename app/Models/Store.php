@@ -30,4 +30,22 @@ public function products() { return $this->hasMany(Product::class); }
     public function chats() { return $this->hasMany(Chat::class); }
     public function supportTickets() { return $this->hasMany(SupportTicket::class); }
 
+    public function soldItems()
+{
+    return $this->hasManyThrough(
+        OrderItem::class,
+        Product::class,
+        'store_id',
+        'product_id',
+        'id',
+        'id'
+    );
+}
+
+public function getTotalSoldAttribute(): int
+{
+    // sum of qty column = total number of items sold
+    return $this->soldItems()->sum('qty');
+}
+
 }
