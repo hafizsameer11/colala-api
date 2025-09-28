@@ -48,7 +48,7 @@ Route::middleware('auth:sanctum')->prefix('seller/onboarding')->group(function (
     Route::post('submit',                  [SellerOnboardingController::class, 'submitForReview']);
 
 
-     Route::get('store/overview',  [SellerOnboardingController::class, 'overview']);   // store + relations + progress
+    Route::get('store/overview',  [SellerOnboardingController::class, 'overview']);   // store + relations + progress
     Route::get('onboarding/progress', [SellerOnboardingController::class, 'progress']); // already exists
 
     // Per-level getters (for edit screens)
@@ -71,6 +71,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('products/update/{id}', [ProductController::class, 'update']);
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
 
+    //Store Orders
+    
+
     // Variants
     Route::post('products/{productId}/variants/create', [ProductVariantController::class, 'create']);
     Route::post('products/{productId}/variants/update/{variantId}', [ProductVariantController::class, 'update']);
@@ -84,7 +87,6 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Product delivery options
     Route::post('products/{id}/delivery-options', [ProductDeliveryOptionController::class, 'attach']);
     Route::delete('products/{id}/delivery-options/{optionId}', [ProductDeliveryOptionController::class, 'detach']);
-
     Route::get('service/', [ServiceController::class, 'getAll']);
     Route::post('service/create', [ServiceController::class, 'create']);
     Route::post('service/update/{id}', [ServiceController::class, 'update']);
