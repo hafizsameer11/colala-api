@@ -40,6 +40,7 @@ class SupportService {
 
     public function listTickets(int $userId) {
         return SupportTicket::where('user_id',$userId)
+        ->with(['lastMessage','unreadMessagesCount'])
             ->latest()
             ->get();
     }
