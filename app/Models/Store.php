@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships; // ✅ add this
+
 
 class Store extends Model
 {
     //
+     use HasRelationships; // ✅ very important
      protected $fillable = [
         'user_id','store_name','store_email','store_phone','store_location',
         'profile_image','banner_image','category_id','theme_color',
@@ -42,20 +45,20 @@ public function products() { return $this->hasMany(Product::class); }
         'id'
     );
 }
-  public function productReviews()
+   public function productReviews()
     {
         return $this->hasManyDeep(
             ProductReview::class,
-            [Product::class, OrderItem::class],
+            [Product::class, OrderItem::class], // through tables
             [
-                'store_id',        // products.store_id
-                'product_id',      // order_items.product_id
-                'order_item_id'    // product_reviews.order_item_id
+                'store_id',      // FK on products table
+                'product_id',    // FK on order_items table
+                'order_item_id', // FK on product_reviews table
             ],
             [
-                'id',              // stores.id
-                'id',              // products.id
-                'id'               // order_items.id
+                'id',            // stores.id
+                'id',            // products.id
+                'id',            // order_items.id
             ]
         );
     }
