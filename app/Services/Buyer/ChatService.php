@@ -33,7 +33,7 @@ class ChatService {
     }
 
     public function fetchMessages(int $chatId, int $userId) {
-        $chat = Chat::where('id',$chatId)->where('user_id',$userId)->firstOrFail();
+        $chat = Chat::with('store')->where('id',$chatId)->where('user_id',$userId)->firstOrFail();
         // mark messages as read
         $chat->messages()->where('sender_type','store')->update(['is_read'=>true]);
         return $chat->messages()->with('sender')->orderBy('created_at','asc')->get();
