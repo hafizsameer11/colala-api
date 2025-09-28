@@ -26,7 +26,8 @@ class ChatService {
                     'store'=>$chat->store->store_name,
                     'last_message'=>$chat->lastMessage?->message,
                     'last_message_at'=>$chat->lastMessage?->created_at,
-                    'unread_count'=>$unread
+                    'unread_count'=>$unread,
+                    'avatar'=>$chat->store->profile_image ? asset('storage/'.$chat->store->profile_image) : null,
                 ];
             });
     }
