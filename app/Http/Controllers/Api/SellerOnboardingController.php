@@ -236,7 +236,7 @@ class SellerOnboardingController extends Controller
         'opening_hours'    => $request->input('opening_hours', []),
     ]);
 
-    // Mark onboarding step as done
+    // Mark onboarding step as done 
     $this->markDone($store, 3, 'level3.addresses');
 
     return $this->ok($store, 'Address added successfully.');
