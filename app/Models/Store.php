@@ -42,19 +42,23 @@ public function products() { return $this->hasMany(Product::class); }
         'id'
     );
 }
-public function productReviews(): HasManyThrough
-{
-    return $this->hasManyThrough(
-        ProductReview::class,
-        Product::class,
-        'store_id',         // FK on products table
-        'product_id',       // FK on product_reviews (through order_items)
-        'id',               // PK on stores table
-        'id'                // PK on products table
-    )
-    ->join('order_items', 'product_reviews.order_item_id', '=', 'order_items.id')
-    ->select('product_reviews.*'); // ensure only review fields are selected
-}
+  public function productReviews()
+    {
+        return $this->hasManyDeep(
+            ProductReview::class,
+            [Product::class, OrderItem::class],
+            [
+                'store_id',        // products.store_id
+                'product_id',      // order_items.product_id
+                'order_item_id'    // product_reviews.order_item_id
+            ],
+            [
+                'id',              // stores.id
+                'id',              // products.id
+                'id'               // order_items.id
+            ]
+        );
+    }
 
 public function getTotalSoldAttribute(): int
 {

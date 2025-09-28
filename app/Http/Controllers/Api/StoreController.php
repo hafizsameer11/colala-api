@@ -19,6 +19,7 @@ class StoreController extends Controller
             return ResponseHelper::error( $e->getMessage(), 500);
         }
     }
+
 public function getById(Request $req, $storeId)
 {
     try {
@@ -33,7 +34,6 @@ public function getById(Request $req, $storeId)
             'products.images',
             'products.variations',
             'services',
-            // fetch product reviews with reviewer and order item
             'productReviews.user',
             'productReviews.orderItem'
         ])
@@ -45,7 +45,6 @@ public function getById(Request $req, $storeId)
         ->findOrFail($storeId);
 
         return ResponseHelper::success($store);
-
     } catch (\Exception $e) {
         return ResponseHelper::error($e->getMessage(), 500);
     }
