@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Store extends Model
 {
@@ -40,6 +41,19 @@ public function products() { return $this->hasMany(Product::class); }
         'id',
         'id'
     );
+}
+public function productReviews(): HasManyThrough
+{
+    return $this->hasManyThrough(
+        ProductReview::class,
+        Product::class,
+        'store_id',         // FK on products table
+        'product_id',       // FK on product_reviews (through order_items)
+        'id',               // PK on stores table
+        'id'                // PK on products table
+    )
+    ->join('order_items', 'product_reviews.order_item_id', '=', 'order_items.id')
+    ->select('product_reviews.*'); // ensure only review fields are selected
 }
 
 public function getTotalSoldAttribute(): int

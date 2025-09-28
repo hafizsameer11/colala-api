@@ -23,16 +23,30 @@ public function getById(Request $req, $storeId)
 {
     try {
         $store = Store::with([
-            'user','socialLinks','businessDetails','addresses',
-            'deliveryPricing','categories','products.orderItems',
-            'products.images','products.variations','services'
+            'user',
+            'socialLinks',
+            'businessDetails',
+            'addresses',
+            'deliveryPricing',
+            'categories',
+            'products.orderItems',
+            'products.images',
+            'products.variations',
+            'services',
+            // fetch product reviews with reviewer and order item
+            'productReviews.user',
+            'productReviews.orderItem'
         ])
-        ->withSum(['soldItems as total_sold' => function ($q) {
-            $q->select(DB::raw('COALESCE(SUM(qty),0)'));
-        }], 'qty')
+        ->withSum([
+            'soldItems as total_sold' => function ($q) {
+                // ensure we always get a numeric value
+                $q->select(DB::raw('COALESCE(SUM(qty),0)'));
+            }
+        ], 'qty')
         ->findOrFail($storeId);
 
         return ResponseHelper::success($store);
+
     } catch (\Exception $e) {
         return ResponseHelper::error($e->getMessage(), 500);
     }
