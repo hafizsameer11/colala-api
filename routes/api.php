@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\StoreController;
+use App\Http\Controllers\Api\StoreReviewController;
 use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Buyer\ChatController;
@@ -147,7 +148,11 @@ Route::middleware('auth:sanctum')->group(function () {
         //Start chat with store without order
         Route::post('chats/start/{store_id}', [ChatController::class, 'startChatWithStore']);
         Route::post('chats/start-service/{store_id}', [ChatController::class, 'startChatWithStoreForService']); // it requires service_id in body
-        
+
+        Route::get('stores/{storeId}/reviews', [StoreReviewController::class, 'index']);
+        Route::post('stores/{storeId}/reviews', [StoreReviewController::class, 'store'])->middleware('auth:sanctum');
+        Route::put('stores/{storeId}/reviews/{reviewId}', [StoreReviewController::class, 'update'])->middleware('auth:sanctum');
+        Route::delete('stores/{storeId}/reviews/{reviewId}', [StoreReviewController::class, 'destroy'])->middleware('auth:sanctum');
     });
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 

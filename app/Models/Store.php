@@ -73,5 +73,9 @@ public function followers()
     return $this->hasMany(StoreFollow::class);
 
 }
+public function storeReveiews()
+{
+    return $this->hasMany(StoreReview::class);
 
+}
 }
