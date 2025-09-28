@@ -221,22 +221,27 @@ class SellerOnboardingController extends Controller
     }
 
     /* ---------------- Level 3.3 (CRUD) ---------------- */
-    public function addAddress(Level3AddAddressRequest $request)
-    {
-        $store = $request->user()->store;
+   public function addAddress(Level3AddAddressRequest $request)
+{
+    // Get the authenticated user's store
+    $store = $request->user()->store;
 
-        StoreAddress::create([
-            'store_id'         => $store->id,
-            'state'            => $request->state,
-            'local_government' => $request->local_government,
-            'full_address'     => $request->full_address,
-            'is_main'          => (bool)$request->is_main,
-            'opening_hours'    => $request->opening_hours ?? [],
-        ]);
+    // Create a new store address with the validated data
+    StoreAddress::create([
+        'store_id'         => $store->id,
+        'state'            => $request->input('state'),
+        'local_government' => $request->input('local_government'),
+        'full_address'     => $request->input('full_address'),
+        'is_main'          => $request->boolean('is_main'),
+        'opening_hours'    => $request->input('opening_hours', []),
+    ]);
 
-        $this->markDone($store, 3, 'level3.addresses');
-        return $this->ok($store, 'Address added');
-    }
+    // Mark onboarding step as done
+    $this->markDone($store, 3, 'level3.addresses');
+
+    return $this->ok($store, 'Address added successfully.');
+}
+
 
     public function deleteAddress($id, Request $request)
     {
