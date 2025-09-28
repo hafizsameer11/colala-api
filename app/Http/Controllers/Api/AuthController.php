@@ -122,7 +122,7 @@ class AuthController extends Controller
 
         return ResponseHelper::success($updatedUser, "Profile updated successfully");
     } catch (\Exception $e) {
-        \Log::error($e->getMessage());
+        Log::error($e->getMessage());
         return ResponseHelper::error($e->getMessage());
     }
 }

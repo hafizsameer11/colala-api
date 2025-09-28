@@ -15,7 +15,7 @@ class StoreReviewController extends Controller
     {
         $store = Store::findOrFail($storeId);
 
-        $reviews = $store->storeReviews()
+        $reviews = $store->storeReveiews()
             ->with('user:id,name,email')
             ->latest()
             ->get();
