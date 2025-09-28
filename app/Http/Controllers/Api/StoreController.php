@@ -39,7 +39,6 @@ public function getById(Request $req, $storeId)
         ])
         ->withSum([
             'soldItems as total_sold' => function ($q) {
-                // ensure we always get a numeric value
                 $q->select(DB::raw('COALESCE(SUM(qty),0)'));
             }
         ], 'qty')
