@@ -21,10 +21,13 @@ class ServiceCategoryRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+        public function rules(): array
     {
         return [
-            //
+            'title'     => 'required|string|max:255',
+            'image'     => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'is_active' => 'boolean',
         ];
     }
+
 }

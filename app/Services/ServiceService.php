@@ -37,6 +37,12 @@ class ServiceService
 
         return $service->load('media','subServices');
     }
+    public function relatedServices($categoryId)
+    {
+        return Service::with('media','subServices')
+            ->where('service_category_id', $categoryId)
+            ->get();
+    }
     public function getById(int $id)
     {
         return Service::with('media','subServices')->findOrFail($id);

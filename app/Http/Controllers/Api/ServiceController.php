@@ -71,4 +71,13 @@ class ServiceController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function relatedServices($categoryId)
+    {
+        try {
+            return ResponseHelper::success($this->serviceService->relatedServices($categoryId));
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\ServiceCategoryController;
 use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreReviewController;
 use App\Http\Controllers\Api\SupportController;
@@ -154,6 +155,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('stores/{storeId}/reviews/{reviewId}', [StoreReviewController::class, 'update'])->middleware('auth:sanctum');
         Route::delete('stores/{storeId}/reviews/{reviewId}', [StoreReviewController::class, 'destroy'])->middleware('auth:sanctum');
     });
+    Route::prefix('service-categories')->group(function () {
+        Route::get('/', [ServiceCategoryController::class, 'index']);
+        Route::post('/', [ServiceCategoryController::class, 'store'])->middleware('auth:sanctum');
+        Route::get('/{id}', [ServiceCategoryController::class, 'show']);
+        Route::put('/{id}', [ServiceCategoryController::class, 'update'])->middleware('auth:sanctum');
+        Route::delete('/{id}', [ServiceCategoryController::class, 'destroy'])->middleware('auth:sanctum');
+
+        // ✅ Extra: attach an existing service to a category
+        Route::post('/{categoryId}/attach-service/{serviceId}', [ServiceCategoryController::class, 'attachService'])
+            ->middleware('auth:sanctum');
+    });
+    Route::get('service/{categoryId}', [App\Http\Controllers\Api\ServiceController::class, 'relatedServices']);
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 
     //edit profile 
