@@ -62,15 +62,21 @@ class UserService
         $user->save();
         return $user;
     }
-    public function update($data,$userId){
+public function update(array $data, int $userId)
+{
+    $user = User::findOrFail($userId);
 
-        $user=User::findOrFail($userId);
-        if (isset($data['profile_picture']) && $data['profile_picture']) {
-            $path = $data['profile_picture']->store('profile_picture', 'public');
-            $data['profile_picture'] = $path;
-        }
-       $user=User::update($data);
-        //$user->save() ;
-        return $user;
+    // Handle profile picture upload
+    if (!empty($data['profile_picture']) && $data['profile_picture'] instanceof \Illuminate\Http\UploadedFile) {
+        $path = $data['profile_picture']->store('profile_picture', 'public');
+        $data['profile_picture'] = $path;
     }
+
+    // Update only the given fields
+    $user->update($data);
+
+    // Return fresh model with updated attributes
+    return $user->fresh();
+}
+
 }

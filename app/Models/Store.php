@@ -78,4 +78,7 @@ public function storeReveiews()
     return $this->hasMany(StoreReview::class);
 
 }
+// public function storeAddress(){
+//     return $this->hasMany(StoreAddress::class);
+// }
 }
