@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
+use App\Models\StoreFollow;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class StoreController extends Controller
@@ -43,6 +45,9 @@ public function getById(Request $req, $storeId)
             }
         ], 'qty')
         ->findOrFail($storeId);
+        $user=Auth::user();
+        //check current user has followed this store or not
+        $store->is_followed =StoreFollow::where('user_id',$user->id)->where('store_id',$storeId)->exists();
 
         return ResponseHelper::success($store);
     } catch (\Exception $e) {
