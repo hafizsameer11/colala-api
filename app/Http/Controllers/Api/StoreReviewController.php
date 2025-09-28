@@ -92,7 +92,7 @@ class StoreReviewController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => 'Review updated successfully.',
-            'data'    => $review->load('user:id,name,email')
+            'data'    => $review->load('user')
         ]);
     }
 
