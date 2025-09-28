@@ -68,5 +68,10 @@ public function getTotalSoldAttribute(): int
     // sum of qty column = total number of items sold
     return $this->soldItems()->sum('qty');
 }
+public function followers()
+{
+    return $this->hasMany(StoreFollow::class);
+
+}
 
 }

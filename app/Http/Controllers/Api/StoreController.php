@@ -37,7 +37,8 @@ public function getById(Request $req, $storeId)
             'products.variations',
             'services',
             'productReviews.user',
-            'productReviews.orderItem'
+            'productReviews.orderItem',
+            'followers.user' // to get follower count
         ])
         ->withSum([
             'soldItems as total_sold' => function ($q) {
