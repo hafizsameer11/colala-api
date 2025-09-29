@@ -10,37 +10,71 @@ class CartService {
         return Cart::firstOrCreate(['user_id'=>$userId,'checked_out'=>false]);
     }
 
-    public function show(Cart $cart): array {
-        $cart->load(['items.product.images','items.variant','items.store']);
-        $grouped = $cart->items->groupBy('store_id')->map(function($items){
-            $subtotal = 0;
-            $lines = $items->map(function($i) use (&$subtotal){
-                $price = $i->unit_discount_price ?? $i->unit_price ?? $i->product->discount_price ?? $i->product->price;
-                $lineTotal = $price * $i->qty;
-                $subtotal += $lineTotal;
-                return [
-                    'id'=>$i->id,
-                    'product_id'=>$i->product_id,
-                    'variant_id'=>$i->variant_id,
-                    'name'=>$i->product->name,
-                    'img'=>$i->product->images->first()->image ?? null,
-                    'color'=>$i->variant->color ?? null,
-                    'size'=>$i->variant->size ?? null,
-                    'store_id'=>$i->store_id,
-                    'unit_price'=>$price,
-                    'qty'=>$i->qty,
-                    'line_total'=>$lineTotal,
-                    'product'=>$i->product,
-                    'variant'=>$i->variant,
-                    'store'=>$i->store,
-                ];
-            });
-            return ['items'=>$lines->values(), 'items_subtotal'=>$subtotal];
+   public function show(Cart $cart): array
+{
+    $cart->load(['items.product.images','items.variant','items.store']);
+
+    $grouped = $cart->items->groupBy('store_id')->map(function ($items) {
+        $subtotal = 0;
+
+        $lines = $items->map(function ($i) use (&$subtotal) {
+            // actual product base price
+            $actualPrice = $i->variant?->price ?? $i->product->price;
+
+            // product-level discount (if any)
+            $productDiscountPrice = $i->variant?->discount_price ?? $i->product->discount_price;
+
+            // coupon-based discount (if applied)
+            $couponDiscount = $i->discount ?? 0;
+
+            // Final unit price after discounts/coupon
+            $finalUnitPrice = $productDiscountPrice
+                ? $productDiscountPrice - $couponDiscount
+                : $actualPrice - $couponDiscount;
+
+            // Ensure not negative
+            $finalUnitPrice = max(0, $finalUnitPrice);
+
+            $lineTotal = $finalUnitPrice * $i->qty;
+            $subtotal += $lineTotal;
+
+            return [
+                'id'                => $i->id,
+                'product_id'        => $i->product_id,
+                'variant_id'        => $i->variant_id,
+                'name'              => $i->product->name,
+                'img'               => $i->product->images->first()->image ?? null,
+                'color'             => $i->variant->color ?? null,
+                'size'              => $i->variant->size ?? null,
+                'store_id'          => $i->store_id,
+
+                // 👉 Show base price and final price separately
+                'unit_price'        => $actualPrice,
+                'discount_price'    => $finalUnitPrice,
+
+                'qty'               => $i->qty,
+                'line_total'        => $lineTotal,
+
+                'product'           => $i->product,
+                'variant'           => $i->variant,
+                'store'             => $i->store,
+            ];
         });
 
-        $itemsTotal = $grouped->sum('items_subtotal');
-        return ['stores'=>$grouped, 'items_total'=>$itemsTotal];
-    }
+        return [
+            'items'          => $lines->values(),
+            'items_subtotal' => $subtotal,
+        ];
+    });
+
+    $itemsTotal = $grouped->sum('items_subtotal');
+
+    return [
+        'stores'      => $grouped,
+        'items_total' => $itemsTotal,
+    ];
+}
+
 
     public function add(int $userId, array $payload): Cart {
         return DB::transaction(function() use ($userId, $payload) {
