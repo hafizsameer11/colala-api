@@ -13,7 +13,8 @@ class SavedItemController extends Controller
 {
     public function __construct(private SavedItemService $svc) {}
 
-    public function list(Request $req) {
+    public function list(Request $req)
+    {
         try {
             $items = $this->svc->list($req->user()->id);
             return ResponseHelper::success($items);
@@ -22,20 +23,30 @@ class SavedItemController extends Controller
         }
     }
 
-    public function toggle(SavedItemRequest $req) {
+    public function toggle(SavedItemRequest $req)
+    {
         try {
-            $result = $this->svc->toggle($req->user()->id, $req->product_id);
-            $message = $result['saved'] ? 'Product saved' : 'Product unsaved';
+            $result = $this->svc->toggle(
+                $req->user()->id,
+                $req->type,      // product/service/post
+                $req->type_id    // id of selected type
+            );
+            $message = $result['saved'] ? 'Item saved' : 'Item unsaved';
             return ResponseHelper::success($result, $message);
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
 
-    public function check(SavedItemRequest $req) {
+    public function check(SavedItemRequest $req)
+    {
         try {
-            $isSaved = $this->svc->isSaved($req->user()->id, $req->product_id);
-            return ResponseHelper::success(['saved'=>$isSaved]);
+            $isSaved = $this->svc->isSaved(
+                $req->user()->id,
+                $req->type,
+                $req->type_id
+            );
+            return ResponseHelper::success(['saved' => $isSaved]);
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
