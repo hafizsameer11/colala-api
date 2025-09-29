@@ -6,7 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 // use App\Http\Requests\Buyer\CreateDisputeRequest;
 use App\Http\Requests\CreateDisputeRequest;
-use App\Models\{Dispute, Chat};
+use App\Models\{Dispute, Chat, Store};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -39,10 +39,12 @@ class DisputeController extends Controller
 
             // Optional: post a system message inside chat to alert all parties
             $chat = Chat::find($data['chat_id']);
+            $store=Store::find($chat->store_id);
             $chat->messages()->create([
                 'user_id' => $user->id,
                 'message' => "📌 Dispute created: {$data['category']}",
                 'type'    => 'system',
+                'sender_id' => $store->user_id, // Added sender_id field
             ]);
 
             return ResponseHelper::success($dispute, 'Dispute created successfully.');
