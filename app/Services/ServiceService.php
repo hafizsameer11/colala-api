@@ -45,7 +45,7 @@ class ServiceService
     }
     public function getById(int $id)
     {
-        return Service::with('media','subServices')->findOrFail($id);
+        return Service::with('media','subServices','store')->findOrFail($id);
     }
 
     public function update(int $id, array $data)
