@@ -88,7 +88,7 @@ class PostService
         ->first();
 
     // Check if this post is already saved for the user
-    $saved = SavedItem::where('item_id', $id)
+    $saved = SavedItem::where('post_id', $id)
         ->where('user_id', $user->id)
         ->where('type', 'post')
         ->first();
