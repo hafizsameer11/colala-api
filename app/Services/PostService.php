@@ -120,7 +120,7 @@ class PostService
 
     if (! $saved) {
         $saved = SavedItem::create([
-            'item_id' => $id,
+            'post_id' => $id,
             'user_id' => $user->id,
             'type'    => 'post'
         ]);
