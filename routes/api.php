@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Buyer\CartController;
 use App\Http\Controllers\Api\Buyer\CheckoutController;
 use App\Http\Controllers\Api\Buyer\DisputeController;
 use App\Http\Controllers\Api\Buyer\EscrowController;
+use App\Http\Controllers\Api\Buyer\LoyaltyController;
 use App\Http\Controllers\Api\Buyer\OrderController;
 use App\Http\Controllers\Api\Buyer\ProductBrowseController;
 use App\Http\Controllers\Api\Buyer\ReviewController;
@@ -29,7 +30,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
-use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;
+// use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;
 
 require __DIR__ . '/seller.php';
 
@@ -203,7 +204,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
         Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
     });
-    Route::get('my-points', [BuyerLoyalty::class, 'myPoints']);
+    Route::get('my-points', [LoyaltyController::class, 'myPoints']);
 
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
