@@ -22,7 +22,7 @@ class StoreFollowService {
     }
 
     public function list(int $userId) {
-        return StoreFollow::with('store')
+        return StoreFollow::with('store.categories')
             ->where('user_id',$userId)
             ->latest()
             ->get()
@@ -35,7 +35,8 @@ class StoreFollowService {
                     'store_phone'=>$f->store->store_phone,
                     'profile_image'=>$f->store->profile_image ? asset('storage/'.$f->store->profile_image) : null,
                     'banner_image'=>$f->store->banner_image ? asset('storage/'.$f->store->banner_image) : null,
-                    'followed_at'=>$f->created_at
+                    'followed_at'=>$f->created_at,
+                    'categories'=>$f->store->categories
                 ];
             });
     }
