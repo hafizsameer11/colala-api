@@ -30,6 +30,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
+use App\Http\Controllers\Api\WalletWithdrawalController;
+
 // use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;
 
 require __DIR__ . '/seller.php';
@@ -209,4 +211,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
+
+    Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
+    Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
 });
