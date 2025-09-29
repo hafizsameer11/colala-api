@@ -10,7 +10,7 @@ class CartService {
         return Cart::firstOrCreate(['user_id'=>$userId,'checked_out'=>false]);
     }
 
-   public function show(Cart $cart): array
+public function show(Cart $cart): array
 {
     $cart->load(['items.product.images','items.variant','items.store']);
 
@@ -18,46 +18,39 @@ class CartService {
         $subtotal = 0;
 
         $lines = $items->map(function ($i) use (&$subtotal) {
-            // actual product base price
-            $actualPrice = $i->variant?->price ?? $i->product->price;
+            // Base (original) unit price: prefer saved cart item value, else variant/product price
+            $basePrice = $i->unit_price ?? $i->variant?->price ?? $i->product->price;
 
-            // product-level discount (if any)
-            $productDiscountPrice = $i->variant?->discount_price ?? $i->product->discount_price;
+            // Discounted price per unit (after coupon or product discount):
+            // prefer saved unit_discount_price if set, else product/variant discount_price, else base
+            $discountedPrice = $i->unit_discount_price
+                ?? $i->variant?->discount_price
+                ?? $i->product->discount_price
+                ?? $basePrice;
 
-            // coupon-based discount (if applied)
-            $couponDiscount = $i->discount ?? 0;
+            // Make sure discount price never goes below zero
+            $discountedPrice = max(0, $discountedPrice);
 
-            // Final unit price after discounts/coupon
-            $finalUnitPrice = $productDiscountPrice
-                ? $productDiscountPrice - $couponDiscount
-                : $actualPrice - $couponDiscount;
-
-            // Ensure not negative
-            $finalUnitPrice = max(0, $finalUnitPrice);
-
-            $lineTotal = $finalUnitPrice * $i->qty;
+            $lineTotal = $discountedPrice * $i->qty;
             $subtotal += $lineTotal;
 
             return [
-                'id'                => $i->id,
-                'product_id'        => $i->product_id,
-                'variant_id'        => $i->variant_id,
-                'name'              => $i->product->name,
-                'img'               => $i->product->images->first()->image ?? null,
-                'color'             => $i->variant->color ?? null,
-                'size'              => $i->variant->size ?? null,
-                'store_id'          => $i->store_id,
-
-                // 👉 Show base price and final price separately
-                'unit_price'        => $actualPrice,
-                'discount_price'    => $finalUnitPrice,
-
-                'qty'               => $i->qty,
-                'line_total'        => $lineTotal,
-
-                'product'           => $i->product,
-                'variant'           => $i->variant,
-                'store'             => $i->store,
+                'id'              => $i->id,
+                'product_id'      => $i->product_id,
+                'variant_id'      => $i->variant_id,
+                'name'            => $i->product->name,
+                'img'             => $i->product->images->first()->image ?? null,
+                'color'           => $i->variant->color ?? null,
+                'size'            => $i->variant->size ?? null,
+                'store_id'        => $i->store_id,
+                // 👉 keep both prices
+                'unit_price'      => $basePrice,
+                'discount_price'  => $discountedPrice,
+                'qty'             => $i->qty,
+                'line_total'      => $lineTotal,
+                'product'         => $i->product,
+                'variant'         => $i->variant,
+                'store'           => $i->store,
             ];
         });
 
@@ -74,6 +67,7 @@ class CartService {
         'items_total' => $itemsTotal,
     ];
 }
+
 
 
     public function add(int $userId, array $payload): Cart {
