@@ -34,18 +34,30 @@ class PostService
     }
 
     public function getAll($req)
-    {
-        $posts = Post::with(['user:id,full_name,profile_picture','media'])
-            ->orderByDesc('id')
-            ->paginate(20);
+{
+    $posts = Post::with([
+            'user:id,full_name,profile_picture',   // keep user basic fields
+            'user.store:id,user_id,store_name',    // ✅ add store for that user
+            'media'
+        ])
+        ->orderByDesc('id')
+        ->paginate(20);
 
-        $myPosts = Post::with(['user:id,full_name,profile_picture','media'])
-            ->where('user_id', Auth::id())
-            ->orderByDesc('id')
-            ->paginate(20);
+    $myPosts = Post::with([
+            'user:id,full_name,profile_picture',
+            'user.store:id,user_id,store_name',
+            'media'
+        ])
+        ->where('user_id', Auth::id())
+        ->orderByDesc('id')
+        ->paginate(20);
 
-        return ['posts' => $posts, 'myPosts' => $myPosts];
-    }
+    return [
+        'posts'   => $posts,
+        'myPosts' => $myPosts,
+    ];
+}
+
 
     public function findById($id)
     {
