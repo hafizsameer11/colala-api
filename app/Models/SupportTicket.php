@@ -16,7 +16,7 @@ class SupportTicket extends Model
     public function storeOrder(){ return $this->belongsTo(StoreOrder::class); }
     public function lastMessage()
     {
-        return $this->hasOne(SupportMessage::class)->latestOfMany();
+        return $this->hasOne(SupportMessage::class, 'ticket_id')->latestOfMany();
     }
     public function unreadMessagesCount()
     {
