@@ -195,15 +195,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         //escrow
-        Route::get('escrow/', [EscrowController::class, 'index']);        // total balance + full history
+        Route::get('escrow', [EscrowController::class, 'index']);        // total balance + full history
         Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
 
 
         Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
         Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
         Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
-        Route::get('my-points', [BuyerLoyalty::class, 'myPoints']);
     });
+    Route::get('my-points', [BuyerLoyalty::class, 'myPoints']);
 
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
