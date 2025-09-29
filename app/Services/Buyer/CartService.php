@@ -30,6 +30,9 @@ class CartService {
                     'unit_price'=>$price,
                     'qty'=>$i->qty,
                     'line_total'=>$lineTotal,
+                    'product'=>$i->product,
+                    'variant'=>$i->variant,
+                    'store'=>$i->store,
                 ];
             });
             return ['items'=>$lines->values(), 'items_subtotal'=>$subtotal];
