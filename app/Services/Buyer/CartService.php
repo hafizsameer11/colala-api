@@ -79,4 +79,28 @@ class CartService {
 
     public function remove(CartItem $item): void { $item->delete(); }
     public function clear(Cart $cart): void { $cart->items()->delete(); }
+    public function applyCoupon(int $userId, array $data)
+    {
+        $cart = $this->getOrCreateCart($userId);
+        $item = CartItem::where('cart_id', $cart->id)
+            ->where('product_id', $data['product_id'])
+            ->first();
+
+        if (!$item) {
+            throw ValidationException::withMessages(['product_id' => 'Product not found in cart.']);
+        }
+
+        $product = Product::findOrFail($data['product_id']);
+
+        if ($product->coupon_code !== $data['coupon_code']) {
+            throw ValidationException::withMessages(['coupon_code' => 'Invalid coupon code for this product.']);
+        }
+
+        // Assuming a fixed discount for simplicity; this could be more complex
+        $discountAmount = $product->discount; 
+        $item->unit_discount_price = max(0, ($item->unit_price ?? $product->price) - $discountAmount);
+        $item->save();
+
+        return $item->fresh();
+    }
 }

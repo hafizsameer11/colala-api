@@ -100,6 +100,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Cart
         //Deliveraddress on the base of sotreId
         Route::get('cart', [CartController::class, 'show']);
+        //for adding coupon and discount for a product
+        Route::post('cart/apply-coupon', [CartController::class, 'applyCoupon']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
         Route::delete('cart/items/{id}', [CartController::class, 'remove']);

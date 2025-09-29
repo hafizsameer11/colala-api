@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api\Buyer;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ApplyCouponRequest;
 use App\Http\Requests\Buyer\AddCartItemRequest;
 use App\Http\Requests\Buyer\UpdateCartQtyRequest;
 use App\Models\CartItem;
 use App\Services\Buyer\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class CartController extends Controller {
     /**
@@ -49,5 +51,13 @@ class CartController extends Controller {
         $cart = $this->svc->getOrCreateCart($request->user()->id);
         $this->svc->clear($cart);
         return ResponseHelper::success(['cleared'=>true]);
+    }
+    public function applyCoupon(ApplyCouponRequest $request) {
+       try{
+        $data = $request->validated();
+        return ResponseHelper::success($this->svc->applyCoupon($request->user()->id,$data));
+       }catch(\Exception $e){
+        return ResponseHelper::error($e->getMessage(),500);
+       }
     }
 }
