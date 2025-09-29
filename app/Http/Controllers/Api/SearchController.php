@@ -39,8 +39,8 @@ class SearchController extends Controller
 
             case 'service':
                 $query = Service::when($q, fn($qBuilder) =>
-                        $qBuilder->where('title', 'LIKE', "%$q%")
-                                 ->orWhere('description', 'LIKE', "%$q%")
+                        $qBuilder->where('name', 'LIKE', "%$q%")
+                                 ->orWhere('full_description', 'LIKE', "%$q%")
                     );
                 break;
         }
