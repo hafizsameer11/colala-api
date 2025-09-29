@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\Buyer\CartController;
 use App\Http\Controllers\Api\Buyer\CheckoutController;
+use App\Http\Controllers\Api\Buyer\DisputeController;
 use App\Http\Controllers\Api\Buyer\EscrowController;
 use App\Http\Controllers\Api\Buyer\OrderController;
 use App\Http\Controllers\Api\Buyer\ProductBrowseController;
@@ -191,8 +192,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         //escrow
-         Route::get('escrow/', [EscrowController::class, 'index']);        // total balance + full history
-    Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
+        Route::get('escrow/', [EscrowController::class, 'index']);        // total balance + full history
+        Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
+
+
+        Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
+        Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
+        Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
     });
 
     //edit profile 

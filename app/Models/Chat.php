@@ -18,4 +18,8 @@ class Chat extends Model
         return $this->hasOne(ChatMessage::class)->latestOfMany();
     }
     public function service(){ return $this->belongsTo(Service::class); }
+     public function dispute()
+    {
+        return $this->hasOne(Dispute::class);
+  }
 }
