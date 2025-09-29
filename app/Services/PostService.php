@@ -90,7 +90,7 @@ class PostService
     // Check if this post is already saved for the user
     $saved = SavedItem::where('post_id', $id)
         ->where('user_id', $user->id)
-        ->where('type', 'post')
+        
         ->first();
 
     if ($like) {
@@ -122,7 +122,6 @@ class PostService
         $saved = SavedItem::create([
             'post_id' => $id,
             'user_id' => $user->id,
-            'type'    => 'post'
         ]);
     }
 
