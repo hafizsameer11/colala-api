@@ -36,7 +36,8 @@ public function productDetails($productId)
     try {
         $products = Product::with([
             'store' => function ($q) {
-                $q->withCount('followers');
+                $q->withCount('followers')       // followers_count
+                  ->withSum('soldItems', 'qty'); // sold_items_sum_qty
             },
             'store.soldItems',
             'category',
@@ -53,5 +54,6 @@ public function productDetails($productId)
         return ResponseHelper::error($e->getMessage(), 500);
     }
 }
+
 
 }
