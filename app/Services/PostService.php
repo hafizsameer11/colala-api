@@ -78,24 +78,61 @@ class PostService
         return $post->delete();
     }
 
-    public function toggleLike($id, $user)
-    {
-        $post = Post::findOrFail($id);
+   public function toggleLike($id, $user)
+{
+    $post = Post::findOrFail($id);
 
-        $like = PostLike::where('post_id', $id)->where('user_id', $user->id)->first();
+    // Check if the user has already liked this post
+    $like = PostLike::where('post_id', $id)
+        ->where('user_id', $user->id)
+        ->first();
 
-        if ($like) {
-            $like->delete();
-            $post->decrement('likes_count');
-            return ['liked' => false, 'likes_count' => $post->likes_count];
+    // Check if this post is already saved for the user
+    $saved = SavedItem::where('item_id', $id)
+        ->where('user_id', $user->id)
+        ->where('type', 'post')
+        ->first();
+
+    if ($like) {
+        // Unlike and optionally unsave
+        $like->delete();
+        $post->decrement('likes_count');
+
+        // toggle saved item OFF if it exists
+        if ($saved) {
+            $saved->delete();
         }
 
-        PostLike::create(['post_id' => $id, 'user_id' => $user->id]);
-        $post->increment('likes_count');
-        $savedItem=SavedItem::create(['item_id' => $id, 'user_id' => $user->id, 'type' => 'post']);
-
-        return ['liked' => true, 'likes_count' => $post->likes_count];
+        return [
+            'liked'       => false,
+            'likes_count' => $post->likes_count,
+            'saved'       => false,
+        ];
     }
+
+    // Like and create saved item if it doesn't exist
+    PostLike::create([
+        'post_id' => $id,
+        'user_id' => $user->id
+    ]);
+
+    $post->increment('likes_count');
+
+    if (! $saved) {
+        $saved = SavedItem::create([
+            'item_id' => $id,
+            'user_id' => $user->id,
+            'type'    => 'post'
+        ]);
+    }
+
+    return [
+        'liked'       => true,
+        'likes_count' => $post->likes_count,
+        'saved'       => true,
+    ];
+}
+
 
     public function getComments($postId)
     {
