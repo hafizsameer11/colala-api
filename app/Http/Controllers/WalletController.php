@@ -24,4 +24,15 @@ class WalletController extends Controller
         return ResponseHelper::error($e->getMessage(),500);
        }
     }
+    public function topUp(Request $req){
+        try{
+            $req->validate([
+                'amount'=>'required|numeric|min:1'
+            ]);
+            $wallet=$this->walletService->topUp($req->user()->id,$req->amount);
+            return ResponseHelper::success($wallet,'Wallet topped up successfully');
+        }catch(\Exception $e){
+            return ResponseHelper::error($e->getMessage(),500);
+        }
+    }
 }

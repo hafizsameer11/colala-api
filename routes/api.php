@@ -214,4 +214,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
     Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
+    Route::post('wallet/top-up', [WalletController::class, 'topUp']);
 });
