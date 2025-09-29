@@ -2,7 +2,7 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Cart, Chat, Order, StoreOrder, OrderItem, Wallet};
+use App\Models\{Cart, Chat, Escrow, Order, StoreOrder, OrderItem, Wallet};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -145,7 +145,7 @@ class CheckoutService
     public function paymentConfirmationWIthShoppingWallet($data)
     {
         return DB::transaction(function () use ($data) {
-            $order = Order::find($data['order_id']);
+            $order = Order::with('storeOrders.items')->find($data['order_id']);
             if (!$order) {
                 throw ValidationException::withMessages(['order' => 'Order not found.']);
             }
@@ -163,23 +163,39 @@ class CheckoutService
                 throw ValidationException::withMessages(['wallet' => 'Insufficient wallet balance.']);
             }
 
+            // Deduct funds
             $wallet->shopping_balance -= $data['amount'];
             $wallet->save();
 
+            // Mark order paid
             $order->payment_status = 'paid';
             $order->save();
 
-            $txId = 'COLTX-' . now()->format('YmdHis') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+            // Create transaction record
+            $txId = $data['tx_id'] ?: 'COLTX-' . now()->format('YmdHis') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT);
             \App\Models\Transaction::create([
-                'tx_id' => $txId,
-                'amount' => $data['amount'],
-                'status' => 'success',
-                'type' => 'order_payment',
-                'order_id' => $order->id,
+                'tx_id'   => $txId,
+                'amount'  => $data['amount'],
+                'status'  => 'success',
+                'type'    => 'order_payment',
+                'order_id'=> $order->id,
                 'user_id' => $user->id,
             ]);
 
-            return $order->load('storeOrders.items');
+            // ✅ Lock escrow funds for each order item
+            foreach ($order->storeOrders as $storeOrder) {
+                foreach ($storeOrder->items as $item) {
+                    Escrow::create([
+                        'user_id'       => $user->id,
+                        'order_id'      => $order->id,
+                        'order_item_id' => $item->id,
+                        'amount'        => $item->line_total,
+                        'status'        => 'locked',
+                    ]);
+                }
+            }
+
+            return $order->fresh('storeOrders.items');
         });
     }
 }

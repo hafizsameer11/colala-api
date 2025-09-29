@@ -103,7 +103,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('cart', [CartController::class, 'show']);
         //for adding coupon and discount for a product
         Route::post('cart/apply-coupon', [CartController::class, 'applyCoupon']);
-Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
+        Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
         Route::delete('cart/items/{id}', [CartController::class, 'remove']);
@@ -174,20 +174,20 @@ Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 
     Route::prefix('faqs')->group(function () {
-    // Public endpoint to get all categories with their faqs
-    Route::get('/', [FaqController::class, 'index']);
+        // Public endpoint to get all categories with their faqs
+        Route::get('/', [FaqController::class, 'index']);
 
-    // Admin-only CRUD (add middleware('auth:sanctum','can:manage-faqs') if needed)
-    Route::get('/category/name/{name}', [FaqController::class, 'showByCategoryName']);
+        // Admin-only CRUD (add middleware('auth:sanctum','can:manage-faqs') if needed)
+        Route::get('/category/name/{name}', [FaqController::class, 'showByCategoryName']);
 
-    Route::post('/category', [FaqController::class, 'storeCategory']);
-    Route::put('/category/{id}', [FaqController::class, 'updateCategory']);
-    Route::delete('/category/{id}', [FaqController::class, 'destroyCategory']);
+        Route::post('/category', [FaqController::class, 'storeCategory']);
+        Route::put('/category/{id}', [FaqController::class, 'updateCategory']);
+        Route::delete('/category/{id}', [FaqController::class, 'destroyCategory']);
 
-    Route::post('/', [FaqController::class, 'storeFaq']);
-    Route::put('/{id}', [FaqController::class, 'updateFaq']);
-    Route::delete('/{id}', [FaqController::class, 'destroyFaq']);
-});
+        Route::post('/', [FaqController::class, 'storeFaq']);
+        Route::put('/{id}', [FaqController::class, 'updateFaq']);
+        Route::delete('/{id}', [FaqController::class, 'destroyFaq']);
+    });
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 });
