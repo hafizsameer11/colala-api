@@ -203,6 +203,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
         Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
         Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
+        Route::get('user-reveiws', [ReviewController::class, 'list']);
     });
     Route::get('my-points', [LoyaltyController::class, 'myPoints']);
 
