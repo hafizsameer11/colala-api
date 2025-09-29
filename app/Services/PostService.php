@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\{Post, PostMedia, PostLike, PostComment, PostShare};
+use App\Models\{Post, PostMedia, PostLike, PostComment, PostShare, SavedItem};
 use Illuminate\Support\Facades\Auth;
 
 class PostService
@@ -92,6 +92,7 @@ class PostService
 
         PostLike::create(['post_id' => $id, 'user_id' => $user->id]);
         $post->increment('likes_count');
+        $savedItem=SavedItem::create(['item_id' => $id, 'user_id' => $user->id, 'type' => 'post']);
 
         return ['liked' => true, 'likes_count' => $post->likes_count];
     }
