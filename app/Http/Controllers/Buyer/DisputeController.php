@@ -74,7 +74,7 @@ class DisputeController extends Controller
     public function show($id)
     {
         try {
-            $dispute = Dispute::with(['chat.messages.user','storeOrder'])
+            $dispute = Dispute::with(['chat.messages.sender','storeOrder'])
                 ->findOrFail($id);
 
             return ResponseHelper::success($dispute);
