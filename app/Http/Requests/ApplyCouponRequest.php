@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Traits\ReturnsJsonOnFail;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ApplyCouponRequest extends FormRequest
 {
@@ -25,7 +27,17 @@ class ApplyCouponRequest extends FormRequest
     {
         return [
             'product_id'=>'required|integer|exists:products,id',
-            'coupon_code'=>'required|string|exists:coupons,code'
+            'coupon_code'=>'required'
         ];
+    }
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(
+            response()->json([
+                'status'  => 'error',
+                'data'    => $validator->errors(),
+                'message' => $validator->errors()->first(),
+            ], 422)
+        );
     }
 }
