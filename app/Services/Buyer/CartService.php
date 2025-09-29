@@ -1,16 +1,19 @@
 <?php
+
 namespace App\Services\Buyer;
 
 use App\Models\{Cart, CartItem, Product, ProductVariant};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class CartService {
-    public function getOrCreateCart(int $userId): Cart {
-        return Cart::firstOrCreate(['user_id'=>$userId,'checked_out'=>false]);
+class CartService
+{
+    public function getOrCreateCart(int $userId): Cart
+    {
+        return Cart::firstOrCreate(['user_id' => $userId, 'checked_out' => false]);
     }
 
-public function show(Cart $cart): array
+   public function show(Cart $cart): array
 {
     $cart->load(['items.product.images','items.variant','items.store']);
 
@@ -18,39 +21,34 @@ public function show(Cart $cart): array
         $subtotal = 0;
 
         $lines = $items->map(function ($i) use (&$subtotal) {
-            // Base (original) unit price: prefer saved cart item value, else variant/product price
-            $basePrice = $i->unit_price ?? $i->variant?->price ?? $i->product->price;
-
-            // Discounted price per unit (after coupon or product discount):
-            // prefer saved unit_discount_price if set, else product/variant discount_price, else base
-            $discountedPrice = $i->unit_discount_price
+            $basePrice = $i->variant?->price ?? $i->product->price;
+            $couponDiscountedPrice = $i->unit_discount_price
                 ?? $i->variant?->discount_price
                 ?? $i->product->discount_price
                 ?? $basePrice;
-
-            // Make sure discount price never goes below zero
-            $discountedPrice = max(0, $discountedPrice);
-
-            $lineTotal = $discountedPrice * $i->qty;
+            $pointsDiscount = $i->loyality_points ?? 0;
+            $finalUnitPrice = max(0, $couponDiscountedPrice - $pointsDiscount);
+            $lineTotal = $finalUnitPrice * $i->qty;
             $subtotal += $lineTotal;
 
             return [
-                'id'              => $i->id,
-                'product_id'      => $i->product_id,
-                'variant_id'      => $i->variant_id,
-                'name'            => $i->product->name,
-                'img'             => $i->product->images->first()->image ?? null,
-                'color'           => $i->variant->color ?? null,
-                'size'            => $i->variant->size ?? null,
-                'store_id'        => $i->store_id,
-                // 👉 keep both prices
-                'unit_price'      => $basePrice,
-                'discount_price'  => $discountedPrice,
-                'qty'             => $i->qty,
-                'line_total'      => $lineTotal,
-                'product'         => $i->product,
-                'variant'         => $i->variant,
-                'store'           => $i->store,
+                'id'               => $i->id,
+                'product_id'       => $i->product_id,
+                'variant_id'       => $i->variant_id,
+                'name'             => $i->product->name,
+                'img'              => $i->product->images->first()->image ?? null,
+                'color'            => $i->variant->color ?? null,
+                'size'             => $i->variant->size ?? null,
+                'store_id'         => $i->store_id,
+                'unit_price'       => $basePrice,
+                'discount_price'   => $finalUnitPrice,
+                'coupon_discount'  => $basePrice - $couponDiscountedPrice,
+                'points_discount'  => $pointsDiscount,
+                'qty'              => $i->qty,
+                'line_total'       => $lineTotal,
+                'product'          => $i->product,
+                'variant'          => $i->variant,
+                'store'            => $i->store,
             ];
         });
 
@@ -70,13 +68,15 @@ public function show(Cart $cart): array
 
 
 
-    public function add(int $userId, array $payload): Cart {
-        return DB::transaction(function() use ($userId, $payload) {
+
+    public function add(int $userId, array $payload): Cart
+    {
+        return DB::transaction(function () use ($userId, $payload) {
             $cart = $this->getOrCreateCart($userId);
 
             $product = Product::findOrFail($payload['product_id']);
             $variant = isset($payload['variant_id'])
-                ? ProductVariant::where('product_id',$product->id)->findOrFail($payload['variant_id'])
+                ? ProductVariant::where('product_id', $product->id)->findOrFail($payload['variant_id'])
                 : null;
 
             if ($variant && $variant->stock < $payload['qty']) {
@@ -84,9 +84,9 @@ public function show(Cart $cart): array
             }
 
             $item = CartItem::firstOrNew([
-                'cart_id'=>$cart->id,
-                'product_id'=>$product->id,
-                'variant_id'=>$variant?->id,
+                'cart_id' => $cart->id,
+                'product_id' => $product->id,
+                'variant_id' => $variant?->id,
             ]);
 
             $item->store_id = $product->store_id;
@@ -99,14 +99,21 @@ public function show(Cart $cart): array
         });
     }
 
-    public function updateQty(CartItem $item, int $qty): CartItem {
+    public function updateQty(CartItem $item, int $qty): CartItem
+    {
         if ($qty < 1) $qty = 1;
-        $item->update(['qty'=>$qty]);
+        $item->update(['qty' => $qty]);
         return $item->fresh();
     }
 
-    public function remove(CartItem $item): void { $item->delete(); }
-    public function clear(Cart $cart): void { $cart->items()->delete(); }
+    public function remove(CartItem $item): void
+    {
+        $item->delete();
+    }
+    public function clear(Cart $cart): void
+    {
+        $cart->items()->delete();
+    }
     public function applyCoupon(int $userId, array $data)
     {
         $cart = $this->getOrCreateCart($userId);
@@ -125,9 +132,46 @@ public function show(Cart $cart): array
         }
 
         // Assuming a fixed discount for simplicity; this could be more complex
-        $discountAmount = $product->discount; 
+        $discountAmount = $product->discount;
         $item->unit_discount_price = max(0, ($item->unit_price ?? $product->price) - $discountAmount);
         $item->discount = $discountAmount;
+        $item->save();
+
+        return $item->fresh();
+    }
+    public function applyPoints(int $userId, array $data)
+    {
+        $cart = $this->getOrCreateCart($userId);
+
+        $item = CartItem::where('cart_id', $cart->id)
+            ->where('product_id', $data['product_id'])
+            ->first();
+
+        if (!$item) {
+            throw ValidationException::withMessages([
+                'product_id' => 'Product not found in cart.'
+            ]);
+        }
+
+        // Ensure points are numeric and not greater than item base price
+        $points = max(0, (int)$data['points']);
+
+        $unitPrice = $item->unit_price ?? $item->variant?->price ?? $item->product->price;
+        if ($points > $unitPrice) {
+            throw ValidationException::withMessages([
+                'points' => 'Points cannot exceed product price.'
+            ]);
+        }
+
+        // Save points and adjust unit_discount_price if coupon or product discount exists
+        $baseDiscountPrice = $item->unit_discount_price
+            ?? $item->variant?->discount_price
+            ?? $item->product->discount_price
+            ?? $unitPrice;
+
+        // Apply points once (not per quantity)
+        $item->loyality_points = $points;
+        $item->unit_discount_price = max(0, $baseDiscountPrice - $points);
         $item->save();
 
         return $item->fresh();

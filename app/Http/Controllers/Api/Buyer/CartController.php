@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\Buyer;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ApplyCouponRequest;
+use App\Http\Requests\ApplyPointsRequest;
 use App\Http\Requests\Buyer\AddCartItemRequest;
 use App\Http\Requests\Buyer\UpdateCartQtyRequest;
 use App\Models\CartItem;
 use App\Services\Buyer\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class CartController extends Controller {
@@ -60,4 +62,14 @@ class CartController extends Controller {
         return ResponseHelper::error($e->getMessage(),500);
        }
     }
+    public function applyPoints(ApplyPointsRequest $request)
+{
+    try {
+        $item = $this->svc->applyPoints($request->user()->id, $request->validated());
+        return ResponseHelper::success($item, 'Loyalty points applied successfully.');
+    } catch (\Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage());
+    }
+}
 }
