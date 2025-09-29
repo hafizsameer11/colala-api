@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
     Route::post('register/{storeId}/step2', [SellerRegistrationController::class, 'registerStep2']);
@@ -95,4 +95,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('service/{id}', [ServiceController::class, 'getById']);
 
 
+});
+
+Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
+    Route::get('settings', [SellerLoyalty::class, 'settings']);
+    Route::post('settings', [SellerLoyalty::class, 'settings']); // update
+    Route::get('customers', [SellerLoyalty::class, 'customers']);
 });

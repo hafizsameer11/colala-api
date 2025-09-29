@@ -28,6 +28,9 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
+use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;
+
 require __DIR__ . '/seller.php';
 
 Route::get('/optimize-app', function () {
@@ -199,6 +202,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
         Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
         Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
+        Route::get('my-points', [BuyerLoyalty::class, 'myPoints']);
     });
 
     //edit profile 
