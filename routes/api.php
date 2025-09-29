@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Buyer\OrderController;
 use App\Http\Controllers\Api\Buyer\ProductBrowseController;
 use App\Http\Controllers\Api\Buyer\ReviewController;
 use App\Http\Controllers\Api\Buyer\UserAddressController;
+use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
@@ -172,6 +173,19 @@ Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
     Route::get('service/{categoryId}', [App\Http\Controllers\Api\ServiceController::class, 'relatedServices']);
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
 
+    Route::prefix('faqs')->group(function () {
+    // Public endpoint to get all categories with their faqs
+    Route::get('/', [FaqController::class, 'index']);
+
+    // Admin-only CRUD (add middleware('auth:sanctum','can:manage-faqs') if needed)
+    Route::post('/category', [FaqController::class, 'storeCategory']);
+    Route::put('/category/{id}', [FaqController::class, 'updateCategory']);
+    Route::delete('/category/{id}', [FaqController::class, 'destroyCategory']);
+
+    Route::post('/', [FaqController::class, 'storeFaq']);
+    Route::put('/{id}', [FaqController::class, 'updateFaq']);
+    Route::delete('/{id}', [FaqController::class, 'destroyFaq']);
+});
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 });
