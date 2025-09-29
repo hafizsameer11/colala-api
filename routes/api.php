@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\Buyer\CartController;
 use App\Http\Controllers\Api\Buyer\CheckoutController;
+use App\Http\Controllers\Api\Buyer\EscrowController;
 use App\Http\Controllers\Api\Buyer\OrderController;
 use App\Http\Controllers\Api\Buyer\ProductBrowseController;
 use App\Http\Controllers\Api\Buyer\ReviewController;
@@ -187,7 +188,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [FaqController::class, 'storeFaq']);
         Route::put('/{id}', [FaqController::class, 'updateFaq']);
         Route::delete('/{id}', [FaqController::class, 'destroyFaq']);
+
+
+        //escrow
+         Route::get('escrow/', [EscrowController::class, 'index']);        // total balance + full history
+    Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
     });
+
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 });
