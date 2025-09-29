@@ -99,6 +99,7 @@ class CartService {
         // Assuming a fixed discount for simplicity; this could be more complex
         $discountAmount = $product->discount; 
         $item->unit_discount_price = max(0, ($item->unit_price ?? $product->price) - $discountAmount);
+        $item->discount = $discountAmount;
         $item->save();
 
         return $item->fresh();
