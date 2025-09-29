@@ -31,17 +31,27 @@ class ProductBrowseController extends Controller
       return ResponseHelper::error($e->getMessage(), 500);
     }
   }
-  public function productDetails($productId)
-  {
+public function productDetails($productId)
+{
     try {
-      $products = Product::with(['store.followersCount','store.soldItems', 'category', 'images', 'variations'])->find($productId);
-      if (!$products) {
-        return ResponseHelper::error('Product not found', 404);
-      }
-      return ResponseHelper::success($products);
-      //  return ResponseHelper::success();
+        $products = Product::with([
+            'store' => function ($q) {
+                $q->withCount('followers');
+            },
+            'store.soldItems',
+            'category',
+            'images',
+            'variations'
+        ])->find($productId);
+
+        if (!$products) {
+            return ResponseHelper::error('Product not found', 404);
+        }
+
+        return ResponseHelper::success($products);
     } catch (\Exception $e) {
-      return ResponseHelper::error($e->getMessage(), 500);
+        return ResponseHelper::error($e->getMessage(), 500);
     }
-  }
+}
+
 }
