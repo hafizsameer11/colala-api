@@ -20,6 +20,6 @@ class SupportTicket extends Model
     }
     public function unreadMessagesCount()
     {
-        return $this->hasMany(SupportMessage::class, 'ticket_id')->where('is_read', false)->count();
+        return $this->hasMany(SupportMessage::class, 'ticket_id')->where('is_read', false)->get();
     }
 }
