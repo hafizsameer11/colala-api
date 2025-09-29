@@ -178,6 +178,8 @@ Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
     Route::get('/', [FaqController::class, 'index']);
 
     // Admin-only CRUD (add middleware('auth:sanctum','can:manage-faqs') if needed)
+    Route::get('/category/name/{name}', [FaqController::class, 'showByCategoryName']);
+
     Route::post('/category', [FaqController::class, 'storeCategory']);
     Route::put('/category/{id}', [FaqController::class, 'updateCategory']);
     Route::delete('/category/{id}', [FaqController::class, 'destroyCategory']);

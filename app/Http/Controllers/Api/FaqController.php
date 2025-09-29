@@ -28,6 +28,30 @@ class FaqController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function showByCategoryName(Request $request, string $name)
+{
+    try {
+        // find category by name (case-insensitive)
+        $category = FaqCategory::where('title', $name)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        // get its active faqs separately
+        $faqs = Faq::where('faq_category_id', $category->id)
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+
+        return ResponseHelper::success([
+            'category' => $category,
+            'faqs'     => $faqs
+        ]);
+    } catch (Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage());
+    }
+}
+
 
     // Create a category (admin)
     public function storeCategory(Request $request)
