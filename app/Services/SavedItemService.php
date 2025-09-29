@@ -69,9 +69,8 @@ class SavedItemService
 
                 if ($saved->post) {
                     return array_merge($base, [
-                        'post_id' => $saved->post_id,
-                        'title'   => $saved->post->title,
-                        'excerpt' => $saved->post->excerpt,
+                       'post'=>$saved->post
+                        
                     ]);
                 }
 
