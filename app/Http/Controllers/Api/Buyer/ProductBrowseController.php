@@ -40,6 +40,7 @@ public function productDetails($productId)
                   ->withSum('soldItems', 'qty'); // sold_items_sum_qty
             },
             'store.soldItems',
+          'store.socialLinks',
             'category',
             'images',
             'variations'
