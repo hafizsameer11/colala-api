@@ -2,7 +2,9 @@
 namespace App\Services;
 use App\Models\Wallet;
 use App\Helpers\ActivityHelper;
+use App\Models\Escrow;
 use App\Models\Transaction;
+use Symfony\Component\HttpKernel\HttpCache\Esi;
 
 class WalletService{
     public function create($data){
@@ -15,6 +17,8 @@ class WalletService{
         if(!$wallet){
             $wallet=$this->create(['user_id'=>$user_id,'shopping_balance'=>0,'reward_balance'=>0,'loyality_points'=>0]);
         }
+        $escrowBalance=Escrow::where('user_id',$user_id)->sum('amount');
+        $wallet->escrow_balance=$escrowBalance;
         return $wallet;
     }
     public function topUp($user_id,$amount){
