@@ -54,7 +54,7 @@ class WalletWithdrawalController extends Controller
                 'tx_id'   => $txId,
                 'amount'  => $data['amount'],
                 'status'  => 'pending',
-                'type'    => 'withdrawal',
+                'type'    => 'withdrawl',
                 'order_id'=> null,
                 'user_id' => $user->id,
             ]);
