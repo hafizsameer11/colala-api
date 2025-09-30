@@ -114,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('cart/apply-points', [CartController::class, 'applyPoints']);
         Route::post('cart/items', [CartController::class, 'add']);
         Route::post('cart/items/{id}', [CartController::class, 'updateQty']);
+        Route::get('cart-quantity', [CartController::class, 'cartQuantity']);
         Route::delete('cart/items/{id}', [CartController::class, 'remove']);
         Route::delete('cart/clear', [CartController::class, 'clear']);
         // Checkout

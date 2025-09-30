@@ -72,4 +72,15 @@ class CartController extends Controller {
         return ResponseHelper::error($e->getMessage());
     }
 }
+public function cartQuantity(Request $request) {
+    try {
+        $cart = $this->svc->getOrCreateCart($request->user()->id);
+        $quantity = $cart->items()->sum('quantity');
+        return ResponseHelper::success(['quantity' => $quantity]);
+    } catch (\Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage(), 500);
+    }
+
+}
 }
