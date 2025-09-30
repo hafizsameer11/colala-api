@@ -33,13 +33,18 @@ class PostService
         return $post->load(['user:id,full_name,profile_picture','media']);
     }
 
-    public function getAll($req)
+ public function getAll($req)
 {
+    $userId = Auth::id();
+
     $posts = Post::with([
-            'user:id,full_name,profile_picture',   // keep user basic fields
-            'user.store:id,user_id,store_name',    // ✅ add store for that user
+            'user:id,full_name,profile_picture',
+            'user.store:id,user_id,store_name',
             'media'
         ])
+        ->withCount(['likes as is_liked' => function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        }])
         ->orderByDesc('id')
         ->paginate(20);
 
@@ -48,7 +53,10 @@ class PostService
             'user.store:id,user_id,store_name',
             'media'
         ])
-        ->where('user_id', Auth::id())
+        ->withCount(['likes as is_liked' => function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        }])
+        ->where('user_id', $userId)
         ->orderByDesc('id')
         ->paginate(20);
 
