@@ -75,7 +75,7 @@ class CartController extends Controller {
 public function cartQuantity(Request $request) {
     try {
         $cart = $this->svc->getOrCreateCart($request->user()->id);
-        $quantity = $cart->items()->sum('quantity');
+        $quantity = $cart->items()->sum('qty');
         return ResponseHelper::success(['quantity' => $quantity]);
     } catch (\Exception $e) {
         Log::error($e->getMessage());
