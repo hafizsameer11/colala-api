@@ -19,7 +19,7 @@ public function getForUser($userId)
         ->orderBy('created_at', 'desc')
         ->get();
     $orderPayments = Transaction::where('user_id', $userId)
-        ->where('type', 'order_payments')
+        ->where('type', 'order_payment')
         ->orderBy('created_at', 'desc')
         ->get();
     return [
