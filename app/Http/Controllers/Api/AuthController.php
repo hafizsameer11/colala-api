@@ -7,6 +7,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Models\UserNotification;
 use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -61,7 +62,12 @@ class AuthController extends Controller
             if(!$user->wallet){
                 $wallet=$this->walletService->create(['user_id'=>$user->id]);
             }
-            
+            UserNotification::create([
+                'user_id' => $user->id,
+                'title' => 'Login Notification',
+                'content' => 'You have successfully logged in to your account.',
+                'is_read' => false,
+            ]);
             return ResponseHelper::success($respone, "user login successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());

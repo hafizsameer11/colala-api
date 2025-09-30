@@ -215,4 +215,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
     Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);
+    Route::get('notifications', [App\Http\Controllers\Api\NotificationController::class, 'getForUser']);
+    Route::post('notifications/mark-as-read/{id}', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
 });
