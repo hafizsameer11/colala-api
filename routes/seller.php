@@ -72,18 +72,13 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
 
     //Store Orders
-    
-
     // Variants
     Route::post('products/{productId}/variants/create', [ProductVariantController::class, 'create']);
     Route::post('products/{productId}/variants/update/{variantId}', [ProductVariantController::class, 'update']);
     Route::delete('products/{productId}/variants/delete/{variantId}', [ProductVariantController::class, 'delete']);
-
     Route::post('products/{id}/bulk-prices', [ProductBulkPriceController::class, 'store']);
     Route::post('products/{id}/bulk-prices/{priceId}', [ProductBulkPriceController::class, 'update']);
     Route::delete('products/{id}/bulk-prices/{priceId}', [ProductBulkPriceController::class, 'delete']);
-
-
     // Product delivery options
     Route::post('products/{id}/delivery-options', [ProductDeliveryOptionController::class, 'attach']);
     Route::delete('products/{id}/delivery-options/{optionId}', [ProductDeliveryOptionController::class, 'detach']);
@@ -91,10 +86,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('service/create', [ServiceController::class, 'create']);
     Route::post('service/update/{id}', [ServiceController::class, 'update']);
     Route::delete('service/delete/{id}', [ServiceController::class, 'delete']);
-
     Route::get('service/{id}', [ServiceController::class, 'getById']);
-
-
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
