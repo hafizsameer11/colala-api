@@ -13,4 +13,9 @@ class ProductBrowseService {
 
         // $ids = collect([$category->id])
     }
+    public function topSelling() {
+        return Product::with(['images','store'])
+            ->take(20)->latest()
+            ->get();
+    }
 }

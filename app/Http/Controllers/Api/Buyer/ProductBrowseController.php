@@ -19,6 +19,14 @@ class ProductBrowseController extends Controller
       return ResponseHelper::error($e->getMessage(), 500);
     }
   }
+  public function topSelling()
+  {
+    try {
+      return ResponseHelper::success($this->svc->topSelling());
+    } catch (\Exception $e) {
+      return ResponseHelper::error($e->getMessage(), 500);
+    }
+  }
   public function storeDeliveryAddresses($storeId)
   {
     try {

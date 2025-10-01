@@ -106,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Browse
         Route::get('categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
         Route::get('product-details/{id}', [ProductBrowseController::class, 'productDetails']);
+        Route::get('products/top-selling', [ProductBrowseController::class, 'topSelling']);
         // Cart
         //Deliveraddress on the base of sotreId
         Route::get('cart', [CartController::class, 'show']);
