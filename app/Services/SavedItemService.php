@@ -63,7 +63,7 @@ class SavedItemService
                     return array_merge($base, [
                         'service_id' => $saved->service_id,
                         'name'       => $saved->service->name,
-                        'price'      => $saved->service->price,
+                        'price'      => $saved->service->price_to. '-'. $saved->service->price_from,
                         'media'      => $saved->service->media->map(fn ($img) => asset('storage/' . $img->path)),
                     ]);
                 }
