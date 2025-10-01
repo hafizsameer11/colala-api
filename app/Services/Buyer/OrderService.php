@@ -12,7 +12,7 @@ class OrderService {
 
     public function detailForUser(int $userId, Order $order) {
         abort_unless($order->user_id === $userId, 403);
-        return $order->load(['storeOrders.store','storeOrders.items.product.images','orderTracking']);
+        return $order->load(['storeOrders.store','storeOrders.items.product.images','items.variant','orderTracking']);
     }
 
     public function buyerConfirmDelivered(int $userId, StoreOrder $storeOrder) {
