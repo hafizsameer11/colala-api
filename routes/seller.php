@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BoostProductController;
+use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductBulkPriceController;
 use App\Http\Controllers\Api\ProductController;
@@ -104,6 +105,13 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('/subscriptions', [SubscriptionController::class, 'mySubscriptions']); // seller's subscriptions
     Route::post('/subscriptions', [SubscriptionController::class, 'subscribe']);      // subscribe to a plan
     Route::patch('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
+
+
+      Route::get('/coupons', [CouponController::class,'index']);
+    Route::post('/coupons', [CouponController::class,'store']);
+    Route::put('/coupons/{coupon}', [CouponController::class,'update']);
+    Route::delete('/coupons/{coupon}', [CouponController::class,'destroy']);
+    Route::post('/coupons/apply/{code}', [CouponController::class,'apply']);
 
 });
 
