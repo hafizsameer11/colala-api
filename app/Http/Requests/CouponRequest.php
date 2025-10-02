@@ -22,7 +22,7 @@ class CouponRequest extends FormRequest
      */
       public function rules(): array {
         return [
-            'code'           => 'required|string|max:50|unique:coupons,code',
+            'code'           => 'required|string|max:50',
             'discount_type'  => 'required|in:1,2',
             'discount_value' => 'required|numeric|min:1',
             'max_usage'      => 'required|integer|min:1',
