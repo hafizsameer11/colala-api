@@ -18,7 +18,7 @@ class ServiceCreateUpdateRequest extends FormRequest
     public function rules()
     {
         return [
-            'store_id' => 'required|exists:stores,id',
+            
             'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string|max:255',

@@ -3,12 +3,18 @@ namespace App\Services;
 
 use App\Models\Service;
 use App\Models\ServiceMedia;
+use App\Models\Store;
 use App\Models\SubService;
+use Illuminate\Support\Facades\Auth;
 
 class ServiceService
 {
     public function create(array $data)
     {
+        $user=Auth::user();
+        $store=Store::where('user_id',$user->id)->first();
+        $data['store_id']=$store->id;
+        
         $service = Service::create($data);
 
         // Media
