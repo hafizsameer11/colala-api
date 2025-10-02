@@ -66,7 +66,7 @@ class SellerChatService
         return ChatMessage::create([
             'chat_id'     => $chat->id,
             'sender_id'   => $sellerId,
-            'sender_type' => 'seller',
+            'sender_type' => 'store',
             'message'     => $text,
             'image'       => $path,
             'is_read'     => false,
