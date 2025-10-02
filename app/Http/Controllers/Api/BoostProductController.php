@@ -40,7 +40,7 @@ class BoostProductController extends Controller
         try {
             $store = $this->userStore();
 
-            $q = BoostProduct::query()
+            $q = BoostProduct::with(['product.images', 'store'])->query()
                 ->forStore($store->id)
                 ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
                 ->latest();
@@ -113,20 +113,20 @@ class BoostProductController extends Controller
     // PATCH /api/boosts/{boost}/status
     public function updateStatus(Request $request, BoostProduct $boost)
     {
-       try{
-         $store = $this->userStore();
-        abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN);
+        try {
+            $store = $this->userStore();
+            abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN);
 
-        $data = $request->validate(['action' => 'required|in:pause,resume,cancel,complete']);
-        $map = ['pause' => 'paused', 'resume' => 'running', 'cancel' => 'cancelled', 'complete' => 'completed'];
+            $data = $request->validate(['action' => 'required|in:pause,resume,cancel,complete']);
+            $map = ['pause' => 'paused', 'resume' => 'running', 'cancel' => 'cancelled', 'complete' => 'completed'];
 
-        $boost->update(['status' => $map[$data['action']]]);
-        
-        $data= new BoostProductResource($boost);
-        return ResponseHelper::success($data, "data retrived succesfuly");
-       }catch(Exception $e){
-        return ResponseHelper::error("Something Went wrong" . $e->getMessage());
-       }
+            $boost->update(['status' => $map[$data['action']]]);
+
+            $data = new BoostProductResource($boost);
+            return ResponseHelper::success($data, "data retrived succesfuly");
+        } catch (Exception $e) {
+            return ResponseHelper::error("Something Went wrong" . $e->getMessage());
+        }
     }
 
     // PATCH /api/boosts/{boost}/metrics
@@ -147,6 +147,6 @@ class BoostProductController extends Controller
         }
 
         $boost->save();
-        $data= new BoostProductResource($boost);
+        $data = new BoostProductResource($boost);
     }
 }
