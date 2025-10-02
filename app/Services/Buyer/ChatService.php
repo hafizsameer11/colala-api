@@ -2,7 +2,8 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Chat, ChatMessage, StoreOrder};
+use App\Models\{Chat, ChatMessage, Store, StoreOrder, User};
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -16,6 +17,19 @@ class ChatService {
     }
 
     public function fetchChatList(int $userId) {
+        $user=Auth::user();
+        $user=User::find($userId);
+        $isSeller=$user->role;
+        $type='user_id';
+        if($isSeller){
+            $type='store_id';
+        }
+        $id=$userId;
+        if($isSeller){
+            $store=Store::where('user_id',$userId)->first();
+            $id=$store->id;
+        }
+
         return Chat::with(['store','lastMessage','service'])
             ->where('user_id',$userId)
             ->get()
@@ -27,6 +41,7 @@ class ChatService {
                     'last_message'=>$chat->lastMessage?->message,
                     'last_message_at'=>$chat->lastMessage?->created_at,
                     'unread_count'=>$unread,
+                    'user'=>$chat->user,
                     'avatar'=>$chat->store->profile_image ? asset('storage/'.$chat->store->profile_image) : null,
                 ];
             });
