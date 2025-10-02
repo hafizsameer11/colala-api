@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BoostProductController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductBulkPriceController;
 use App\Http\Controllers\Api\ProductController;
@@ -87,6 +88,15 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('service/update/{id}', [ServiceController::class, 'update']);
     Route::delete('service/delete/{id}', [ServiceController::class, 'delete']);
     Route::get('service/{id}', [ServiceController::class, 'getById']);
+
+    //Permote a product
+
+     Route::get('/boosts',                   [BoostProductController::class, 'index']);
+    Route::post('/boosts/preview',          [BoostProductController::class, 'preview']);
+    Route::post('/boosts',                  [BoostProductController::class, 'store']);
+    Route::get('/boosts/{boost}',           [BoostProductController::class, 'show']);
+    Route::patch('/boosts/{boost}/status',  [BoostProductController::class, 'updateStatus']);
+    Route::patch('/boosts/{boost}/metrics', [BoostProductController::class, 'updateMetrics']);
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
