@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 Route::prefix('seller')->group(function () {
@@ -97,6 +98,13 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('/boosts/{boost}',           [BoostProductController::class, 'show']);
     Route::patch('/boosts/{boost}/status',  [BoostProductController::class, 'updateStatus']);
     Route::patch('/boosts/{boost}/metrics', [BoostProductController::class, 'updateMetrics']);
+
+
+      Route::get('/plans', [SubscriptionController::class, 'plans']);                 // list available plans
+    Route::get('/subscriptions', [SubscriptionController::class, 'mySubscriptions']); // seller's subscriptions
+    Route::post('/subscriptions', [SubscriptionController::class, 'subscribe']);      // subscribe to a plan
+    Route::patch('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
+
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
