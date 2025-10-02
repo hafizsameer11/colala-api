@@ -73,12 +73,43 @@ class PostService
             ->findOrFail($id);
     }
 
-    public function updateByUser($id, array $data, $user)
-    {
-        $post = Post::where('id', $id)->where('user_id', $user->id)->firstOrFail();
-        $post->update($data);
-        return $post;
+ public function updateByUser($id, array $data, $user)
+{
+    $post = Post::where('id', $id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    // ✅ Update text fields
+    $post->update([
+        'body'       => $data['body'] ?? $post->body,
+        'visibility' => $data['visibility'] ?? $post->visibility,
+    ]);
+
+    // ✅ Handle media updates if provided
+    if (isset($data['media'])) {
+        // Optional: clear old media before re-upload
+        if (!empty($data['replace_media']) && $data['replace_media'] === true) {
+            $post->media()->delete();
+        }
+
+        foreach ($data['media'] as $i => $file) {
+            $mime = $file->getClientMimeType();
+            $type = str_starts_with($mime, 'video') ? 'video' : 'image';
+            $path = $file->store("posts/{$post->id}", 'public');
+
+            PostMedia::create([
+                'post_id'  => $post->id,
+                'path'     => $path,
+                'type'     => $type,
+                'position' => $i,
+            ]);
+        }
     }
+
+    // ✅ Return fresh post with relations
+    return $post->load(['user:id,full_name,profile_picture', 'media']);
+}
+
 
     public function deleteByUser($id, $user)
     {
