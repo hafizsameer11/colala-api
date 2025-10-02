@@ -12,25 +12,37 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('boost_products', function (Blueprint $table) {
+           Schema::create('boost_products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('product_id');
-            $table->unsignedBigInteger('store_id');
-            $table->date('start_date')->default(DB::raw('CURRENT_DATE'));
-            $table->string('status')->default('pending');
-            $table->integer('duration')->default(1);
-            $table->string('budget')->nullable();
-            $table->string('location')->nullable();
-            $table->string('reach')->nullable();
-            $table->string('total_amount')->nullable();
-            $table->string('impressions')->nullable();
-            $table->string('cpc')->nullable();
-            $table->string('clicks')->nullable();
-            $table->string('payment_method')->nullable();
-            $table->string('payment_status')->default('pending');
 
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('store_id')->constrained()->cascadeOnDelete();
+
+            // DATE columns can't safely default to CURRENT_DATE on many MySQL/MariaDB versions.
+            // Make it nullable and set today() in app code when creating.
+            $table->date('start_date')->nullable();
+
+            $table->enum('status', ['draft','scheduled','running','paused','completed','cancelled','pending'])
+                  ->default('pending');
+
+            $table->unsignedSmallInteger('duration')->default(1); // days
+
+            // Use numeric types (change to decimal if you prefer minor units vs. currency)
+            $table->unsignedInteger('budget')->nullable();        // daily budget (minor units)
+            $table->string('location')->nullable();
+            $table->unsignedInteger('reach')->default(0);
+            $table->unsignedInteger('total_amount')->default(0);  // budget*duration + fees
+            $table->unsignedInteger('impressions')->default(0);
+            $table->unsignedDecimal('cpc', 10, 2)->default(0);
+            $table->unsignedInteger('clicks')->default(0);
+
+            $table->enum('payment_method', ['wallet','card','bank'])->nullable();
+            $table->enum('payment_status', ['pending','paid','failed','refunded'])->default('pending');
 
             $table->timestamps();
+
+            $table->index(['store_id', 'status']);
+            $table->index(['start_date']);
         });
     }
 
