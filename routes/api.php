@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
-use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
+// use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
 use App\Http\Controllers\Api\WalletWithdrawalController;
 
 // use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;

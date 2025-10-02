@@ -1,6 +1,6 @@
 <?php 
 
-namespace App\Http\Controllers\Api\Seller;
+namespace App\Http\Controllers\Seller;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;

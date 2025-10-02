@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\Seller\LoyaltyController as SellerLoyalty;
+use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
     Route::post('register/{storeId}/step2', [SellerRegistrationController::class, 'registerStep2']);
