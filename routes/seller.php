@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BoostProductController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\PostController;
@@ -111,8 +113,18 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('/coupons', [CouponController::class,'store']);
     Route::put('/coupons/{coupon}', [CouponController::class,'update']);
     Route::delete('/coupons/{coupon}', [CouponController::class,'destroy']);
+
     Route::post('/coupons/apply/{code}', [CouponController::class,'apply']);
 
+
+        Route::get('/announcements', [AnnouncementController::class,'index']);
+    Route::post('/announcements', [AnnouncementController::class,'store']);
+    Route::delete('/announcements/{announcement}', [AnnouncementController::class,'destroy']);
+
+    // Banners
+    Route::get('/banners', [BannerController::class,'index']);
+    Route::post('/banners', [BannerController::class,'store']);
+    Route::delete('/banners/{banner}', [BannerController::class,'destroy']);
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
