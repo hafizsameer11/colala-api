@@ -33,7 +33,7 @@ return new class extends Migration
             $table->unsignedInteger('reach')->default(0);
             $table->unsignedInteger('total_amount')->default(0);  // budget*duration + fees
             $table->unsignedInteger('impressions')->default(0);
-            $table->unsignedDecimal('cpc', 10, 2)->default(0);
+            $table->decimal('cpc', 10, 2)->default(0);
             $table->unsignedInteger('clicks')->default(0);
 
             $table->enum('payment_method', ['wallet','card','bank'])->nullable();
