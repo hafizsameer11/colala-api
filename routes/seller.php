@@ -127,9 +127,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('/banners', [BannerController::class,'store']);
     Route::delete('/banners/{banner}', [BannerController::class,'destroy']);
 
-     Route::get('/', [SellerChatController::class, 'list']);
-    Route::get('/{chatId}/messages', [SellerChatController::class, 'messages']);
-    Route::post('/{chatId}/send', [SellerChatController::class, 'send']);
+     Route::get('chat/', [SellerChatController::class, 'list']);
+    Route::get('chat/{chatId}/messages', [SellerChatController::class, 'messages']);
+    Route::post('chat/{chatId}/send', [SellerChatController::class, 'send']);
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
