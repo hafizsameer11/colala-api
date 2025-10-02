@@ -148,5 +148,7 @@ class BoostProductController extends Controller
 
         $boost->save();
         $data = new BoostProductResource($boost);
+
+        return ResponseHelper::success($data, "data retrived succesfuly");
     }
 }
