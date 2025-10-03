@@ -11,4 +11,5 @@ class StoreOrder extends Model
     public function store(){ return $this->belongsTo(Store::class); }
     public function items(){ return $this->hasMany(OrderItem::class); }
     public function deliveryPricing(){ return $this->belongsTo(StoreDeliveryPricing::class,'delivery_pricing_id'); }
+    public function orderTracking(){ return $this->hasMany(OrderTracking::class); }
 }

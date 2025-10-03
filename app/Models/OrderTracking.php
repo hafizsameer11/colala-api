@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class OrderTracking extends Model
 {
     protected $fillable = [
-        'order_id',
+        'store_order_id',
         'status',
         'notes',
         'delivery_code',
     ];
 
-    public function order()
+    public function storeOrder()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(StoreOrder::class);
     }
 }
