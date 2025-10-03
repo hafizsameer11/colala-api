@@ -118,6 +118,19 @@ class Store extends Model
     {
         return $this->followers()->count();
     }
+    // app/Models/Store.php
+
+public function getFollowersCountAttribute(): int
+{
+    return $this->followers()->count();
+}
+
+
+public function getAverageRatingAttribute(): float
+{
+    return round($this->storeReveiews()->avg('rating') ?? 0, 1);
+}
+
     // public function storeAddress(){
     //     return $this->hasMany(StoreAddress::class);
     // }

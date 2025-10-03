@@ -338,6 +338,10 @@ public function overview(Request $req)
             'categories'    => $store->categories->map(fn($c)=>[
                                 'id'=>$c->id,'title'=>$c->title,'image_url'=>$this->url($c->image)
                               ]),
+                                  // ✅ Add stats
+            'followers_count' => $store->followers_count,
+            'total_sold'      => $store->total_sold,
+            'average_rating'  => $store->average_rating,
             'social_links'  => $store->socialLinks->map->only(['id','type','url']),
         ],
         'business' => optional($store->businessDetails)->only([
