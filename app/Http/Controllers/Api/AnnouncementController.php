@@ -51,4 +51,17 @@ class AnnouncementController extends Controller
         $store = $this->userStore();
         abort_if($announcement->store_id !== $store->id, 403, "Unauthorized");
     }
+    // app/Http/Controllers/Api/AnnouncementController.php
+public function update(AnnouncementRequest $request, Announcement $announcement) {
+    try {
+        $this->authorizeAccess($announcement);
+        $announcement->update([
+            'message' => $request->message,
+        ]);
+        return ResponseHelper::success(new AnnouncementResource($announcement), "Announcement updated");
+    } catch (\Exception $e) {
+        return ResponseHelper::error("Failed to update: ".$e->getMessage());
+    }
+}
+
 }

@@ -1,21 +1,22 @@
 <?php
-
+// app/Http/Requests/SavedCardRequest.php
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-class BannerRequest extends FormRequest
+class SavedCardRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-   public function authorize(): bool { return true; }
+    public function authorize(): bool { return true; }
+
     public function rules(): array {
         return [
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'link'  => 'nullable|url',
+            'card_number'  => 'required|digits_between:13,19',
+            'card_holder'  => 'required|string|max:100',
+            'expiry_month' => 'required|digits:2',
+            'expiry_year'  => 'required|digits:4',
+            'cvv'          => 'required|digits_between:3,4',
         ];
     }
      protected function failedValidation(Validator $validator)

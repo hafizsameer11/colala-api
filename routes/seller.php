@@ -8,11 +8,14 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProductBulkPriceController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductDeliveryOptionController;
+use App\Http\Controllers\Api\ProductStatController;
 use App\Http\Controllers\Api\ProductVariantController;
+use App\Http\Controllers\Api\SavedCardController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ServiceStatController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
@@ -130,6 +133,22 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
      Route::get('chat/', [SellerChatController::class, 'list']);
     Route::get('chat/{chatId}/messages', [SellerChatController::class, 'messages']);
     Route::post('chat/{chatId}/send', [SellerChatController::class, 'send']);
+
+      Route::get('/products/{id}/stats', [ProductStatController::class,'getStats']);  // chart data (daily)
+    Route::get('/products/{id}/stats/totals', [ProductStatController::class,'totals']); // overall totals
+    Route::get('/services/{id}/stats', [ServiceStatController::class,'getStats']);      // daily chart data
+    Route::get('/services/{id}/stats/totals', [ServiceStatController::class,'totals']); // totals
+
+      Route::get('/cards', [SavedCardController::class,'index']);
+    Route::post('/cards', [SavedCardController::class,'store']);
+    Route::patch('/cards/{id}/active', [SavedCardController::class,'setActive']);
+    Route::patch('/cards/{id}/autodebit', [SavedCardController::class,'toggleAutodebit']);
+    Route::delete('/cards/{id}', [SavedCardController::class,'destroy']);
+
+        Route::put('/announcements/{announcement}', [AnnouncementController::class,'update']);   // ✅ update
+            Route::post('/banners/{banner}', [BannerController::class,'update']);   // ✅ update
+
+
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {

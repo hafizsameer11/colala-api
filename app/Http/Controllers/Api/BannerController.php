@@ -50,4 +50,26 @@ class BannerController extends Controller
         $store = $this->userStore();
         abort_if($banner->store_id !== $store->id, 403, "Unauthorized");
     }
+    // app/Http/Controllers/Api/BannerController.php
+public function update(BannerRequest $request, Banner $banner) {
+    try {
+        $this->authorizeAccess($banner);
+
+        $data = [];
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('banners','public');
+            $data['image_path'] = $path;
+        }
+        if ($request->filled('link')) {
+            $data['link'] = $request->link;
+        }
+
+        $banner->update($data);
+
+        return ResponseHelper::success(new BannerResource($banner), "Banner updated");
+    } catch (Exception $e) {
+        return ResponseHelper::error("Failed to update: ".$e->getMessage());
+    }
+}
+
 }
