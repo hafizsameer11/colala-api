@@ -56,4 +56,18 @@ class Product extends Model
     {
         return $this->hasMany(Service::class);
     }
+    public function productStats()
+    {
+        return $this->hasMany(ProductStat::class);
+    }
+    public function statsSummary(): array
+{
+    return $this->productStats()
+        ->selectRaw('event_type, COUNT(*) as total')
+        ->groupBy('event_type')
+        ->pluck('total','event_type')
+        ->toArray();
+}
+    //now send the count of every type of product stat
+    
 }

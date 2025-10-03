@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 
 namespace App\Services;
@@ -11,24 +11,36 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductService
 {
+
     public function getAll()
     {
-        $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
-        return Product::with(['variants.images','images'])
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+
+        return Product::with(['variants.images', 'images'])
+            ->withCount([
+                'productStats as views' => fn($q) => $q->where('event_type', 'view'),
+                'productStats as impressions' => fn($q) => $q->where('event_type', 'impression'),
+                'productStats as clicks' => fn($q) => $q->where('event_type', 'click'),
+                'productStats as carts' => fn($q) => $q->where('event_type', 'add_to_cart'),
+                'productStats as orders' => fn($q) => $q->where('event_type', 'order'),
+                'productStats as chats' => fn($q) => $q->where('event_type', 'chat'),
+            ])
             ->where('store_id', $storeId)
             ->get();
     }
-    public function getAllforBuyer(){
-        return Product::with(['variants.images','images','store'])
+
+    public function getAllforBuyer()
+    {
+        return Product::with(['variants.images', 'images', 'store'])
             ->get();
     }
 
     public function create($data)
     {
-        $user=Auth::user();
-        $store=Store::where('user_id',$user->id)->first();
-        if(!$store){
-             throw new Exception('Store not found');
+        $user = Auth::user();
+        $store = Store::where('user_id', $user->id)->first();
+        if (!$store) {
+            throw new Exception('Store not found');
         }
         $data['store_id'] = $store->id;
         $product = Product::create($data);
@@ -49,7 +61,7 @@ class ProductService
 
     public function update($id, $data)
     {
-        $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update($data);
 
@@ -67,12 +79,12 @@ class ProductService
             $product->deliveryOptions()->sync($data['delivery_option_ids']);
         }
 
-        return $product->load(['images','deliveryOptions']);
+        return $product->load(['images', 'deliveryOptions']);
     }
 
     public function delete($id)
     {
-                $storeId=Store::where('user_id',Auth::user()->id)->pluck('id')->first();
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
 
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         return $product->delete();
