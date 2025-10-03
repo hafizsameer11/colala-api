@@ -12,6 +12,7 @@ class Service extends Model
             'service_category_id', // ✅
     ];
 
+
     public function media()
     {
         return $this->hasMany(ServiceMedia::class);
