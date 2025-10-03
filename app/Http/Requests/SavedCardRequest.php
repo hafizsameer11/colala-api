@@ -15,7 +15,7 @@ class SavedCardRequest extends FormRequest
             'card_number'  => 'required|digits_between:13,19',
             'card_holder'  => 'required|string|max:100',
             'expiry_month' => 'required|digits:2',
-            'expiry_year'  => 'required|digits:4',
+            'expiry_year'  => 'required',
             'cvv'          => 'required|digits_between:3,4',
         ];
     }
