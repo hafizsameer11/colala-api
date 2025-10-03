@@ -40,10 +40,11 @@ class BoostProductController extends Controller
         try {
             $store = $this->userStore();
 
-            $q = BoostProduct::with(['product.images', 'store'])->query()
-                ->forStore($store->id)
-                ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
-                ->latest();
+          $q = BoostProduct::with(['product.images', 'store'])
+    ->forStore($store->id)
+    ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
+    ->latest();
+
 
             $data = BoostProductResource::collection($q->paginate(20));
             return ResponseHelper::success($data, "data retrived succesfuly");
