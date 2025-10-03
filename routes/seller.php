@@ -151,6 +151,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
 
     Route::get('orders', [SellerOrderController::class, 'index']);
     Route::get('orders/{id}', [SellerOrderController::class, 'getOrder']);
+    Route::post('orders/{orderId}/out-for-deliver', [SellerOrderController::class, 'markOutForDelivery']);
+    Route::post('orders/{orderId}/delivered', [SellerOrderController::class, 'verifyDeliveryCode']);
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {

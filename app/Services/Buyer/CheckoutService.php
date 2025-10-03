@@ -93,47 +93,51 @@ class CheckoutService
             }
 
             // Create order tracking and chat
-            $deliveryCode = random_int(1000, 9999);
-            \App\Models\OrderTracking::create([
-                'order_id' => $order->id,
-                'status' => 'pending',
-                'notes' => 'Order has been placed and is pending processing.',
-                'delivery_code' => $deliveryCode,
-            ]);
+
 
             foreach ($preview['stores'] as $S) {
                 $so = StoreOrder::create([
                     'order_id' => $order->id,
                     'store_id' => $S['store_id'],
                     'status'   => 'placed',
-                    'shipping_fee' => 0, // or make column nullable
+                    'shipping_fee' => 0,
                     'items_subtotal' => $S['items_subtotal'],
                     'discount' => 0,
                     'subtotal_with_shipping' => $S['items_subtotal'],
                 ]);
 
+                // ✅ tracking per store order
+                $deliveryCode = random_int(1000, 9999);
+                \App\Models\OrderTracking::create([
+                    'store_order_id' => $so->id,   // now linked correctly
+                    'status'         => 'pending',
+                    'notes'          => 'Order has been placed and is pending processing.',
+                    'delivery_code'  => $deliveryCode,
+                ]);
+
                 foreach ($S['lines'] as $L) {
                     OrderItem::create([
                         'store_order_id' => $so->id,
-                        'product_id' => $L['product_id'],
-                        'variant_id' => $L['variant_id'] ?? null,
-                        'name' => $L['name'],
-                        'sku' => null,
-                        'color' => null,
-                        'size' => null,
-                        'unit_price' => $L['unit'],
+                        'product_id'     => $L['product_id'],
+                        'variant_id'     => $L['variant_id'] ?? null,
+                        'name'           => $L['name'],
+                        'sku'            => null,
+                        'color'          => null,
+                        'size'           => null,
+                        'unit_price'     => $L['unit'],
                         'unit_discount_price' => null,
-                        'qty' => $L['qty'],
-                        'line_total' => $L['line_total'],
+                        'qty'            => $L['qty'],
+                        'line_total'     => $L['line_total'],
                     ]);
                 }
 
                 Chat::firstOrCreate([
                     'store_order_id' => $so->id,
-                    'user_id' => $cart->user_id,
-                    'store_id' => $S['store_id'],
+                    'user_id'        => $cart->user_id,
+                    'store_id'       => $S['store_id'],
                 ]);
             }
+
 
             $cart->update(['checked_out' => true]);
             $cart->items()->delete();
@@ -178,7 +182,7 @@ class CheckoutService
                 'amount'  => $data['amount'],
                 'status'  => 'success',
                 'type'    => 'order_payment',
-                'order_id'=> $order->id,
+                'order_id' => $order->id,
                 'user_id' => $user->id,
             ]);
 

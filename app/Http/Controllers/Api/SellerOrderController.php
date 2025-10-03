@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderTracking;
 use App\Models\Store;
 use App\Models\StoreOrder;
 use Exception;
@@ -29,12 +30,12 @@ class SellerOrderController extends Controller
             }
 
             // ✅ Fetch store orders (each belongs to an order)
-            $completedOrder = StoreOrder::with(['order', 'store', 'items'])
+            $completedOrder = StoreOrder::with(['order', 'store', 'items', 'orderTracking'])
                 ->where('status', 'delivered')
                 ->where('store_id', $store->id)
                 ->latest()
                 ->paginate(20);
-            $newOrders = StoreOrder::with(['order', 'store', 'items'])->whereNot('status', 'delivered')->where('store_id', $store->id)->latest()->paginate(20);
+            $newOrders = StoreOrder::with(['order', 'store', 'items', 'orderTracking'])->whereNot('status', 'delivered')->where('store_id', $store->id)->latest()->paginate(20);
             return ResponseHelper::success([
                 'completed_orders' => $completedOrder,
                 'new_orders' => $newOrders
@@ -43,10 +44,41 @@ class SellerOrderController extends Controller
             return ResponseHelper::error("Something went wrong: " . $e->getMessage());
         }
     }
-    public function details($storeOrderId){
+    public function details($storeOrderId)
+    {
         try {
-            $storeOrder = StoreOrder::with(['order', 'store', 'items'])->where('id', $storeOrderId)->first();
+            $storeOrder = StoreOrder::with(['order', 'store', 'items', 'orderTracking'])->where('id', $storeOrderId)->first();
             return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
+        } catch (Exception $e) {
+            return ResponseHelper::error("Something went wrong: " . $e->getMessage());
+        }
+    }
+    public function markOutForDelivery($orderId)
+    {
+        try {
+            $storeOrder = StoreOrder::where('id', $orderId)->first();
+            $storeOrder->update(['status' => 'out_for_delivery']);
+            $orderTracking = OrderTracking::where('store_order_id', $orderId)->first();
+            $orderTracking->update(['status' => 'out_for_delivery']);
+
+            return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
+        } catch (Exception $e) {
+            return ResponseHelper::error("Something went wrong: " . $e->getMessage());
+        }
+    }
+    public function verifyDeliveryCode(Request $request, $orderId)
+    {
+        try {
+            $code = $request->code;
+            $orderTracking = OrderTracking::where('store_order_id', $orderId)->first();
+            if ($orderTracking->delivery_code == $code) {
+                $storeOrder = StoreOrder::where('id', $orderId)->first();
+                $storeOrder->update(['status' => 'delivered']);
+                $orderTracking->update(['status' => 'delivered']);
+                return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
+            } else {
+                return ResponseHelper::error("Invalid code");
+            }
         } catch (Exception $e) {
             return ResponseHelper::error("Something went wrong: " . $e->getMessage());
         }
