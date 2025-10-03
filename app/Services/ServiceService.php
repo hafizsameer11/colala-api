@@ -63,9 +63,18 @@ class ServiceService
     }
 
     public function getAll()
-    {
-        return Service::with('media','subServices')->get();
-    }
+{
+    return Service::with(['media','subServices'])
+        ->withCount([
+            'stats as views'       => fn($q) => $q->where('event_type', 'view'),
+            'stats as impressions' => fn($q) => $q->where('event_type', 'impression'),
+            'stats as clicks'      => fn($q) => $q->where('event_type', 'click'),
+            'stats as chats'       => fn($q) => $q->where('event_type', 'chat'),
+            'stats as phone_views' => fn($q) => $q->where('event_type', 'phone_view'),
+        ])
+        ->get();
+}
+
 
     public function delete(int $id)
     {
