@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SavedCardController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
+use App\Http\Controllers\Api\SellerOrderController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceStatController;
@@ -148,7 +149,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
         Route::put('/announcements/{announcement}', [AnnouncementController::class,'update']);   // ✅ update
             Route::post('/banners/{banner}', [BannerController::class,'update']);   // ✅ update
 
-
+    Route::get('orders', [SellerOrderController::class, 'index']);
+    Route::get('orders/{id}', [SellerOrderController::class, 'getOrder']);
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
