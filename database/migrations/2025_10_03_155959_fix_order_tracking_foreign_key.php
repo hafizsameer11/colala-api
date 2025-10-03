@@ -7,14 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void {
         Schema::table('order_trackings', function (Blueprint $table) {
-            // 1. Drop old foreign key + column
             $table->dropForeign(['order_id']);
             $table->dropColumn('order_id');
-
-            // 2. Add new store_order_id column
             $table->unsignedBigInteger('store_order_id')->after('id');
-
-            // 3. Add new FK to store_orders
             $table->foreign('store_order_id')
                   ->references('id')
                   ->on('store_orders')
