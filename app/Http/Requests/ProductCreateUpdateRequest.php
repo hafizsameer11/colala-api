@@ -20,22 +20,40 @@ class ProductCreateUpdateRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'category_id' => 'nullable|exists:categories,id',
-            'brand' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'discount_price' => 'nullable|numeric',
-            'has_variants' => 'boolean',
-            'status' => 'in:draft,active,inactive',
-            'video' => 'nullable',
-            'images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
-            'coupon_code' => 'nullable|string|max:50',
-            'discount' => 'nullable|string|max:50',
+            /* ---------- 🧩 PRODUCT MAIN FIELDS ---------- */
+            'name'                     => 'required|string|max:255',
+            'category_id'              => 'nullable|exists:categories,id',
+            'brand'                    => 'nullable|string|max:255',
+            'description'              => 'nullable|string',
+            'price'                    => 'nullable|numeric|min:0',
+            'discount_price'           => 'nullable|numeric|min:0',
+            'has_variants'             => 'required|boolean',
+            'status'                   => 'nullable|in:draft,active,inactive',
+            'video'                    => 'nullable|string|max:255',
+            'coupon_code'              => 'nullable|string|max:50',
+            'discount'                 => 'nullable|string|max:50',
             'loyality_points_applicable' => 'boolean',
+
+            /* ---------- 🖼️ PRODUCT IMAGES ---------- */
+            'images'                   => 'array',
+            'images.*'                 => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
+
+            /* ---------- 🧬 VARIANTS (nested array) ---------- */
+            'variants'                 => 'array',
+            'variants.*.id'            => 'nullable|integer|exists:product_variants,id',
+            'variants.*.sku'           => 'nullable|string|max:100',
+            'variants.*.color'         => 'nullable|string|max:50',
+            'variants.*.size'          => 'nullable|string|max:50',
+            'variants.*.price'         => 'required_if:has_variants,1|numeric|min:0',
+            'variants.*.discount_price'=> 'nullable|numeric|min:0',
+            'variants.*.stock'         => 'required_if:has_variants,1|integer|min:0',
+
+            /* ---------- 📷 VARIANT IMAGES ---------- */
+            'variants.*.images'        => 'array',
+            'variants.*.images.*'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
