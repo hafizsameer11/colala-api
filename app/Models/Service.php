@@ -10,6 +10,7 @@ class Service extends Model
         'store_id','category_id','name','short_description',
         'full_description','price_from','price_to','discount_price','status',
             'service_category_id', // ✅
+            'video'
     ];
 
 

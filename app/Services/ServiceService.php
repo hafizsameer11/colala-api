@@ -15,6 +15,12 @@ class ServiceService
         $store=Store::where('user_id',$user->id)->first();
         $data['store_id']=$store->id;
         
+        //check if have video 
+          if (!empty($data['video'])) {
+            $path = $data['video']->store('services', 'public');
+            $data['video'] = $path;
+        }
+
         $service = Service::create($data);
 
         // Media
@@ -28,7 +34,8 @@ class ServiceService
                 ]);
             }
         }
-
+        //check if has video
+      
         // Sub-services
         if (!empty($data['sub_services'])) {
             foreach ($data['sub_services'] as $sub) {

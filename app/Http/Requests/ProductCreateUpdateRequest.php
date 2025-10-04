@@ -32,7 +32,7 @@ class ProductCreateUpdateRequest extends FormRequest
             'discount_price'           => 'nullable|numeric|min:0',
             'has_variants'             => 'required|boolean',
             'status'                   => 'nullable|in:draft,active,inactive',
-            'video'                    => 'nullable|string|max:255',
+            'video'                    => 'nullable',
             'coupon_code'              => 'nullable|string|max:50',
             'discount'                 => 'nullable|string|max:50',
             'loyality_points_applicable' => 'boolean',
