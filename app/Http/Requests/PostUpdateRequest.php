@@ -16,6 +16,9 @@ class PostUpdateRequest extends FormRequest
         return [
             'body' => 'nullable|string|max:5000',
             'visibility' => 'nullable|in:public,followers',
+             'media' => 'nullable|array|max:10',
+            'media.*' => 'file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:20480',
+
         ];
     }
 }
