@@ -56,6 +56,7 @@ class AuthController extends Controller
             $respone=
             [
                 'user'=>$user,
+                'store'=>$user->store,
                 'token'=>$token
             ];
             //check if user have wallet otherwise creste wallet

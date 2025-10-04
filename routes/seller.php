@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\SellerOrderController;
 use App\Http\Controllers\Api\SellerRegistrationController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceStatController;
+use App\Http\Controllers\Api\StoreManagementController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
@@ -117,7 +118,13 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('orders', [SellerOrderController::class, 'index']);
     Route::get('orders/{id}', [SellerOrderController::class, 'getOrder']);
     Route::post('orders/{orderId}/out-for-deliver', [SellerOrderController::class, 'markOutForDelivery']); //id will be used here will be the uid of sotore order means id from the list not the order_id
-    Route::post('orders/{orderId}/delivered', [SellerOrderController::class, 'verifyDeliveryCode']);
+    Route::post('orders/{orderId}/delivered', [SellerOrderController::class, 'verifyDeliveryCode']); 
+    Route::get('/store/builder', [StoreManagementController::class, 'builderShow']);
+
+    // CREATE/UPDATE store + main address + categories (multipart/form-data)
+    Route::post('/store/builder', [StoreManagementController::class, 'builderUpsert']);
+
+
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
