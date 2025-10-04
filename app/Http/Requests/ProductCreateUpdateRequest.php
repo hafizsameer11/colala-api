@@ -31,7 +31,7 @@ class ProductCreateUpdateRequest extends FormRequest
             'discount_price' => 'nullable|numeric',
             'has_variants' => 'boolean',
             'status' => 'in:draft,active,inactive',
-            'video' => 'nullable|string',
+            'video' => 'nullable',
             'images.*' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
             'coupon_code' => 'nullable|string|max:50',
             'discount' => 'nullable|string|max:50',
