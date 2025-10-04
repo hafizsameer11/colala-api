@@ -31,7 +31,7 @@ class ServiceCreateUpdateRequest extends FormRequest
             'sub_services.*.name' => 'required_with:sub_services|string',
             'sub_services.*.price_from' => 'nullable|numeric',
             'sub_services.*.price_to' => 'nullable|numeric',
-            'video' => 'nullable|string|max:255',
+            'video' => 'nullable',
         ];
     }
     public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
