@@ -30,7 +30,7 @@ class SellerOrderController extends Controller
             }
 
             // ✅ Fetch store orders (each belongs to an order)
-            $completedOrder = StoreOrder::with(['order', 'store', 'items', 'orderTracking'])
+            $completedOrder = StoreOrder::with(['order.user', 'store', 'items', 'orderTracking'])
                 ->where('status', 'delivered')
                 ->where('store_id', $store->id)
                 ->latest()
