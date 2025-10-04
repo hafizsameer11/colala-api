@@ -24,9 +24,10 @@ class StoreManagementController extends Controller
         $userId = Auth::id();
 
         $store = Store::with([
-            'addresses' => fn ($q) => $q->orderByDesc('is_main'),
+            'addresses' => fn($q) => $q->orderByDesc('is_main'),
             'categories:id,title' // adapt "title" to your Category column
         ])->where('user_id', $userId)->first();
+
 
         // For the picker
         $allCategories = Category::select('id', 'title')->orderBy('title')->get();
@@ -39,10 +40,13 @@ class StoreManagementController extends Controller
                 'store_email'    => $store->store_email,
                 'store_phone'    => $store->store_phone,
                 'store_location' => $store->store_location,
-                'profile_image'  => $store->profile_image ? asset('storage/'.$store->profile_image): null,
-                'banner_image'   => $store->banner_image ?  asset('storage/'.$store->banner_image) : null,
+                'profile_image'  => $store->profile_image ? asset('storage/' . $store->profile_image) : null,
+                'banner_image'   => $store->banner_image ?  asset('storage/' . $store->banner_image) : null,
                 'theme_color'    => $store->theme_color,
                 'categories'     => $store->categories->map(fn($c) => ['id' => $c->id, 'title' => $c->title]),
+                'followers_count' => $store->followers_count,
+                'total_sold'      => $store->total_sold,
+                'average_rating'  => $store->average_rating,
                 'address'        => optional($store->addresses->first(), function ($addr) {
                     return [
                         'state'            => $addr->state,
@@ -70,29 +74,31 @@ class StoreManagementController extends Controller
 
         // Validation (email unique per stores table, ignoring current store if present)
         $validated = $request->validate([
-            'store_name'     => ['required','string','max:190'],
+            'store_name'     => ['required', 'string', 'max:190'],
             'store_email'    => [
-                'nullable','email','max:190',
-                Rule::unique('stores','store_email')->ignore(optional($existingStore)->id)
+                'nullable',
+                'email',
+                'max:190',
+                Rule::unique('stores', 'store_email')->ignore(optional($existingStore)->id)
             ],
-            'store_phone'    => ['nullable','string','max:40'],
-            'store_location' => ['nullable','string','max:190'],
-            'theme_color'    => ['nullable','string','max:20'], // hex or token
+            'store_phone'    => ['nullable', 'string', 'max:40'],
+            'store_location' => ['nullable', 'string', 'max:190'],
+            'theme_color'    => ['nullable', 'string', 'max:20'], // hex or token
 
             // images: optional
-            'profile_image'  => ['nullable','image','mimes:jpg,jpeg,png,webp','max:4096'],
-            'banner_image'   => ['nullable','image','mimes:jpg,jpeg,png,webp','max:6144'],
+            'profile_image'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'banner_image'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
 
             // categories: array of IDs
-            'category_ids'   => ['nullable','array'],
-            'category_ids.*' => ['integer','exists:categories,id'],
+            'category_ids'   => ['nullable', 'array'],
+            'category_ids.*' => ['integer', 'exists:categories,id'],
 
             // optional address block
-            'address.state'             => ['nullable','string','max:190'],
-            'address.local_government'  => ['nullable','string','max:190'],
-            'address.full_address'      => ['nullable','string','max:500'],
-            'address.is_main'           => ['nullable','boolean'],
-            'address.opening_hours'     => ['nullable','array'],
+            'address.state'             => ['nullable', 'string', 'max:190'],
+            'address.local_government'  => ['nullable', 'string', 'max:190'],
+            'address.full_address'      => ['nullable', 'string', 'max:500'],
+            'address.is_main'           => ['nullable', 'boolean'],
+            'address.opening_hours'     => ['nullable', 'array'],
         ]);
 
         // Files (if provided)
@@ -110,7 +116,11 @@ class StoreManagementController extends Controller
 
         // Upsert inside a transaction
         $store = DB::transaction(function () use (
-            $userId, $existingStore, $validated, $profilePath, $bannerPath
+            $userId,
+            $existingStore,
+            $validated,
+            $profilePath,
+            $bannerPath
         ) {
             // Insert / Update Store
             $storeData = [
@@ -122,8 +132,12 @@ class StoreManagementController extends Controller
                 'theme_color'    => $validated['theme_color'] ?? null,
             ];
 
-            if ($profilePath) { $storeData['profile_image'] = $profilePath; }
-            if ($bannerPath)  { $storeData['banner_image']  = $bannerPath;  }
+            if ($profilePath) {
+                $storeData['profile_image'] = $profilePath;
+            }
+            if ($bannerPath) {
+                $storeData['banner_image']  = $bannerPath;
+            }
 
             if ($existingStore) {
                 $existingStore->update($storeData);
@@ -176,8 +190,8 @@ class StoreManagementController extends Controller
                 'store_phone'    => $store->store_phone,
                 'store_location' => $store->store_location,
                 'theme_color'    => $store->theme_color,
-                'profile_image'  => $store->profile_image ? asset('storage/'.$store->profile_image) : null,
-                'banner_image'   => $store->banner_image ?  asset('storage/'.$store->banner_image) : null,
+                'profile_image'  => $store->profile_image ? asset('storage/' . $store->profile_image) : null,
+                'banner_image'   => $store->banner_image ?  asset('storage/' . $store->banner_image) : null,
                 'categories'     => $store->categories->map(fn($c) => ['id' => $c->id, 'title' => $c->title]),
                 'address'        => optional($store->addresses->first(), function ($addr) {
                     return [
