@@ -325,7 +325,7 @@ public function overview(Request $req)
     ])->firstOrFail();
         $products=Product::where('store_id',$store->id)->with('images')->get();
         $posts=Post::where('user_id',$store->user_id)->latest()->get();
-        $services=Service::where('store_id',$store->id)->with('images')->get();
+        $services=Service::where('store_id',$store->id)->with('media')->get();
     return response()->json([
         'status' => true,
         'store'  => [
