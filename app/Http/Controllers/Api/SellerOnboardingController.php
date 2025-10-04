@@ -321,7 +321,8 @@ public function overview(Request $req)
         'addresses',
         'deliveryPricing',
         'socialLinks',
-        'categories:id,title,image'
+        'categories:id,title,image',
+        'banners'
     ])->firstOrFail();
         $products=Product::where('store_id',$store->id)->with('images','reviews')->get();
         $posts=Post::where('user_id',$store->user_id)->latest()->get();

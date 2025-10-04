@@ -131,6 +131,9 @@ public function getAverageRatingAttribute(): float
     return round($this->storeReveiews()->avg('rating') ?? 0, 1);
 }
 
+public function banners(){
+    return $this->hasMany(Banner::class);
+}
     // public function storeAddress(){
     //     return $this->hasMany(StoreAddress::class);
     // }

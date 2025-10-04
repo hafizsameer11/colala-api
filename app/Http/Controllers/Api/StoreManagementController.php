@@ -25,6 +25,7 @@ class StoreManagementController extends Controller
 
         $store = Store::with([
             'addresses' => fn($q) => $q->orderByDesc('is_main'),
+            'banners',
             'categories:id,title' // adapt "title" to your Category column
         ])->where('user_id', $userId)->first();
 
@@ -47,6 +48,7 @@ class StoreManagementController extends Controller
                 'followers_count' => $store->followers_count,
                 'total_sold'      => $store->total_sold,
                 'average_rating'  => $store->average_rating,
+                'banners'=>$store->banners,
                 'address'        => optional($store->addresses->first(), function ($addr) {
                     return [
                         'state'            => $addr->state,
