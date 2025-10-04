@@ -52,7 +52,7 @@ public function productDetails($productId)
             'category',
             'images',
           'variations',
-          'reveiws'
+          'reviews'
         ])->find($productId);
 
         if (!$products) {
