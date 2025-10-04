@@ -116,7 +116,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
             Route::post('/banners/{banner}', [BannerController::class,'update']);   // ✅ update
 
     Route::get('orders', [SellerOrderController::class, 'index']);
-    Route::get('orders/{id}', [SellerOrderController::class, 'getOrder']);
+    Route::get('orders/{id}', [SellerOrderController::class, 'details']);
     Route::post('orders/{orderId}/out-for-deliver', [SellerOrderController::class, 'markOutForDelivery']); //id will be used here will be the uid of sotore order means id from the list not the order_id
     Route::post('orders/{orderId}/delivered', [SellerOrderController::class, 'verifyDeliveryCode']); 
     Route::get('/store/builder', [StoreManagementController::class, 'builderShow']);
