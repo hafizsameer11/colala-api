@@ -13,7 +13,7 @@ use App\Http\Requests\Level3UtilityBillRequest;
 use App\Http\Requests\Level3AddAddressRequest;
 use App\Http\Requests\Level3AddDeliveryRequest;
 use App\Http\Requests\Level3ThemeRequest;
-use App\Models\{User, Store, StoreSocialLink, StoreBusinessDetail, StoreAddress, StoreDeliveryPricing, StoreOnboardingStep};
+use App\Models\{Post, Product, Service, User, Store, StoreSocialLink, StoreBusinessDetail, StoreAddress, StoreDeliveryPricing, StoreOnboardingStep};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -323,7 +323,9 @@ public function overview(Request $req)
         'socialLinks',
         'categories:id,title,image'
     ])->firstOrFail();
-
+        $products=Product::where('store_id',$store->id)->with('images')->get();
+        $posts=Post::where('user_id',$store->user_id)->latest()->get();
+        $services=Service::where('store_id',$store->id)->with('images')->get();
     return response()->json([
         'status' => true,
         'store'  => [
@@ -343,6 +345,9 @@ public function overview(Request $req)
             'total_sold'      => $store->total_sold,
             'average_rating'  => $store->average_rating,
             'social_links'  => $store->socialLinks->map->only(['id','type','url']),
+            'products'=>$products,
+            'posts'=>$posts,
+            'services'=>$services
         ],
         'business' => optional($store->businessDetails)->only([
             'registered_name','business_type','nin_number','bn_number','cac_number','has_physical_store'
