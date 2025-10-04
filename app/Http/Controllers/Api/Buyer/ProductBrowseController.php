@@ -51,7 +51,8 @@ public function productDetails($productId)
           'store.socialLinks',
             'category',
             'images',
-            'variations'
+          'variations',
+          'reveiws'
         ])->find($productId);
 
         if (!$products) {

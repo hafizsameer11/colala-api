@@ -68,6 +68,9 @@ class Product extends Model
         ->pluck('total','event_type')
         ->toArray();
 }
+public function reveiws(){
+    return $this->hasMany(ProductReview::class);
+}
     //now send the count of every type of product stat
     
 }
