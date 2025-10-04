@@ -61,8 +61,10 @@ class BoostProductController extends Controller
             $this->assertProductBelongsToStore((int)$request->product_id, $store->id);
 
             $calc = $this->svc->computeTotals((int)$request->budget, (int)$request->duration);
-
+            $product=Product::with(['images', 'store'])->find((int)$request->product_id);
+            
             return response()->json([
+                'product'      => $product,
                 'daily_budget' => (int)$request->budget,
                 'duration'     => (int)$request->duration,
                 'subtotal'     => $calc['subtotal'],
