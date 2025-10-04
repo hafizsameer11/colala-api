@@ -68,9 +68,18 @@ class Product extends Model
         ->pluck('total','event_type')
         ->toArray();
 }
-public function reveiws(){
-    return $this->hasMany(ProductReview::class);
+public function reviews() // ✅ correct spelling
+{
+    // Product -> OrderItem(product_id) -> ProductReview(order_item_id)
+    return $this->hasManyThrough(
+        ProductReview::class,   // final
+        OrderItem::class,       // through
+        'product_id',           // FK on order_items -> products.id
+        'order_item_id',        // FK on product_reviews -> order_items.id
+        'id',                   // local key on products
+        'id'                    // local key on order_items
+    );
 }
-    //now send the count of every type of product stat
+//now send the count of every type of product stat
     
 }
