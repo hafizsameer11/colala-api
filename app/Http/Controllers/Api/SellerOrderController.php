@@ -59,6 +59,15 @@ class SellerOrderController extends Controller
             $storeOrder = StoreOrder::where('id', $orderId)->first();
             $storeOrder->update(['status' => 'out_for_delivery']);
             $orderTracking = OrderTracking::where('store_order_id', $orderId)->first();
+            //if order. tracking is null, create one
+            if (!$orderTracking) {
+                $orderTracking = new OrderTracking();
+                $deliveryCode=random_int(100000, 999999);
+                $orderTracking->store_order_id = $orderId;
+                $orderTracking->delivery_code = $deliveryCode;
+                $orderTracking->status='out_for_delivery';
+                $orderTracking->save();
+            }
             $orderTracking->update(['status' => 'out_for_delivery']);
 
             return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
