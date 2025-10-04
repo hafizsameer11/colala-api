@@ -42,28 +42,33 @@ class ProductBrowseController extends Controller
 public function productDetails($productId)
 {
     try {
-        $products = Product::with([
+        $product = Product::with([
             'store' => function ($q) {
-                $q->withCount('followers')       // followers_count
-                  ->withSum('soldItems', 'qty'); // sold_items_sum_qty
+                $q->withCount('followers')
+                  ->withSum('soldItems', 'qty');
             },
             'store.soldItems',
-          'store.socialLinks',
+            'store.socialLinks',
             'category',
             'images',
-          'variations',
-          'reviews'
+            'variations',
+            'reviews',
+            'boost', // include relation
         ])->find($productId);
 
-        if (!$products) {
+        if (!$product) {
             return ResponseHelper::error('Product not found', 404);
         }
 
-        return ResponseHelper::success($products);
+        $data = $product->toArray();
+        $data['is_boosted'] = $product->isBoosted(); // ✅ boolean value
+
+        return ResponseHelper::success($data);
     } catch (\Exception $e) {
         return ResponseHelper::error($e->getMessage(), 500);
     }
 }
+
 
 
 }

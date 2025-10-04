@@ -80,6 +80,21 @@ public function reviews() // ✅ correct spelling
         'id'                    // local key on order_items
     );
 }
+public function boost()
+{
+    return $this->hasOne(BoostProduct::class, 'product_id');
+}
+public function isBoosted(): bool
+{
+    $boost = $this->boost()
+        ->where('status', 'active')
+        ->whereDate('start_date', '<=', now())
+        ->whereDate('end_date', '>=', now())
+        ->exists();
+
+    return $boost;
+}
+
 //now send the count of every type of product stat
     
 }
