@@ -88,8 +88,7 @@ public function isBoosted(): bool
 {
     $boost = $this->boost()
         ->where('status', 'active')
-        ->whereDate('start_date', '<=', now())
-        ->whereDate('end_date', '>=', now())
+     
         ->exists();
 
     return $boost;
