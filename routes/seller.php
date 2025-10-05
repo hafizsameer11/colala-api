@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\ServiceStatController;
 use App\Http\Controllers\Api\StoreManagementController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Buyer\ChatController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 Route::prefix('seller')->group(function () {
@@ -123,6 +124,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
 
     // CREATE/UPDATE store + main address + categories (multipart/form-data)
     Route::post('/store/builder', [StoreManagementController::class, 'builderUpsert']);
+            Route::post('chats/start/{user_id}', [ChatController::class, 'startChatWithCustomer']);
+
 
 
 });

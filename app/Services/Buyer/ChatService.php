@@ -2,7 +2,7 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Chat, ChatMessage, StoreOrder};
+use App\Models\{Chat, ChatMessage, Store, StoreOrder};
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -98,6 +98,27 @@ class ChatService {
             'service_id' => $serviceId,
             'type' => 'service',
             'store_order_id' => null,
+        ]);
+    }
+    public function startChatWithCustomer(int $userId){
+       //check if already exists without order
+       $store=Store::where('user_id',$userId)->pluck('id')->first();
+       $storeId=$store->id;
+       $existingChat = Chat::where('user_id', $userId)
+            ->where('store_id', $storeId)
+            ->where('store_order_id', null)
+            ->where('type', 'general')
+            ->first();
+        if ($existingChat) {
+            return $existingChat;
+        }
+        // Create a new general chat
+        return Chat::create([
+            'user_id' => $userId,
+            'store_id' => $storeId,
+            'type' => 'general',
+            'store_order_id' => null,
+            'service_id' => null,
         ]);
     }
 }

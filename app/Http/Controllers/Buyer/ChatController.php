@@ -70,4 +70,13 @@ class ChatController extends Controller
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
+    public function startChatWithCustomer($user_id){
+        try{
+        $chat = $this->svc->startChatWithCustomer($user_id);
+            return ResponseHelper::success($chat, 'Chat started');
+
+        }catch(Exception $e){
+            return ResponseHelper::error($e->getMessage(),500);
+        }
+    }
 }
