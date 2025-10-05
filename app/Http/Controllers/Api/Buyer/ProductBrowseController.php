@@ -61,6 +61,8 @@ public function productDetails($productId)
         }
 
         $data = $product->toArray();
+        //get the quantity of product from variants which have stock
+        $data['qty'] = $product->variations->where('stock', '>', 0)->sum('stock');
         $data['is_boosted'] = $product->isBoosted(); // ✅ boolean value
 
         return ResponseHelper::success($data);
