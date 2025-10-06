@@ -83,6 +83,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('/boosts',                   [BoostProductController::class, 'index']);
     Route::post('/boosts/preview',          [BoostProductController::class, 'preview']);
     Route::post('/boosts',                  [BoostProductController::class, 'store']);
+    Route::post('/boosts/update/{id}',                  [BoostProductController::class, 'update']);
     Route::get('/boosts/{boost}',           [BoostProductController::class, 'show']);
     Route::patch('/boosts/{boost}/status',  [BoostProductController::class, 'updateStatus']);
     Route::patch('/boosts/{boost}/metrics', [BoostProductController::class, 'updateMetrics']);

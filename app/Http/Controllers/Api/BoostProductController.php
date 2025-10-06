@@ -114,10 +114,12 @@ class BoostProductController extends Controller
         }
     }
 
-    public function update(UpdateBoostProductRequest $request, BoostProduct $boost)
+    public function update(UpdateBoostProductRequest $request, $id)
 {
     try {
         $store = $this->userStore();
+
+        $boost = BoostProduct::findOrFail($id);
         abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN, 'Unauthorized to update this boost.');
 
         // Restrict updates if boost already finished
