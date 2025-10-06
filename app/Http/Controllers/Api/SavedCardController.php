@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 
 // app/Http/Controllers/Api/SavedCardController.php
@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SavedCardRequest;
+use App\Http\Requests\UpdateSavedCardRequest;
 use App\Http\Resources\SavedCardResource;
 use App\Models\SavedCard;
 use Exception;
@@ -14,12 +15,14 @@ use Illuminate\Support\Facades\Auth;
 
 class SavedCardController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         $cards = SavedCard::where('user_id', Auth::id())->get();
         return ResponseHelper::success(SavedCardResource::collection($cards));
     }
 
-    public function store(SavedCardRequest $request) {
+    public function store(SavedCardRequest $request)
+    {
         try {
             $user = Auth::user();
 
@@ -34,32 +37,68 @@ class SavedCardController extends Controller
                 'brand'        => $brand,
                 'expiry_month' => $request->expiry_month,
                 'expiry_year'  => $request->expiry_year,
-                'gateway_ref'  => 'tok_'.uniqid(), // dummy token for now
+                'gateway_ref'  => 'tok_' . uniqid(), // dummy token for now
             ]);
 
-            return ResponseHelper::success(new SavedCardResource($card),"Card saved");
+            return ResponseHelper::success(new SavedCardResource($card), "Card saved");
         } catch (Exception $e) {
-            return ResponseHelper::error("Failed to save card: ".$e->getMessage());
+            return ResponseHelper::error("Failed to save card: " . $e->getMessage());
         }
     }
 
-    public function setActive($id) {
+
+    public function setActive($id)
+    {
         $user = Auth::user();
-        SavedCard::where('user_id',$user->id)->update(['is_active'=>false]);
-        $card = SavedCard::where('user_id',$user->id)->findOrFail($id);
-        $card->update(['is_active'=>true]);
-        return ResponseHelper::success(new SavedCardResource($card),"Active card set");
+        SavedCard::where('user_id', $user->id)->update(['is_active' => false]);
+        $card = SavedCard::where('user_id', $user->id)->findOrFail($id);
+        $card->update(['is_active' => true]);
+        return ResponseHelper::success(new SavedCardResource($card), "Active card set");
+    }
+    public function update(UpdateSavedCardRequest $request, $id)
+    {
+        try {
+            $card = SavedCard::where('user_id', Auth::id())->findOrFail($id);
+
+            $data = $request->only([
+                'card_number',
+                'card_holder',
+                'expiry_month',
+                'expiry_year',
+                'cvv'
+            ]);
+
+            // If card number changed, regenerate token and last4
+            if (!empty($data['card_number']) && $data['card_number'] !== $card->card_number) {
+                $data['last4'] = substr($data['card_number'], -4);
+                $data['brand'] = 'MasterCard'; // later replace with detection logic
+                $data['gateway_ref'] = 'tok_' . uniqid();
+            }
+
+            $card->update($data);
+
+            return ResponseHelper::success(
+                new SavedCardResource($card),
+                "Card updated successfully"
+            );
+        } catch (Exception $e) {
+            return ResponseHelper::error("Failed to update card: " . $e->getMessage());
+        }
     }
 
-    public function toggleAutodebit($id) {
-        $card = SavedCard::where('user_id',Auth::id())->findOrFail($id);
-        $card->update(['is_autodebit'=>!$card->is_autodebit]);
-        return ResponseHelper::success(new SavedCardResource($card),"Autodebit updated");
+
+
+    public function toggleAutodebit($id)
+    {
+        $card = SavedCard::where('user_id', Auth::id())->findOrFail($id);
+        $card->update(['is_autodebit' => !$card->is_autodebit]);
+        return ResponseHelper::success(new SavedCardResource($card), "Autodebit updated");
     }
 
-    public function destroy($id) {
-        $card = SavedCard::where('user_id',Auth::id())->findOrFail($id);
+    public function destroy($id)
+    {
+        $card = SavedCard::where('user_id', Auth::id())->findOrFail($id);
         $card->delete();
-        return ResponseHelper::success(null,"Card deleted");
+        return ResponseHelper::success(null, "Card deleted");
     }
 }
