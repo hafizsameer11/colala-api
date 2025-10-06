@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BoostProductRequest;
+use App\Http\Requests\UpdateBoostProductRequest;
 use App\Http\Resources\BoostProductResource;
 use App\Models\BoostProduct;
 use App\Models\Product;
@@ -113,6 +114,44 @@ class BoostProductController extends Controller
         }
     }
 
+    public function update(UpdateBoostProductRequest $request, BoostProduct $boost)
+{
+    try {
+        $store = $this->userStore();
+        abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN, 'Unauthorized to update this boost.');
+
+        // Restrict updates if boost already finished
+        if (in_array($boost->status, ['completed', 'cancelled'])) {
+            return ResponseHelper::error("Cannot update a {$boost->status} boost.");
+        }
+
+        $validated = $request->validated();
+
+        // Recalculate totals only if budget or duration changed
+        if (isset($validated['budget']) || isset($validated['duration'])) {
+            $calc = $this->svc->computeTotals(
+                $validated['budget'] ?? $boost->daily_budget,
+                $validated['duration'] ?? $boost->duration
+            );
+
+            $validated['subtotal']        = $calc['subtotal'];
+            $validated['platform_fee']    = $calc['platform_fee'];
+            $validated['total_amount']    = $calc['total'];
+            $validated['estimated_reach'] = $calc['reach'];
+            $validated['estimated_clicks'] = $calc['est_clicks'];
+            $validated['estimated_cpc']   = $calc['est_cpc'];
+        }
+
+        $boost->update($validated);
+
+        return ResponseHelper::success(
+            new BoostProductResource($boost->fresh()),
+            "Boost updated successfully"
+        );
+    } catch (Exception $e) {
+        return ResponseHelper::error("Failed to update boost: " . $e->getMessage());
+    }
+}
     // PATCH /api/boosts/{boost}/status
     public function updateStatus(Request $request, BoostProduct $boost)
     {
