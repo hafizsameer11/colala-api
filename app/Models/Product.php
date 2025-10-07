@@ -21,7 +21,7 @@ class Product extends Model
         'discount',
         'loyality_points_applicable',
         'is_sold',
-        'is_unavailable'
+        'is_unavailable','quantity'
     ];
 
     public function store()
