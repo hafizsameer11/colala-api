@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderTracking;
 use App\Models\LoyaltyPoint;
 use App\Models\LoyaltySetting;
+use App\Models\Wallet;
 use App\Models\Store;
 use App\Models\StoreOrder;
 use Exception;
@@ -92,12 +93,20 @@ class SellerOrderController extends Controller
                 if (!$wasDelivered) {
                     $setting = LoyaltySetting::where('store_id', $storeOrder->store_id)->first();
                     if ($setting && $setting->enable_order_points && (int)$setting->points_per_order > 0) {
+                        $points = (int)$setting->points_per_order;
                         LoyaltyPoint::create([
                             'user_id'  => $storeOrder->order->user_id,
                             'store_id' => $storeOrder->store_id,
-                            'points'   => (int)$setting->points_per_order,
+                            'points'   => $points,
                             'source'   => 'order',
                         ]);
+
+                        // Update or create wallet loyalty points balance
+                        $wallet = Wallet::firstOrCreate(
+                            ['user_id' => $storeOrder->order->user_id],
+                            ['shopping_balance' => 0, 'reward_balance' => 0, 'loyality_points' => 0]
+                        );
+                        $wallet->increment('loyality_points', $points);
                     }
                 }
                 return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
