@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHelper;
+use App\Models\User;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 
@@ -41,7 +42,9 @@ class WalletController extends Controller
     {
         try {
             $wallet = $this->walletService->getBalance($req->user()->id);
+            $refferalCOunt=User::where('invite_code',$req->user()->user_code)->count();
             return ResponseHelper::success([
+                'no_of_referrals' => $refferalCOunt,
                 'user_code' => $req->user()->user_code,
                 'current_referral_balance' => (int)$wallet->referral_balance,
             ], 'Referral balance fetched successfully');
