@@ -40,6 +40,8 @@ public function getById(Request $req, $storeId)
             'productReviews.user',
             'productReviews.orderItem',
             'storeReveiews.user',
+            'announcements',
+            'banners',
             'followers.user' // to get follower count
         ])
         ->withSum([

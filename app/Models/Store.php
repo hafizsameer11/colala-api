@@ -134,6 +134,9 @@ public function getAverageRatingAttribute(): float
 public function banners(){
     return $this->hasMany(Banner::class);
 }
+public function announcements(){
+    return $this->hasMany(Announcement::class);
+}
     // public function storeAddress(){
     //     return $this->hasMany(StoreAddress::class);
     // }
