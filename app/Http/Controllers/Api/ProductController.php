@@ -99,4 +99,14 @@ class ProductController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function myproducts()
+    {
+        try {
+            return ResponseHelper::success($this->productService->myproducts());
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

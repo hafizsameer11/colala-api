@@ -56,9 +56,9 @@ class ServiceService
             ->where('service_category_id', $categoryId)
             ->get();
     }
-    public function getById(int $id)
+    public function getById($id)
     {
-        return Service::with('media','subServices','store')->findOrFail($id);
+        return Service::with('media','subServices','store')->findOrFail((int)$id);
     }
 
     public function update(int $id, array $data)

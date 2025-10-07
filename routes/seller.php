@@ -156,15 +156,15 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Seller Analytics
     Route::get('analytics', [SellerAnalyticsController::class, 'index']);
     
-    // Service Management
+    // Service Management - Specific routes first
+    Route::get('services/my-services', [ServiceController::class, 'myservices']);
     Route::post('services/{id}/mark-sold', [ServiceController::class, 'markAsSold']);
     Route::post('services/{id}/mark-unavailable', [ServiceController::class, 'markAsUnavailable']);
     Route::post('services/{id}/mark-available', [ServiceController::class, 'markAsAvailable']);
     
-    // Product Management
-    Route::post('products/{id}/mark-available', [ProductController::class, 'markAsAvailable']);
-    Route::get('service/my-services', [ServiceController::class, 'myservices']);
+    // Product Management - Specific routes first
     Route::get('products/my-products', [ProductController::class, 'myproducts']);
+    Route::post('products/{id}/mark-available', [ProductController::class, 'markAsAvailable']);
 
 
 });
