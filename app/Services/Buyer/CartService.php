@@ -156,7 +156,7 @@ class CartService
 
         $item->unit_discount_price = max(0, $unitPrice - $discountAmount);
         $item->discount = $discountAmount;
-        $item->coupon_code = $coupon->code ?? $data['coupon_code'];
+        // $item->coupon_code = $coupon->code ?? $data['coupon_code'];
         $item->save();
 
         return $item->fresh();
