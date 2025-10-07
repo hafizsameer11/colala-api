@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductCreateUpdateRequest;
 use App\Services\ProductService;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -104,6 +105,21 @@ class ProductController extends Controller
     {
         try {
             return ResponseHelper::success($this->productService->myproducts());
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    public function updateQuantity(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'quantity' => 'required|integer|min:0'
+            ]);
+
+            $product = $this->productService->updateQuantity($id, $request->quantity);
+            return ResponseHelper::success($product, 'Product quantity updated successfully');
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());

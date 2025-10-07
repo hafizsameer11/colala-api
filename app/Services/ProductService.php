@@ -242,4 +242,14 @@ class ProductService
         
         return $product->fresh();
     }
+
+    public function updateQuantity($id, $quantity)
+    {
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
+        $product->update(['quantity' => $quantity]);
+        
+        return $product->fresh();
+    }
 }

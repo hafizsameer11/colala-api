@@ -11,4 +11,5 @@ class OrderItem extends Model
     public function storeOrder(){ return $this->belongsTo(StoreOrder::class); }
     public function product(){ return $this->belongsTo(Product::class); }
     public function variant(){ return $this->belongsTo(ProductVariant::class,'variant_id'); }
+    public function escrows(){ return $this->hasMany(Escrow::class); }
 }

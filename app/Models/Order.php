@@ -12,6 +12,7 @@ class Order extends Model
     public function user(){ return $this->belongsTo(User::class); }
     public function storeOrders(){ return $this->hasMany(StoreOrder::class); }
     public function orderTracking(){ return $this->hasMany(OrderTracking::class); }
+    public function escrows(){ return $this->hasMany(Escrow::class); }
     // public function items(){
     //     return $this->hasMany(OrderItem::class);
     // }

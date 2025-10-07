@@ -15,4 +15,7 @@ class StoreOrder extends Model
     public function chat(){
         return $this->hasOne(Chat::class);
     }
+    public function escrows(){ 
+        return $this->hasManyThrough(Escrow::class, OrderItem::class, 'store_order_id', 'order_item_id');
+    }
 }

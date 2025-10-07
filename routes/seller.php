@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\SellerAnalyticsController;
 use App\Http\Controllers\Api\AddOnServiceController;
 use App\Http\Controllers\Api\AddOnServiceChatController;
 use App\Http\Controllers\Api\SellerLoyaltyController;
+use App\Http\Controllers\Api\SellerEscrowController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -165,6 +166,12 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Product Management - Specific routes first
     Route::get('products/my-products', [ProductController::class, 'myproducts']);
     Route::post('products/{id}/mark-available', [ProductController::class, 'markAsAvailable']);
+    Route::put('products/{id}/quantity', [ProductController::class, 'updateQuantity']);
+    
+    // Seller Escrow Management
+    Route::get('escrow', [SellerEscrowController::class, 'index']);
+    Route::get('escrow/history', [SellerEscrowController::class, 'history']);
+    Route::get('escrow/orders', [SellerEscrowController::class, 'orders']);
 
 
 });
