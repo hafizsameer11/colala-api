@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\ProductStatController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SavedCardController;
 use App\Http\Controllers\Api\SellerAnalyticsController;
+use App\Http\Controllers\Api\AddOnServiceController;
+use App\Http\Controllers\Api\AddOnServiceChatController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -133,6 +135,17 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('analytics', [SellerAnalyticsController::class, 'index']);
     Route::post('products/{id}/mark-sold', [ProductController::class, 'markAsSold']);
     Route::post('products/{id}/mark-unavailable', [ProductController::class, 'markAsUnavailable']);
+    
+    // Add-on Services
+    Route::get('add-on-services', [AddOnServiceController::class, 'index']);
+    Route::post('add-on-services', [AddOnServiceController::class, 'store']);
+    Route::get('add-on-services/{id}', [AddOnServiceController::class, 'show']);
+    Route::put('add-on-services/{id}/status', [AddOnServiceController::class, 'updateStatus']);
+    
+    // Add-on Service Chat
+    Route::get('add-on-services/{serviceId}/chat', [AddOnServiceChatController::class, 'getMessages']);
+    Route::post('add-on-services/{serviceId}/chat', [AddOnServiceChatController::class, 'sendMessage']);
+    Route::post('add-on-services/{serviceId}/chat/mark-read', [AddOnServiceChatController::class, 'markAsRead']);
 
 });
 
