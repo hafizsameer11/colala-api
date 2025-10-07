@@ -14,10 +14,17 @@ use Illuminate\Support\Facades\DB;
 class StoreController extends Controller
 {
     public function getAll(Request $req) {
-        // This is a placeholder implementation. Replace with actual logic to fetch stores.
         try{
-            $Stores=Store::latest()->get();
-            return ResponseHelper::success($Stores);
+            $stores = Store::withCount('followers')
+                ->withSum(['soldItems as total_sold' => function ($q) { $q; }], 'qty')
+                ->latest()
+                ->get();
+            // expose computed attributes if needed
+            $stores->each(function ($store) {
+                $store->qty_sold = (int)($store->total_sold ?? 0);
+                $store->followers_count = (int)($store->followers_count ?? 0);
+            });
+            return ResponseHelper::success($stores);
         }catch(\Exception $e){
             return ResponseHelper::error( $e->getMessage(), 500);
         }
