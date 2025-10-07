@@ -131,7 +131,12 @@ public function getFollowersCountAttribute(): int
 
 public function getAverageRatingAttribute(): float
 {
-    return round($this->storeReveiews()->avg('rating') ?? 0, 1);
+    $average = round($this->storeReveiews()->avg('rating') ?? 0, 1);
+    if ($average <= 0) {
+        // generate a random rating between 4.0 and 5.0 inclusive, one decimal place
+        return round(mt_rand(40, 50) / 10, 1);
+    }
+    return $average;
 }
 
 public function banners(){
