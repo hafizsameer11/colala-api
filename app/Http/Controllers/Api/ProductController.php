@@ -88,4 +88,15 @@ class ProductController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function markAsAvailable($id)
+    {
+        try {
+            $product = $this->productService->markAsAvailable($id);
+            return ResponseHelper::success($product, 'Product marked as available successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

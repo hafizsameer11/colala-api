@@ -115,4 +115,18 @@ class ServiceService
         
         return $service->fresh();
     }
+
+    public function markAsAvailable(int $id)
+    {
+        $user = Auth::user();
+        $store = Store::where('user_id', $user->id)->first();
+        
+        $service = Service::where('store_id', $store->id)->findOrFail($id);
+        $service->update([
+            'is_sold' => false, // Reset sold when marking as available
+            'is_unavailable' => false, // Reset unavailable when marking as available
+        ]);
+        
+        return $service->fresh();
+    }
 }

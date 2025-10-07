@@ -102,4 +102,15 @@ class ServiceController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function markAsAvailable($id)
+    {
+        try {
+            $service = $this->serviceService->markAsAvailable($id);
+            return ResponseHelper::success($service, 'Service marked as available successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

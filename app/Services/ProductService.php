@@ -212,4 +212,17 @@ class ProductService
         
         return $product->fresh();
     }
+
+    public function markAsAvailable($id)
+    {
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
+        $product->update([
+            'is_sold' => false, // Reset sold when marking as available
+            'is_unavailable' => false, // Reset unavailable when marking as available
+        ]);
+        
+        return $product->fresh();
+    }
 }

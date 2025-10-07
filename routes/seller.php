@@ -159,6 +159,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Service Management
     Route::post('services/{id}/mark-sold', [ServiceController::class, 'markAsSold']);
     Route::post('services/{id}/mark-unavailable', [ServiceController::class, 'markAsUnavailable']);
+    Route::post('services/{id}/mark-available', [ServiceController::class, 'markAsAvailable']);
+    
+    // Product Management
+    Route::post('products/{id}/mark-available', [ProductController::class, 'markAsAvailable']);
 
 });
 
