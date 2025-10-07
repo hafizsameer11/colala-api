@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\StoreController;
 use App\Http\Controllers\Api\StoreReviewController;
 use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\TransactionController;
+use App\Http\Controllers\Api\SellerLeaderboardController;
 use App\Http\Controllers\Buyer\ChatController;
 use App\Http\Controllers\Buyer\SavedItemController;
 use App\Http\Controllers\Buyer\StoreFollowController;
@@ -138,6 +139,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('addresses/{id}', [UserAddressController::class, 'update']);
         Route::delete('addresses/{id}', [UserAddressController::class, 'destroy']);
 
+        // Loyalty points summary for buyer
+
         //get wallet balance
         Route::get('getBalance', [WalletController::class, 'getBalance']);
         //chats
@@ -211,6 +214,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('user-reveiws', [ReviewController::class, 'list']);
     Route::get('my-points', [LoyaltyController::class, 'myPoints']);
 
+    // Seller leaderboard: points given to users (order-based)
+
     //edit profile 
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 
@@ -220,4 +225,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('notifications', [App\Http\Controllers\Api\NotificationController::class, 'getForUser']);
     Route::post('notifications/mark-as-read/{id}', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
     Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);
+    Route::get('leaderboard/sellers', [SellerLeaderboardController::class, 'index']);
+    Route::get('my-points', [LoyaltyController::class, 'myPoints']);
+
 });
