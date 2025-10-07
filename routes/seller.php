@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\SavedCardController;
 use App\Http\Controllers\Api\SellerAnalyticsController;
 use App\Http\Controllers\Api\AddOnServiceController;
 use App\Http\Controllers\Api\AddOnServiceChatController;
+use App\Http\Controllers\Api\SellerLoyaltyController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -146,6 +147,11 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('add-on-services/{serviceId}/chat', [AddOnServiceChatController::class, 'getMessages']);
     Route::post('add-on-services/{serviceId}/chat', [AddOnServiceChatController::class, 'sendMessage']);
     Route::post('add-on-services/{serviceId}/chat/mark-read', [AddOnServiceChatController::class, 'markAsRead']);
+    
+    // Seller Loyalty Management
+    Route::get('loyalty/customers', [SellerLoyaltyController::class, 'getCustomerPoints']);
+    Route::get('loyalty/settings', [SellerLoyaltyController::class, 'getLoyaltySettings']);
+    Route::post('loyalty/settings', [SellerLoyaltyController::class, 'updateLoyaltySettings']);
 
 });
 
