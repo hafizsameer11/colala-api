@@ -220,8 +220,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
 
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
+    Route::post('wallet/withdraw/referral', [WalletWithdrawalController::class, 'requestReferralWithdraw']);
     Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);
+    Route::post('wallet/transfer', [WalletController::class, 'transfer']);
     Route::get('notifications', [App\Http\Controllers\Api\NotificationController::class, 'getForUser']);
     Route::post('notifications/mark-as-read/{id}', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
     Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);

@@ -79,6 +79,63 @@ class WalletWithdrawalController extends Controller
     }
 
     /**
+     * Handle referral balance withdrawal request
+     */
+    public function requestReferralWithdraw(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'amount'         => 'required|numeric|min:1',
+            'bank_name'      => 'required|string',
+            'account_number' => 'required|string',
+            'account_name'   => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return ResponseHelper::error($validator->errors()->first(), 422);
+        }
+
+        $data = $validator->validated();
+
+        DB::beginTransaction();
+        try {
+            $user   = $request->user();
+            $wallet = $user->wallet()->lockForUpdate()->first();
+
+            if (!$wallet || $wallet->referral_balance < $data['amount']) {
+                return ResponseHelper::error('Insufficient referral balance.', 422);
+            }
+
+            $wallet->decrement('referral_balance', $data['amount']);
+
+            $txId = 'WD-REF-' . now()->format('YmdHis') . '-' . random_int(100000, 999999);
+            Transaction::create([
+                'tx_id'   => $txId,
+                'amount'  => $data['amount'],
+                'status'  => 'pending',
+                'type'    => 'withdrawal_referral',
+                'order_id'=> null,
+                'user_id' => $user->id,
+            ]);
+
+            WithdrawalRequest::create([
+                'user_id'       => $user->id,
+                'amount'        => $data['amount'],
+                'bank_name'     => $data['bank_name'],
+                'account_number'=> $data['account_number'],
+                'account_name'  => $data['account_name'],
+                'status'        => 'pending'
+            ]);
+
+            DB::commit();
+            return ResponseHelper::success(null, 'Referral withdrawal request submitted successfully.');
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    /**
      * Get current user's withdrawal requests
      */
     public function myWithdrawals(Request $request)

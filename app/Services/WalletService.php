@@ -37,4 +37,36 @@ class WalletService{
         ActivityHelper::log($user_id, "Wallet topped up by amount: $amount.");
         return $wallet;
     }
+
+    public function transferBalance(int $userId, string $from, string $to, int $amount){
+        $wallet = $this->getBalance($userId);
+        $map = [
+            'shopping' => 'shopping_balance',
+            'referral' => 'referral_balance',
+            'reward'   => 'reward_balance',
+        ];
+        $fromCol = $map[$from] ?? null;
+        $toCol   = $map[$to] ?? null;
+        if (!$fromCol || !$toCol) {
+            throw new \InvalidArgumentException('Invalid transfer type');
+        }
+        if ($wallet->$fromCol < $amount) {
+            throw new \RuntimeException('Insufficient balance for transfer');
+        }
+        $wallet->$fromCol -= $amount;
+        $wallet->$toCol   += $amount;
+        $wallet->save();
+
+        Transaction::create([
+            'tx_id'=>uniqid('tx_'),
+            'amount'=>$amount,
+            'status'=>'completed',
+            'type'=>"transfer_{$from}_to_{$to}",
+            'user_id'=>$userId,
+            'order_id'=>null
+        ]);
+
+        ActivityHelper::log($userId, "Transferred {$amount} from {$from} to {$to}.");
+        return $wallet;
+    }
 }
