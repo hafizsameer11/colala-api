@@ -54,15 +54,10 @@ class WalletController extends Controller
     {
         try {
             $req->validate([
-                'from'   => 'required|in:referral',
-                'to'     => 'required|in:shopping',
                 'amount' => 'required|numeric|min:1'
             ]);
-            // Only allow referral -> shopping transfers
-            if (!($req->from === 'referral' && $req->to === 'shopping')) {
-                return ResponseHelper::error('Only referral to shopping transfers are allowed.', 422);
-            }
-            $wallet = $this->walletService->transferBalance($req->user()->id, $req->from, $req->to, (int)$req->amount);
+            // Always transfer referral -> shopping for the auth user
+            $wallet = $this->walletService->transferReferralToShopping($req->user()->id, (int)$req->amount);
             return ResponseHelper::success($wallet, 'Transfer completed');
         } catch (\Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);

@@ -69,4 +69,26 @@ class WalletService{
         ActivityHelper::log($userId, "Transferred {$amount} from {$from} to {$to}.");
         return $wallet;
     }
+
+    public function transferReferralToShopping(int $userId, int $amount)
+    {
+        $wallet = $this->getBalance($userId);
+        if ($wallet->referral_balance < $amount) {
+            throw new \RuntimeException('Insufficient balance for transfer');
+        }
+        $wallet->referral_balance -= $amount;
+        $wallet->shopping_balance += $amount;
+        $wallet->save();
+
+        Transaction::create([
+            'tx_id'   => uniqid('tx_'),
+            'amount'  => $amount,
+            'status'  => 'completed',
+            'type'    => 'transfer_referral_to_shopping',
+            'user_id' => $userId,
+            'order_id'=> null,
+        ]);
+        ActivityHelper::log($userId, "Transferred {$amount} from referral to shopping.");
+        return $wallet;
+    }
 }
