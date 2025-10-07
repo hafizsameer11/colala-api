@@ -42,7 +42,7 @@ class WalletController extends Controller
     {
         try {
             $wallet = $this->walletService->getBalance($req->user()->id);
-            $refferalCOunt=User::where('invite_code',$req->user()->user_code)->count();
+            $refferalCOunt=User::where('referral_code',$req->user()->user_code)->count();
             return ResponseHelper::success([
                 'no_of_referrals' => $refferalCOunt,
                 'user_code' => $req->user()->user_code,
