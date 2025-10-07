@@ -6,6 +6,8 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderTracking;
+use App\Models\LoyaltyPoint;
+use App\Models\LoyaltySetting;
 use App\Models\Store;
 use App\Models\StoreOrder;
 use Exception;
@@ -81,9 +83,23 @@ class SellerOrderController extends Controller
             $code = $request->code;
             $orderTracking = OrderTracking::where('store_order_id', $orderId)->first();
             if ($orderTracking->delivery_code == $code) {
-                $storeOrder = StoreOrder::where('id', $orderId)->first();
+                $storeOrder = StoreOrder::with('order')->where('id', $orderId)->first();
+                $wasDelivered = $storeOrder && $storeOrder->status === 'delivered';
                 $storeOrder->update(['status' => 'delivered']);
                 $orderTracking->update(['status' => 'delivered']);
+
+                // Award loyalty points on first-time delivery confirmation
+                if (!$wasDelivered) {
+                    $setting = LoyaltySetting::where('store_id', $storeOrder->store_id)->first();
+                    if ($setting && $setting->enable_order_points && (int)$setting->points_per_order > 0) {
+                        LoyaltyPoint::create([
+                            'user_id'  => $storeOrder->order->user_id,
+                            'store_id' => $storeOrder->store_id,
+                            'points'   => (int)$setting->points_per_order,
+                            'source'   => 'order',
+                        ]);
+                    }
+                }
                 return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
             } else {
                 return ResponseHelper::error("Invalid code");
