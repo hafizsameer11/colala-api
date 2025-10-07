@@ -2,7 +2,7 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Cart, CartItem, Product, ProductVariant};
+use App\Models\{Cart, CartItem, Product, ProductVariant, Coupon};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -13,58 +13,58 @@ class CartService
         return Cart::firstOrCreate(['user_id' => $userId, 'checked_out' => false]);
     }
 
-   public function show(Cart $cart): array
-{
-    $cart->load(['items.product.images','items.variant','items.store']);
+    public function show(Cart $cart): array
+    {
+        $cart->load(['items.product.images', 'items.variant', 'items.store']);
 
-    $grouped = $cart->items->groupBy('store_id')->map(function ($items) {
-        $subtotal = 0;
+        $grouped = $cart->items->groupBy('store_id')->map(function ($items) {
+            $subtotal = 0;
 
-        $lines = $items->map(function ($i) use (&$subtotal) {
-            $basePrice = $i->variant?->price ?? $i->product->price;
-            $couponDiscountedPrice = $i->unit_discount_price
-                ?? $i->variant?->discount_price
-                ?? $i->product->discount_price
-                ?? $basePrice;
-            $pointsDiscount = $i->loyality_points ?? 0;
-            $finalUnitPrice = max(0, $couponDiscountedPrice - $pointsDiscount);
-            $lineTotal = $finalUnitPrice * $i->qty;
-            $subtotal += $lineTotal;
+            $lines = $items->map(function ($i) use (&$subtotal) {
+                $basePrice = $i->variant?->price ?? $i->product->price;
+                $couponDiscountedPrice = $i->unit_discount_price
+                    ?? $i->variant?->discount_price
+                    ?? $i->product->discount_price
+                    ?? $basePrice;
+                $pointsDiscount = $i->loyality_points ?? 0;
+                $finalUnitPrice = max(0, $couponDiscountedPrice - $pointsDiscount);
+                $lineTotal = $finalUnitPrice * $i->qty;
+                $subtotal += $lineTotal;
+
+                return [
+                    'id'               => $i->id,
+                    'product_id'       => $i->product_id,
+                    'variant_id'       => $i->variant_id,
+                    'name'             => $i->product->name,
+                    'img'              => $i->product->images->first()->image ?? null,
+                    'color'            => $i->variant->color ?? null,
+                    'size'             => $i->variant->size ?? null,
+                    'store_id'         => $i->store_id,
+                    'unit_price'       => $basePrice,
+                    'discount_price'   => $finalUnitPrice,
+                    'coupon_discount'  => $basePrice - $couponDiscountedPrice,
+                    'points_discount'  => $pointsDiscount,
+                    'qty'              => $i->qty,
+                    'line_total'       => $lineTotal,
+                    'product'          => $i->product,
+                    'variant'          => $i->variant,
+                    'store'            => $i->store,
+                ];
+            });
 
             return [
-                'id'               => $i->id,
-                'product_id'       => $i->product_id,
-                'variant_id'       => $i->variant_id,
-                'name'             => $i->product->name,
-                'img'              => $i->product->images->first()->image ?? null,
-                'color'            => $i->variant->color ?? null,
-                'size'             => $i->variant->size ?? null,
-                'store_id'         => $i->store_id,
-                'unit_price'       => $basePrice,
-                'discount_price'   => $finalUnitPrice,
-                'coupon_discount'  => $basePrice - $couponDiscountedPrice,
-                'points_discount'  => $pointsDiscount,
-                'qty'              => $i->qty,
-                'line_total'       => $lineTotal,
-                'product'          => $i->product,
-                'variant'          => $i->variant,
-                'store'            => $i->store,
+                'items'          => $lines->values(),
+                'items_subtotal' => $subtotal,
             ];
         });
 
+        $itemsTotal = $grouped->sum('items_subtotal');
+
         return [
-            'items'          => $lines->values(),
-            'items_subtotal' => $subtotal,
+            'stores'      => $grouped,
+            'items_total' => $itemsTotal,
         ];
-    });
-
-    $itemsTotal = $grouped->sum('items_subtotal');
-
-    return [
-        'stores'      => $grouped,
-        'items_total' => $itemsTotal,
-    ];
-}
+    }
 
 
 
@@ -127,14 +127,36 @@ class CartService
 
         $product = Product::findOrFail($data['product_id']);
 
-        if ($product->coupon_code !== $data['coupon_code']) {
-            throw ValidationException::withMessages(['coupon_code' => 'Invalid coupon code for this product.']);
+        // Find active coupon by code, optionally scoped to the product's store
+        $coupon = Coupon::active()
+            ->where('code', $data['coupon_code'])
+            ->when(isset($product->store_id), function ($q) use ($product) {
+                return $q->where(function ($qq) use ($product) {
+                    $qq->whereNull('store_id')->orWhere('store_id', $product->store_id);
+                });
+            })
+            ->first();
+
+        if (!$coupon) {
+            throw ValidationException::withMessages(['coupon_code' => 'Invalid or expired coupon code.']);
         }
 
-        // Assuming a fixed discount for simplicity; this could be more complex
-        $discountAmount = $product->discount;
-        $item->unit_discount_price = max(0, ($item->unit_price ?? $product->price) - $discountAmount);
+        $unitPrice = $item->unit_price ?? $item->variant?->price ?? $product->price;
+
+        // Compute discount amount from coupon settings
+        $discountAmount = 0;
+        if (in_array(strtolower($coupon->discount_type), ['percent', 'percentage'])) {
+            $discountAmount = (int) floor(($unitPrice * (float)$coupon->discount_value) / 100);
+        } else {
+            // fixed amount
+            $discountAmount = (int) $coupon->discount_value;
+        }
+
+        $discountAmount = max(0, min($discountAmount, $unitPrice));
+
+        $item->unit_discount_price = max(0, $unitPrice - $discountAmount);
         $item->discount = $discountAmount;
+        $item->coupon_code = $coupon->code ?? $data['coupon_code'];
         $item->save();
 
         return $item->fresh();
