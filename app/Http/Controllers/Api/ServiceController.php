@@ -80,4 +80,26 @@ class ServiceController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function markAsSold($id)
+    {
+        try {
+            $service = $this->serviceService->markAsSold($id);
+            return ResponseHelper::success($service, 'Service marked as sold successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    public function markAsUnavailable($id)
+    {
+        try {
+            $service = $this->serviceService->markAsUnavailable($id);
+            return ResponseHelper::success($service, 'Service marked as unavailable successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

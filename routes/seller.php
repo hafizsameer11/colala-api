@@ -155,6 +155,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     
     // Seller Analytics
     Route::get('analytics', [SellerAnalyticsController::class, 'index']);
+    
+    // Service Management
+    Route::post('services/{id}/mark-sold', [ServiceController::class, 'markAsSold']);
+    Route::post('services/{id}/mark-unavailable', [ServiceController::class, 'markAsUnavailable']);
 
 });
 

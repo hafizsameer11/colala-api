@@ -87,4 +87,32 @@ class ServiceService
     {
         return Service::findOrFail($id)->delete();
     }
+
+    public function markAsSold(int $id)
+    {
+        $user = Auth::user();
+        $store = Store::where('user_id', $user->id)->first();
+        
+        $service = Service::where('store_id', $store->id)->findOrFail($id);
+        $service->update([
+            'is_sold' => true,
+            'is_unavailable' => false, // Reset unavailable when marking as sold
+        ]);
+        
+        return $service->fresh();
+    }
+
+    public function markAsUnavailable(int $id)
+    {
+        $user = Auth::user();
+        $store = Store::where('user_id', $user->id)->first();
+        
+        $service = Service::where('store_id', $store->id)->findOrFail($id);
+        $service->update([
+            'is_unavailable' => true,
+            'is_sold' => false, // Reset sold when marking as unavailable
+        ]);
+        
+        return $service->fresh();
+    }
 }
