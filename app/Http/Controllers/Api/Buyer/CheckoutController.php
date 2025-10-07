@@ -54,9 +54,13 @@ class CheckoutController extends Controller
             $orderId = $data['order_id'];
             $txId    = $data['tx_id'];
 
-            $order = Order::find($orderId);
+            $order = Order::with('storeOrders.items')->find($orderId);
             if (!$order) {
                 return ResponseHelper::error('Order not found', 404);
+            }
+
+            if ($order->payment_status === 'paid') {
+                return ResponseHelper::error('Order is already paid', 400);
             }
 
             $order->payment_status = 'paid';
@@ -70,6 +74,19 @@ class CheckoutController extends Controller
                 'order_id' => $orderId,
                 'user_id' => $req->user()->id,
             ]);
+
+            // ✅ Lock escrow funds for each order item
+            foreach ($order->storeOrders as $storeOrder) {
+                foreach ($storeOrder->items as $item) {
+                    \App\Models\Escrow::create([
+                        'user_id'       => $req->user()->id,
+                        'order_id'      => $order->id,
+                        'order_item_id' => $item->id,
+                        'amount'        => $item->line_total,
+                        'status'        => 'locked',
+                    ]);
+                }
+            }
 
             return ResponseHelper::success(['message' => 'Payment confirmed successfully.']);
         } catch (\Exception $e) {
