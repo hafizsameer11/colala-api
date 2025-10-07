@@ -87,8 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/search', [SearchController::class, 'search']);
     
     // Camera Search
-    Route::post('/search/camera', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByImage']);
-    Route::post('/search/barcode', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByBarcode']);
+    
 
     Route::get('/posts', [PostController::class, 'index']);             // list posts
     Route::post('/posts', [PostController::class, 'store']);            // create post
@@ -236,4 +235,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Seller analytics
     Route::get('my-points', [LoyaltyController::class, 'myPoints']);
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
+    Route::post('/search/camera', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByImage']);
+    Route::post('/search/barcode', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByBarcode']);
 });
