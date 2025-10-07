@@ -229,6 +229,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('leaderboard/sellers', [SellerLeaderboardController::class, 'index']);
     Route::get('my-points', [LoyaltyController::class, 'myPoints']);
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
-
-
 });

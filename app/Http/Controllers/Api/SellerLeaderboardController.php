@@ -46,7 +46,17 @@ class SellerLeaderboardController extends Controller
                 ->get()
                 ->keyBy('id');
 
-            $build = function ($rows) use ($stores) {
+            // If no stores have points, include all stores with 0 points
+            if ($storeIds->isEmpty()) {
+                $allStores = Store::withCount('followers')->get();
+                $stores = $allStores->keyBy('id');
+                // Create empty results for all periods
+                foreach ($windows as $key => $_) {
+                    $results[$key] = collect();
+                }
+            }
+
+            $build = function ($rows) use ($stores, $storeIds) {
                 return $rows->map(function ($r) use ($stores) {
                     $store = $stores->get($r->store_id);
                     return [
@@ -59,6 +69,23 @@ class SellerLeaderboardController extends Controller
                     ];
                 })->values();
             };
+
+            // If no stores have points, show all stores with 0 points
+            if ($storeIds->isEmpty()) {
+                $allStores = Store::withCount('followers')->get();
+                $build = function ($_) use ($allStores) {
+                    return $allStores->map(function ($store) {
+                        return [
+                            'store_id' => $store->id,
+                            'store_name' => $store->store_name,
+                            'total_points' => 0,
+                            'followers_count' => (int) ($store->followers_count ?? 0),
+                            'average_rating' => $store->average_rating,
+                            'profile_image' => $store->profile_image,
+                        ];
+                    })->values();
+                };
+            }
 
             return ResponseHelper::success([
                 'today'   => $build($results['today']),
