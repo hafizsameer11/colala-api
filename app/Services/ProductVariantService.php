@@ -10,8 +10,8 @@ class ProductVariantService
 {
     public function create($productId, $data)
     {
-        $variant = Product::findOrFail($productId)
-            ->variants()->create($data);
+        $product = Product::findOrFail($productId);
+        $variant = $product->variants()->create($data);
 
         if (isset($data['images'])) {
             foreach ($data['images'] as $file) {
@@ -23,12 +23,16 @@ class ProductVariantService
                 ]);
             }
         }
+        
+        // Update product quantity after adding variant
+        $product->updateQuantityFromVariants();
 
         return $variant->load('images');
     }
 
     public function update($productId, $variantId, $data)
     {
+        $product = Product::findOrFail($productId);
         $variant = ProductVariant::where('product_id', $productId)->findOrFail($variantId);
         $variant->update($data);
 
@@ -42,13 +46,22 @@ class ProductVariantService
                 ]);
             }
         }
+        
+        // Update product quantity after updating variant
+        $product->updateQuantityFromVariants();
 
         return $variant->load('images');
     }
 
     public function delete($productId, $variantId)
     {
+        $product = Product::findOrFail($productId);
         $variant = ProductVariant::where('product_id', $productId)->findOrFail($variantId);
-        return $variant->delete();
+        $result = $variant->delete();
+        
+        // Update product quantity after deleting variant
+        $product->updateQuantityFromVariants();
+        
+        return $result;
     }
 }

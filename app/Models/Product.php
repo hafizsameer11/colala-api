@@ -21,7 +21,8 @@ class Product extends Model
         'discount',
         'loyality_points_applicable',
         'is_sold',
-        'is_unavailable','quantity'
+        'is_unavailable',
+        'quantity'
     ];
 
     public function store()
@@ -97,5 +98,15 @@ public function isBoosted(): bool
 }
 
 //now send the count of every type of product stat
+
+    /**
+     * Update product quantity based on variant stock totals
+     */
+    public function updateQuantityFromVariants()
+    {
+        $totalStock = $this->variants()->sum('stock');
+        $this->update(['quantity' => $totalStock]);
+        return $this;
+    }
     
 }

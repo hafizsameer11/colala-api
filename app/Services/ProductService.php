@@ -50,6 +50,9 @@ class ProductService
 
             /** Create main product */
             $product = Product::create($data);
+            
+            // Set initial quantity based on variants or default to 0
+            $initialQuantity = 0;
 
             /** Upload product-level images */
             if (!empty($data['images'])) {
@@ -76,6 +79,9 @@ class ProductService
                         'discount_price'  => $variantData['discount_price'] ?? null,
                         'stock'           => $variantData['stock'] ?? 0,
                     ]);
+                    
+                    // Add to total quantity
+                    $initialQuantity += $variantData['stock'] ?? 0;
 
                     // Upload variant images
                     if (!empty($variantData['images'])) {
@@ -90,6 +96,9 @@ class ProductService
                     }
                 }
             }
+            
+            // Update product quantity
+            $product->update(['quantity' => $initialQuantity]);
 
             return $product->load(['images', 'variants.images']);
         });
@@ -161,6 +170,9 @@ class ProductService
                     }
                 }
             }
+            
+            // Update product quantity after variant changes
+            $product->updateQuantityFromVariants();
 
             return $product->load(['images', 'variants.images']);
         });
