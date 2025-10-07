@@ -9,6 +9,8 @@ use App\Models\OrderTracking;
 use App\Models\LoyaltyPoint;
 use App\Models\LoyaltySetting;
 use App\Models\Wallet;
+use App\Models\User;
+use App\Models\StoreReferralEarning;
 use App\Models\Store;
 use App\Models\StoreOrder;
 use Exception;
@@ -104,9 +106,34 @@ class SellerOrderController extends Controller
                         // Update or create wallet loyalty points balance
                         $wallet = Wallet::firstOrCreate(
                             ['user_id' => $storeOrder->order->user_id],
-                            ['shopping_balance' => 0, 'reward_balance' => 0, 'loyality_points' => 0]
+                            ['shopping_balance' => 0, 'reward_balance' => 0, 'referral_balance' => 0, 'loyality_points' => 0]
                         );
                         $wallet->increment('loyality_points', $points);
+                    }
+
+                    // Referral bonus: if buyer was invited, award referrer
+                    $buyer = User::find($storeOrder->order->user_id);
+                    $inviteCode = $buyer?->invite_code;
+                    if ($inviteCode) {
+                        $referrer = User::where('user_code', $inviteCode)->first();
+                        if ($referrer && $setting && $setting->enable_referral_points && (int)$setting->points_per_referral > 0) {
+                            $refPoints = (int)$setting->points_per_referral;
+
+                            // Record store referral earning
+                            StoreReferralEarning::create([
+                                'user_id'  => $referrer->id,
+                                'store_id' => $storeOrder->store_id,
+                                'order_id' => $storeOrder->order_id,
+                                'amount'   => $refPoints,
+                            ]);
+
+                            // Update or create wallet referral balance (not loyalty)
+                            $refWallet = Wallet::firstOrCreate(
+                                ['user_id' => $referrer->id],
+                                ['shopping_balance' => 0, 'reward_balance' => 0, 'referral_balance' => 0, 'loyality_points' => 0]
+                            );
+                            $refWallet->increment('referral_balance', $refPoints);
+                        }
                     }
                 }
                 return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
