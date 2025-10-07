@@ -172,6 +172,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('escrow', [SellerEscrowController::class, 'index']);
     Route::get('escrow/history', [SellerEscrowController::class, 'history']);
     Route::get('escrow/orders', [SellerEscrowController::class, 'orders']);
+    
+    // Boost Product Management
+    Route::delete('boosts/{boost}', [BoostProductController::class, 'destroy']);
 
 
 });

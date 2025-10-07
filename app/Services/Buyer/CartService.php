@@ -2,6 +2,7 @@
 
 namespace App\Services\Buyer;
 
+use App\Helpers\ProductStatHelper;
 use App\Models\{Cart, CartItem, Product, ProductVariant, Coupon, LoyaltyPoint, Wallet};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -94,6 +95,9 @@ class CartService
             $item->unit_price = $variant?->price ?? $product->price;
             $item->unit_discount_price = $variant?->discount_price ?? $product->discount_price;
             $item->save();
+
+            // Record add_to_cart event
+            ProductStatHelper::record($product->id, 'add_to_cart');
 
             return $cart->fresh('items');
         });

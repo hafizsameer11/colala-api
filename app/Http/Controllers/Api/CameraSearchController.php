@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ProductStatHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
@@ -42,6 +43,13 @@ class CameraSearchController extends Controller
             // Search based on extracted text
             $results = $this->performSearch($extractedText, $type);
 
+            // Record impression for search results
+            if ($type === 'product' && $results->count() > 0) {
+                foreach ($results as $product) {
+                    ProductStatHelper::record($product->id, 'impression');
+                }
+            }
+
             return ResponseHelper::success([
                 'extracted_text' => $extractedText,
                 'search_results' => $results,
@@ -80,6 +88,13 @@ class CameraSearchController extends Controller
 
             // Search products by barcode
             $results = $this->searchByBarcodeNumber($barcode, $type);
+
+            // Record impression for barcode search results
+            if ($type === 'product' && $results->count() > 0) {
+                foreach ($results as $product) {
+                    ProductStatHelper::record($product->id, 'impression');
+                }
+            }
 
             return ResponseHelper::success([
                 'barcode' => $barcode,

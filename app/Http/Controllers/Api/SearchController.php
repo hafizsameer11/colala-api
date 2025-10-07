@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ProductStatHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Service;
@@ -46,6 +47,13 @@ class SearchController extends Controller
         }
 
         $results = $query->paginate(20);
+
+        // Record impression for search results
+        if ($type === 'product') {
+            foreach ($results->items() as $product) {
+                ProductStatHelper::record($product->id, 'impression');
+            }
+        }
 
         return response()->json([
             'status'  => true,

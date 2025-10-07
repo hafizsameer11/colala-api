@@ -195,4 +195,24 @@ class BoostProductController extends Controller
 
         return ResponseHelper::success($data, "data retrived succesfuly");
     }
+
+    // DELETE /api/boosts/{boost}
+    public function destroy(BoostProduct $boost)
+    {
+        try {
+            $store = $this->userStore();
+            abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN, 'Unauthorized to delete this boost.');
+
+            // Check if boost can be deleted (only allow deletion of certain statuses)
+            if (in_array($boost->status, ['running', 'paused'])) {
+                return ResponseHelper::error("Cannot delete a {$boost->status} boost. Please cancel it first.");
+            }
+
+            $boost->delete();
+
+            return ResponseHelper::success(null, "Boost deleted successfully");
+        } catch (Exception $e) {
+            return ResponseHelper::error("Failed to delete boost: " . $e->getMessage());
+        }
+    }
 }

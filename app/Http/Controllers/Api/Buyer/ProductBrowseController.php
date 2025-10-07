@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Buyer;
 
+use App\Helpers\ProductStatHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
@@ -59,6 +60,9 @@ public function productDetails($productId)
         if (!$product) {
             return ResponseHelper::error('Product not found', 404);
         }
+
+        // Record click/view event for product details
+        ProductStatHelper::record($product->id, 'view');
 
         $data = $product->toArray();
         //get the quantity of product from variants which have stock

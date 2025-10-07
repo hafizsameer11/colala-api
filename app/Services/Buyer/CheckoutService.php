@@ -2,6 +2,7 @@
 
 namespace App\Services\Buyer;
 
+use App\Helpers\ProductStatHelper;
 use App\Models\{Cart, Chat, Escrow, Order, StoreOrder, OrderItem, Wallet};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -129,6 +130,9 @@ class CheckoutService
                         'qty'            => $L['qty'],
                         'line_total'     => $L['line_total'],
                     ]);
+
+                    // Record order event for each product
+                    ProductStatHelper::record($L['product_id'], 'order');
                 }
 
                 Chat::firstOrCreate([

@@ -3,6 +3,7 @@
 
 namespace App\Services;
 
+use App\Helpers\ProductStatHelper;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
@@ -50,8 +51,15 @@ class ProductService
 
     public function getAllforBuyer()
     {
-        return Product::with(['variants.images', 'images', 'store'])
+        $products = Product::with(['variants.images', 'images', 'store'])
             ->get();
+
+        // Record impression for each product
+        foreach ($products as $product) {
+            ProductStatHelper::record($product->id, 'impression');
+        }
+
+        return $products;
     }
 
     public function create(array $data)

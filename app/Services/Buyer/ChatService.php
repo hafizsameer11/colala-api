@@ -2,6 +2,7 @@
 
 namespace App\Services\Buyer;
 
+use App\Helpers\ProductStatHelper;
 use App\Models\{Chat, ChatMessage, Store, StoreOrder};
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -92,13 +93,18 @@ class ChatService {
         }
 
         // Create a new service chat
-        return Chat::create([
+        $chat = Chat::create([
             'user_id' => $userId,
             'store_id' => $storeId,
             'service_id' => $serviceId,
             'type' => 'service',
             'store_order_id' => null,
         ]);
+
+        // Record chat event for the service
+        ProductStatHelper::record($serviceId, 'chat');
+
+        return $chat;
     }
     public function startChatWithCustomer(int $userId){
        //check if already exists without order
