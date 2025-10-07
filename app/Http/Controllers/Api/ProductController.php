@@ -66,4 +66,26 @@ class ProductController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+
+    public function markAsSold($id)
+    {
+        try {
+            $product = $this->productService->markAsSold($id);
+            return ResponseHelper::success($product, 'Product marked as sold successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    public function markAsUnavailable($id)
+    {
+        try {
+            $product = $this->productService->markAsUnavailable($id);
+            return ResponseHelper::success($product, 'Product marked as unavailable successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

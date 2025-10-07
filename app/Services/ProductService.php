@@ -174,4 +174,30 @@ class ProductService
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         return $product->delete();
     }
+
+    public function markAsSold($id)
+    {
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
+        $product->update([
+            'is_sold' => true,
+            'is_unavailable' => false, // Reset unavailable when marking as sold
+        ]);
+        
+        return $product->fresh();
+    }
+
+    public function markAsUnavailable($id)
+    {
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        
+        $product = Product::where('store_id', $storeId)->findOrFail($id);
+        $product->update([
+            'is_unavailable' => true,
+            'is_sold' => false, // Reset sold when marking as unavailable
+        ]);
+        
+        return $product->fresh();
+    }
 }

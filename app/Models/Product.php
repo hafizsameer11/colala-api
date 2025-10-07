@@ -19,7 +19,9 @@ class Product extends Model
         'status',
         'coupon_code',
         'discount',
-        'loyality_points_applicable'
+        'loyality_points_applicable',
+        'is_sold',
+        'is_unavailable'
     ];
 
     public function store()

@@ -68,6 +68,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('products/create', [ProductController::class, 'create']);
     Route::post('products/update/{id}', [ProductController::class, 'update']);
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
+  
     Route::post('products/{productId}/variants/create', [ProductVariantController::class, 'create']);
     Route::post('products/{productId}/variants/update/{variantId}', [ProductVariantController::class, 'update']);
     Route::delete('products/{productId}/variants/delete/{variantId}', [ProductVariantController::class, 'delete']);
@@ -130,6 +131,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('/store/builder', [StoreManagementController::class, 'builderUpsert']);
     Route::post('chats/start/{user_id}', [ChatController::class, 'startChatWithCustomer']);
     Route::get('analytics', [SellerAnalyticsController::class, 'index']);
+    Route::post('products/{id}/mark-sold', [ProductController::class, 'markAsSold']);
+    Route::post('products/{id}/mark-unavailable', [ProductController::class, 'markAsUnavailable']);
 
 });
 
