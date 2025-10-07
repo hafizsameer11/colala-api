@@ -30,6 +30,23 @@ class ProductService
             ->where('store_id', $storeId)
             ->get();
     }
+    public function myproducts()
+    {
+        
+        $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+
+        return Product::with(['variants.images', 'images'])
+            ->withCount([
+                'productStats as views' => fn($q) => $q->where('event_type', 'view'),
+                'productStats as impressions' => fn($q) => $q->where('event_type', 'impression'),
+                'productStats as clicks' => fn($q) => $q->where('event_type', 'click'),
+                'productStats as carts' => fn($q) => $q->where('event_type', 'add_to_cart'),
+                'productStats as orders' => fn($q) => $q->where('event_type', 'order'),
+                'productStats as chats' => fn($q) => $q->where('event_type', 'chat'),
+            ])
+            ->where('store_id', $storeId)
+            ->get();
+    }
 
     public function getAllforBuyer()
     {

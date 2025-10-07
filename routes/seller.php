@@ -164,6 +164,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Product Management
     Route::post('products/{id}/mark-available', [ProductController::class, 'markAsAvailable']);
     Route::get('service/my-services', [ServiceController::class, 'myservices']);
+    Route::get('products/my-products', [ProductController::class, 'myproducts']);
 
 
 });
