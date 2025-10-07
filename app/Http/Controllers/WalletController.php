@@ -35,4 +35,17 @@ class WalletController extends Controller
             return ResponseHelper::error($e->getMessage(),500);
         }
     }
+
+    public function refferalBalance(Request $req)
+    {
+        try {
+            $wallet = $this->walletService->getBalance($req->user()->id);
+            return ResponseHelper::success([
+                'user_code' => $req->user()->user_code,
+                'current_referral_balance' => (int)$wallet->referral_balance,
+            ], 'Referral balance fetched successfully');
+        } catch (\Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
 }

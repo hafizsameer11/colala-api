@@ -6,7 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
- use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -34,7 +34,7 @@ class User extends Authenticatable
         'role',
         'is_active',
         'password',
-    'role'
+        'role'
     ];
 
     /**
@@ -60,20 +60,29 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-   public function store() { return $this->hasOne(Store::class); }
-   public function wallet() { return $this->hasOne(Wallet::class); }
-   public function orders() { return $this->hasMany(Order::class); }
-    public function transactions() { return $this->hasMany(Transaction::class); }
+    public function store()
+    {
+        return $this->hasOne(Store::class);
+    }
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
     public function referrals()
-{
-    return $this->hasMany(Referral::class);
-}
+    {
+        return $this->hasMany(Referral::class);
+    }
 
-public function referralEarning()
-{
-    return $this->hasOne(ReferralEarning::class);
-}
-
-    
-
+    public function referralEarning()
+    {
+        return $this->hasOne(ReferralEarning::class);
+    }
 }

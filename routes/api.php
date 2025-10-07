@@ -219,4 +219,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);
     Route::get('notifications', [App\Http\Controllers\Api\NotificationController::class, 'getForUser']);
     Route::post('notifications/mark-as-read/{id}', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+    Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);
 });
