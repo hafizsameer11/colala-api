@@ -29,8 +29,17 @@ class ServiceController extends Controller
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
         }
-    }
 
+    }
+    // Route::get('service/my-services', [ServiceController::class, 'myservices']);
+public function myservices(){
+    try {
+        return ResponseHelper::success($this->serviceService->myservices());
+    } catch (Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage());
+    }
+}
     public function update(ServiceCreateUpdateRequest $request, $id)
     {
         try {

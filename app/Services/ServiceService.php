@@ -81,6 +81,20 @@ class ServiceService
         ])
         ->get();
 }
+    public function myservices()
+{
+    $user = Auth::user();
+    $store = Store::where('user_id', $user->id)->first();
+    return Service::with(['media','subServices'])->where('store_id', $store->id)
+        ->withCount([
+            'stats as views'       => fn($q) => $q->where('event_type', 'view'),
+            'stats as impressions' => fn($q) => $q->where('event_type', 'impression'),
+            'stats as clicks'      => fn($q) => $q->where('event_type', 'click'),
+            'stats as chats'       => fn($q) => $q->where('event_type', 'chat'),
+            'stats as phone_views' => fn($q) => $q->where('event_type', 'phone_view'),
+        ])
+        ->get();
+}
 
 
     public function delete(int $id)
