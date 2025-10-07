@@ -85,6 +85,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
     // routes/api.php
     Route::get('/search', [SearchController::class, 'search']);
+    
+    // Camera Search
+    Route::post('/search/camera', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByImage']);
+    Route::post('/search/barcode', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByBarcode']);
 
     Route::get('/posts', [PostController::class, 'index']);             // list posts
     Route::post('/posts', [PostController::class, 'store']);            // create post
