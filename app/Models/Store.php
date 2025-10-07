@@ -24,6 +24,9 @@ class Store extends Model
         'referral_code',
         'status'
     ];
+    protected $appends = [
+        'average_rating',
+    ];
 
     public function socialLinks()
     {
