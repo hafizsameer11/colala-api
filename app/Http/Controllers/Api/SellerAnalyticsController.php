@@ -64,13 +64,20 @@ class SellerAnalyticsController extends Controller
             $dayEnd = $current->copy()->endOfDay();
 
             // Get daily metrics
-            $impressions = ProductStat::where('store_id', $storeId)
+            $impressions = ProductStat::whereHas('product', function($query) use ($storeId) {
+                    $query->where('store_id', $storeId);
+                })
+                ->where('event_type', 'impression')
                 ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->sum('impressions') ?? 0;
+                ->count();
 
-            $visitors = ProductStat::where('store_id', $storeId)
+            $visitors = ProductStat::whereHas('product', function($query) use ($storeId) {
+                    $query->where('store_id', $storeId);
+                })
+                ->where('event_type', 'view')
                 ->whereBetween('created_at', [$dayStart, $dayEnd])
-                ->sum('visitors') ?? 0;
+                ->distinct('user_id')
+                ->count('user_id');
 
             $orders = StoreOrder::where('store_id', $storeId)
                 ->whereBetween('created_at', [$dayStart, $dayEnd])
@@ -210,13 +217,19 @@ class SellerAnalyticsController extends Controller
 
     private function getProductPerformance($storeId, $startDate, $endDate)
     {
-        $totalImpressions = ProductStat::where('store_id', $storeId)
+        $totalImpressions = ProductStat::whereHas('product', function($query) use ($storeId) {
+                $query->where('store_id', $storeId);
+            })
+            ->where('event_type', 'impression')
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('impressions') ?? 0;
+            ->count();
 
-        $totalClicks = ProductStat::where('store_id', $storeId)
+        $totalClicks = ProductStat::whereHas('product', function($query) use ($storeId) {
+                $query->where('store_id', $storeId);
+            })
+            ->where('event_type', 'click')
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('clicks') ?? 0;
+            ->count();
 
         $ordersPlaced = StoreOrder::where('store_id', $storeId)
             ->whereBetween('created_at', [$startDate, $endDate])

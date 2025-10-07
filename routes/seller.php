@@ -158,8 +158,4 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
-    Route::get('settings', [SellerLoyalty::class, 'settings']);
-    Route::post('settings', [SellerLoyalty::class, 'settings']); // update
-    Route::get('customers', [SellerLoyalty::class, 'customers']);
-});
+// Removed duplicate loyalty routes - using the ones in the main seller group above
