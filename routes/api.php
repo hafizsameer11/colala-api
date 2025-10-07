@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\StoreReviewController;
 use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\SellerLeaderboardController;
+use App\Http\Controllers\Api\SellerAnalyticsController;
 use App\Http\Controllers\Buyer\ChatController;
 use App\Http\Controllers\Buyer\SavedItemController;
 use App\Http\Controllers\Buyer\StoreFollowController;
@@ -227,6 +228,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('notifications/mark-as-read/{id}', [App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
     Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);
     Route::get('leaderboard/sellers', [SellerLeaderboardController::class, 'index']);
+    
+    // Seller analytics
     Route::get('my-points', [LoyaltyController::class, 'myPoints']);
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
 });

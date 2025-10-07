@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ProductDeliveryOptionController;
 use App\Http\Controllers\Api\ProductStatController;
 use App\Http\Controllers\Api\ProductVariantController;
 use App\Http\Controllers\Api\SavedCardController;
+use App\Http\Controllers\Api\SellerAnalyticsController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -128,6 +129,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // CREATE/UPDATE store + main address + categories (multipart/form-data)
     Route::post('/store/builder', [StoreManagementController::class, 'builderUpsert']);
     Route::post('chats/start/{user_id}', [ChatController::class, 'startChatWithCustomer']);
+    Route::get('analytics', [SellerAnalyticsController::class, 'index']);
+
 });
 
 Route::middleware('auth:sanctum')->prefix('seller/loyalty')->group(function () {
