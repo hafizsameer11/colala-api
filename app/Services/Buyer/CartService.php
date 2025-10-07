@@ -2,7 +2,7 @@
 
 namespace App\Services\Buyer;
 
-use App\Models\{Cart, CartItem, Product, ProductVariant, Coupon};
+use App\Models\{Cart, CartItem, Product, ProductVariant, Coupon, LoyaltyPoint, Wallet};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -175,8 +175,19 @@ class CartService
             ]);
         }
 
-        // Ensure points are numeric and not greater than item base price
+        // Ensure points are numeric
         $points = max(0, (int)$data['points']);
+
+        // Validate user has enough loyalty points for this store
+        $storeId = $item->store_id;
+        $earnedPointsForStore = (int) LoyaltyPoint::where('user_id', $userId)
+            ->where('store_id', $storeId)
+            ->sum('points');
+        if ($points > $earnedPointsForStore) {
+            throw ValidationException::withMessages([
+                'points' => 'Insufficient loyalty points for this store.'
+            ]);
+        }
 
         $unitPrice = $item->unit_price ?? $item->variant?->price ?? $item->product->price;
         if ($points > $unitPrice) {
@@ -191,10 +202,26 @@ class CartService
             ?? $item->product->discount_price
             ?? $unitPrice;
 
-        // Apply points once (not per quantity)
-        $item->loyality_points = $points;
-        $item->unit_discount_price = max(0, $baseDiscountPrice - $points);
+        // Cap points to not exceed the current discounted unit price
+        $pointsToApply = min($points, (int)$baseDiscountPrice);
+
+        // Ensure wallet has enough global loyalty points; create wallet if missing
+        $wallet = Wallet::firstOrCreate(
+            ['user_id' => $userId],
+            ['shopping_balance' => 0, 'reward_balance' => 0, 'referral_balance' => 0, 'loyality_points' => 0]
+        );
+        $availableWalletPoints = (int) $wallet->loyality_points;
+        $pointsToApply = min($pointsToApply, $availableWalletPoints);
+
+        // Apply points once (not per quantity); 1 point == 1 naira
+        $item->loyality_points = $pointsToApply;
+        $item->unit_discount_price = max(0, $baseDiscountPrice - $pointsToApply);
         $item->save();
+
+        // Deduct applied points from wallet balance
+        if ($pointsToApply > 0) {
+            $wallet->decrement('loyality_points', $pointsToApply);
+        }
 
         return $item->fresh();
     }
