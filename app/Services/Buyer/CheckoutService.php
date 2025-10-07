@@ -135,6 +135,7 @@ class CheckoutService
                     'store_order_id' => $so->id,
                     'user_id'        => $cart->user_id,
                     'store_id'       => $S['store_id'],
+                    'type'=>'order'
                 ]);
             }
 
