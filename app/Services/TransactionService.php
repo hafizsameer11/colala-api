@@ -20,7 +20,7 @@ public function getForUser($userId)
         ->orderBy('created_at', 'desc')
         ->get();
     $orderPayments = Transaction::where('user_id', $userId)
-        ->where('type', 'order_payment')
+        ->where('type', 'order_payment')->with('order')
         ->orderBy('created_at', 'desc')
         ->get();
         $wallet=Wallet::where('user_id',$userId)->first();
