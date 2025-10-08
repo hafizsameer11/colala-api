@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Services\StoreUserService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -22,9 +23,11 @@ class StoreUserController extends Controller
     /**
      * Get all users for a store
      */
-    public function index(Request $request, $storeId)
+    public function index(Request $request)
     {
         try {
+            $user=Auth::user();
+            $storeId=$user->store->id;
             $users = $this->storeUserService->getStoreUsers($storeId);
             return ResponseHelper::success($users, 'Store users retrieved successfully');
         } catch (Exception $e) {
@@ -36,7 +39,7 @@ class StoreUserController extends Controller
     /**
      * Invite a new user to the store
      */
-    public function invite(Request $request, $storeId)
+    public function invite(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -47,7 +50,8 @@ class StoreUserController extends Controller
                 'permissions' => 'nullable|array',
                 'permissions.*' => 'string',
             ]);
-
+            $user=Auth::user();
+            $storeId=$user->store->id;
             if ($validator->fails()) {
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
@@ -63,7 +67,7 @@ class StoreUserController extends Controller
     /**
      * Update user role and permissions
      */
-    public function update(Request $request, $storeId, $userId)
+    public function update(Request $request, $userId)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -73,6 +77,8 @@ class StoreUserController extends Controller
                 'is_active' => 'nullable|boolean',
             ]);
 
+            $user=Auth::user();
+            $storeId=$user->store->id;
             if ($validator->fails()) {
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
@@ -88,9 +94,11 @@ class StoreUserController extends Controller
     /**
      * Remove user from store
      */
-    public function remove(Request $request, $storeId, $userId)
+    public function remove(Request $request, $userId)
     {
         try {
+            $user=Auth::user();
+            $storeId=$user->store->id;
             $this->storeUserService->removeUser($storeId, $userId);
             return ResponseHelper::success(null, 'User removed from store successfully');
         } catch (Exception $e) {

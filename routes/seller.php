@@ -188,10 +188,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('products/bulk-upload/jobs/{uploadId}/results', [BulkProductUploadController::class, 'getJobResults']);
     
     // Store User Management
-    Route::get('stores/{storeId}/users', [StoreUserController::class, 'index']);
-    Route::post('stores/{storeId}/users/invite', [StoreUserController::class, 'invite']);
-    Route::put('stores/{storeId}/users/{userId}', [StoreUserController::class, 'update']);
-    Route::delete('stores/{storeId}/users/{userId}', [StoreUserController::class, 'remove']);
+    Route::get('stores/users', [StoreUserController::class, 'index']);
+    Route::post('stores/users/invite', [StoreUserController::class, 'invite']);
+    Route::put('stores/users/{userId}', [StoreUserController::class, 'update']);
+    Route::delete('stores/users/{userId}', [StoreUserController::class, 'remove']);
     Route::get('stores/users/roles', [StoreUserController::class, 'getRoles']);
 
 
