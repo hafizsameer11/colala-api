@@ -63,7 +63,7 @@ class User extends Authenticatable
     }
     public function store()
     {
-        return $this->belongsTo(Store::class);
+        return $this->hasOne(Store::class);
     }
     public function wallet()
     {
@@ -88,26 +88,62 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is a seller (has a store)
+     * Get user's store relationships
      */
-    public function isSeller(): bool
+    public function storeUsers()
     {
-        return !is_null($this->store_id);
+        return $this->hasMany(StoreUser::class);
     }
 
     /**
-     * Check if user owns a specific store
+     * Get stores where user is a member
      */
-    public function ownsStore(int $storeId): bool
+    public function stores()
     {
-        return $this->store_id === $storeId;
+        return $this->belongsToMany(Store::class, 'store_users')
+            ->withPivot(['role', 'permissions', 'is_active', 'joined_at'])
+            ->withTimestamps();
     }
 
     /**
-     * Get user's store ID
+     * Check if user has access to a store
      */
-    public function getStoreId(): ?int
+    public function hasStoreAccess(int $storeId): bool
     {
-        return $this->store_id;
+        return $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->whereNotNull('joined_at')
+            ->exists();
+    }
+
+    /**
+     * Get user's role in a specific store
+     */
+    public function getStoreRole(int $storeId): ?string
+    {
+        $storeUser = $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->first();
+
+        return $storeUser?->role;
+    }
+
+    /**
+     * Check if user has permission in a store
+     */
+    public function hasStorePermission(int $storeId, string $permission): bool
+    {
+        $storeUser = $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$storeUser) {
+            return false;
+        }
+
+        return $storeUser->hasPermission($permission);
     }
 }
