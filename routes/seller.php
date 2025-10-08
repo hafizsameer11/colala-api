@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\AddOnServiceController;
 use App\Http\Controllers\Api\AddOnServiceChatController;
 use App\Http\Controllers\Api\SellerLoyaltyController;
 use App\Http\Controllers\Api\SellerEscrowController;
+use App\Http\Controllers\Api\BulkProductUploadController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -175,6 +176,12 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     
     // Boost Product Management
     Route::delete('boosts/{boost}', [BoostProductController::class, 'destroy']);
+    
+    // Bulk Product Upload
+    Route::get('products/bulk-upload/template', [BulkProductUploadController::class, 'getTemplate']);
+    Route::get('products/bulk-upload/categories', [BulkProductUploadController::class, 'getCategories']);
+    Route::post('products/bulk-upload', [BulkProductUploadController::class, 'upload']);
+    Route::post('products/bulk-upload/file', [BulkProductUploadController::class, 'uploadFile']);
 
 
 });
