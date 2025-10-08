@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\AddOnServiceChatController;
 use App\Http\Controllers\Api\SellerLoyaltyController;
 use App\Http\Controllers\Api\SellerEscrowController;
 use App\Http\Controllers\Api\BulkProductUploadController;
+use App\Http\Controllers\Api\StoreUserController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -185,6 +186,13 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('products/bulk-upload/jobs', [BulkProductUploadController::class, 'getUserJobs']);
     Route::get('products/bulk-upload/jobs/{uploadId}/status', [BulkProductUploadController::class, 'getJobStatus']);
     Route::get('products/bulk-upload/jobs/{uploadId}/results', [BulkProductUploadController::class, 'getJobResults']);
+    
+    // Store User Management
+    Route::get('stores/{storeId}/users', [StoreUserController::class, 'index']);
+    Route::post('stores/{storeId}/users/invite', [StoreUserController::class, 'invite']);
+    Route::put('stores/{storeId}/users/{userId}', [StoreUserController::class, 'update']);
+    Route::delete('stores/{storeId}/users/{userId}', [StoreUserController::class, 'remove']);
+    Route::get('stores/users/roles', [StoreUserController::class, 'getRoles']);
 
 
 });

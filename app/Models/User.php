@@ -85,4 +85,64 @@ class User extends Authenticatable
     {
         return $this->hasOne(ReferralEarning::class);
     }
+
+    /**
+     * Get user's store relationships
+     */
+    public function storeUsers()
+    {
+        return $this->hasMany(StoreUser::class);
+    }
+
+    /**
+     * Get stores where user is a member
+     */
+    public function stores()
+    {
+        return $this->belongsToMany(Store::class, 'store_users')
+            ->withPivot(['role', 'permissions', 'is_active', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if user has access to a store
+     */
+    public function hasStoreAccess(int $storeId): bool
+    {
+        return $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->whereNotNull('joined_at')
+            ->exists();
+    }
+
+    /**
+     * Get user's role in a specific store
+     */
+    public function getStoreRole(int $storeId): ?string
+    {
+        $storeUser = $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->first();
+
+        return $storeUser?->role;
+    }
+
+    /**
+     * Check if user has permission in a store
+     */
+    public function hasStorePermission(int $storeId, string $permission): bool
+    {
+        $storeUser = $this->storeUsers()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$storeUser) {
+            return false;
+        }
+
+        return $storeUser->hasPermission($permission);
+    }
 }

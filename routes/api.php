@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\SellerLeaderboardController;
 use App\Http\Controllers\Api\SellerAnalyticsController;
+use App\Http\Controllers\Api\UserStoreController;
 use App\Http\Controllers\Buyer\ChatController;
 use App\Http\Controllers\Buyer\SavedItemController;
 use App\Http\Controllers\Buyer\StoreFollowController;
@@ -135,6 +136,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
         Route::get('store/{storeId}/delivery-addresses', [ProductBrowseController::class, 'storeDeliveryAddresses']);
+        
+        // User Store Access
+        Route::get('stores', [UserStoreController::class, 'index']);
+        Route::post('stores/{storeId}/join', [UserStoreController::class, 'join']);
+        Route::get('stores/{storeId}/permission', [UserStoreController::class, 'checkPermission']);
     });
     Route::prefix('buyer')->middleware('auth:sanctum')->group(function () {
         Route::get('addresses', [UserAddressController::class, 'index']);
