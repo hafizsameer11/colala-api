@@ -339,6 +339,7 @@ public function overview(Request $req)
             'theme_color'   => $store->theme_color,
             'profile_image' => $this->url($store->profile_image),
             'banner_image'  => $this->url($store->banner_image),
+            'announcements'=>$store->announcements,
             'permotaional_banners'=>$store->banners,
             'categories'    => $store->categories->map(fn($c)=>[
                                 'id'=>$c->id,'title'=>$c->title,'image_url'=>$this->url($c->image)
