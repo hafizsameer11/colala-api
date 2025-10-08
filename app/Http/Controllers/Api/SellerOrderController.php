@@ -52,7 +52,7 @@ class SellerOrderController extends Controller
     public function details($storeOrderId)
     {
         try {
-            $storeOrder = StoreOrder::with(['order', 'store', 'items.product.images', 'orderTracking','chat'])->where('id', $storeOrderId)->first();
+            $storeOrder = StoreOrder::with(['order', 'store', 'items.product.images', 'orderTracking','chat','order.deliveryAddress'])->where('id', $storeOrderId)->first();
             return ResponseHelper::success($storeOrder, "Store order retrieved successfully");
         } catch (Exception $e) {
             return ResponseHelper::error("Something went wrong: " . $e->getMessage());
