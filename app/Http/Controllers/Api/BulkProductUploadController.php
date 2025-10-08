@@ -34,7 +34,7 @@ class BulkProductUploadController extends Controller
     }
 
     /**
-     * Process bulk product upload
+     * Process bulk product upload (Queue-based)
      */
     public function upload(Request $request)
     {
@@ -50,7 +50,7 @@ class BulkProductUploadController extends Controller
 
             $results = $this->bulkUploadService->processBulkUpload($request->csv_data);
 
-            return ResponseHelper::success($results, 'Bulk upload processed successfully');
+            return ResponseHelper::success($results, 'Bulk upload job has been queued');
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -58,7 +58,7 @@ class BulkProductUploadController extends Controller
     }
 
     /**
-     * Upload CSV file and process
+     * Upload CSV file and process (Queue-based)
      */
     public function uploadFile(Request $request)
     {
@@ -76,7 +76,7 @@ class BulkProductUploadController extends Controller
             
             $results = $this->bulkUploadService->processBulkUpload($csvData);
 
-            return ResponseHelper::success($results, 'CSV file processed successfully');
+            return ResponseHelper::success($results, 'CSV file has been queued for processing');
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -120,6 +120,48 @@ class BulkProductUploadController extends Controller
         try {
             $categories = \App\Models\Category::select('id', 'title')->get();
             return ResponseHelper::success($categories, 'Categories retrieved successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get job status
+     */
+    public function getJobStatus(Request $request, $uploadId)
+    {
+        try {
+            $status = $this->bulkUploadService->getJobStatus($uploadId);
+            return ResponseHelper::success($status, 'Job status retrieved successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get all jobs for user
+     */
+    public function getUserJobs(Request $request)
+    {
+        try {
+            $jobs = $this->bulkUploadService->getUserJobs($request->user()->id);
+            return ResponseHelper::success($jobs, 'User jobs retrieved successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get job results
+     */
+    public function getJobResults(Request $request, $uploadId)
+    {
+        try {
+            $results = $this->bulkUploadService->getJobResults($uploadId);
+            return ResponseHelper::success($results, 'Job results retrieved successfully');
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);

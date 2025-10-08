@@ -182,6 +182,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('products/bulk-upload/categories', [BulkProductUploadController::class, 'getCategories']);
     Route::post('products/bulk-upload', [BulkProductUploadController::class, 'upload']);
     Route::post('products/bulk-upload/file', [BulkProductUploadController::class, 'uploadFile']);
+    Route::get('products/bulk-upload/jobs', [BulkProductUploadController::class, 'getUserJobs']);
+    Route::get('products/bulk-upload/jobs/{uploadId}/status', [BulkProductUploadController::class, 'getJobStatus']);
+    Route::get('products/bulk-upload/jobs/{uploadId}/results', [BulkProductUploadController::class, 'getJobResults']);
 
 
 });

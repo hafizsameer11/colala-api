@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Jobs\ProcessBulkProductUpload;
+use App\Models\BulkUploadJob;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
@@ -11,6 +13,7 @@ use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class BulkProductUploadService
@@ -23,18 +26,10 @@ class BulkProductUploadService
     }
 
     /**
-     * Process bulk product upload from CSV
+     * Process bulk product upload from CSV (Queue-based)
      */
     public function processBulkUpload(array $csvData): array
     {
-        $results = [
-            'success' => [],
-            'errors' => [],
-            'total_processed' => 0,
-            'success_count' => 0,
-            'error_count' => 0
-        ];
-
         $user = Auth::user();
         $store = Store::where('user_id', $user->id)->first();
         
@@ -42,37 +37,30 @@ class BulkProductUploadService
             throw new Exception('Store not found');
         }
 
-        foreach ($csvData as $index => $row) {
-            $results['total_processed']++;
-            
-            try {
-                // Validate row data
-                $this->validateRow($row, $index + 1);
-                
-                // Process the product
-                $product = $this->createProductFromRow($row, $store->id);
-                
-                $results['success'][] = [
-                    'row' => $index + 1,
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'message' => 'Product created successfully'
-                ];
-                
-                $results['success_count']++;
-                
-            } catch (Exception $e) {
-                $results['errors'][] = [
-                    'row' => $index + 1,
-                    'error' => $e->getMessage(),
-                    'data' => $row
-                ];
-                
-                $results['error_count']++;
-            }
-        }
+        // Generate unique upload ID
+        $uploadId = 'bulk_' . Str::random(32);
+        
+        // Create bulk upload job record
+        $bulkUploadJob = BulkUploadJob::create([
+            'upload_id' => $uploadId,
+            'user_id' => $user->id,
+            'status' => 'pending',
+            'csv_data' => $csvData,
+            'total_rows' => count($csvData),
+            'processed_rows' => 0,
+            'success_count' => 0,
+            'error_count' => 0,
+        ]);
 
-        return $results;
+        // Dispatch the job to queue
+        ProcessBulkProductUpload::dispatch($user->id, $csvData, $uploadId);
+
+        return [
+            'upload_id' => $uploadId,
+            'status' => 'pending',
+            'message' => 'Bulk upload job has been queued and will be processed in the background',
+            'total_rows' => count($csvData),
+        ];
     }
 
     /**
@@ -344,6 +332,83 @@ class BulkProductUploadService
                 'image_urls' => 'Comma-separated Google Drive image URLs (optional)',
                 'variants_data' => 'JSON string with variant data (optional)'
             ]
+        ];
+    }
+
+    /**
+     * Get bulk upload job status
+     */
+    public function getJobStatus(string $uploadId): array
+    {
+        $job = BulkUploadJob::where('upload_id', $uploadId)->first();
+        
+        if (!$job) {
+            throw new Exception('Bulk upload job not found');
+        }
+
+        return [
+            'upload_id' => $job->upload_id,
+            'status' => $job->status,
+            'progress_percentage' => $job->progress_percentage,
+            'total_rows' => $job->total_rows,
+            'processed_rows' => $job->processed_rows,
+            'success_count' => $job->success_count,
+            'error_count' => $job->error_count,
+            'started_at' => $job->started_at,
+            'completed_at' => $job->completed_at,
+            'error_message' => $job->error_message,
+            'results' => $job->results,
+        ];
+    }
+
+    /**
+     * Get all bulk upload jobs for user
+     */
+    public function getUserJobs(int $userId): array
+    {
+        $jobs = BulkUploadJob::where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $jobs->map(function ($job) {
+            return [
+                'upload_id' => $job->upload_id,
+                'status' => $job->status,
+                'progress_percentage' => $job->progress_percentage,
+                'total_rows' => $job->total_rows,
+                'processed_rows' => $job->processed_rows,
+                'success_count' => $job->success_count,
+                'error_count' => $job->error_count,
+                'started_at' => $job->started_at,
+                'completed_at' => $job->completed_at,
+                'created_at' => $job->created_at,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Get job results
+     */
+    public function getJobResults(string $uploadId): array
+    {
+        $job = BulkUploadJob::where('upload_id', $uploadId)->first();
+        
+        if (!$job) {
+            throw new Exception('Bulk upload job not found');
+        }
+
+        if (!$job->isCompleted()) {
+            throw new Exception('Job is not completed yet');
+        }
+
+        return [
+            'upload_id' => $job->upload_id,
+            'status' => $job->status,
+            'total_rows' => $job->total_rows,
+            'success_count' => $job->success_count,
+            'error_count' => $job->error_count,
+            'results' => $job->results,
+            'completed_at' => $job->completed_at,
         ];
     }
 }
