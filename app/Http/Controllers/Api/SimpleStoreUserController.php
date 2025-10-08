@@ -27,7 +27,7 @@ class SimpleStoreUserController extends Controller
     {
         try {
             $user = Auth::user();
-            $storeId = $user->store_id;
+            $storeId = $user->store->id;
             
             if (!$storeId) {
                 return ResponseHelper::error('User is not associated with any store', 403);
