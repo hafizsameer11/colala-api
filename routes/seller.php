@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\AddOnServiceChatController;
 use App\Http\Controllers\Api\SellerLoyaltyController;
 use App\Http\Controllers\Api\SellerEscrowController;
 use App\Http\Controllers\Api\BulkProductUploadController;
-use App\Http\Controllers\Api\StoreUserController;
+use App\Http\Controllers\Api\SimpleStoreUserController;
 use App\Http\Controllers\Api\SellerChatController;
 use App\Http\Controllers\Api\SellerOnboardingController;
 use App\Http\Controllers\Api\SellerOrderController;
@@ -188,11 +188,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('products/bulk-upload/jobs/{uploadId}/results', [BulkProductUploadController::class, 'getJobResults']);
     
     // Store User Management
-    Route::get('stores/users', [StoreUserController::class, 'index']);
-    Route::post('stores/users/invite', [StoreUserController::class, 'invite']);
-    Route::put('stores/users/{userId}', [StoreUserController::class, 'update']);
-    Route::delete('stores/users/{userId}', [StoreUserController::class, 'remove']);
-    Route::get('stores/users/roles', [StoreUserController::class, 'getRoles']);
+    Route::get('store/users', [SimpleStoreUserController::class, 'index']);
+    Route::post('store/users/add', [SimpleStoreUserController::class, 'addUser']);
+    Route::delete('store/users/{userId}', [SimpleStoreUserController::class, 'removeUser']);
 
 
 });

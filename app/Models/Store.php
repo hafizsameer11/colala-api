@@ -48,6 +48,14 @@ class Store extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get all users associated with this store
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'store_categories', 'store_id', 'category_id');

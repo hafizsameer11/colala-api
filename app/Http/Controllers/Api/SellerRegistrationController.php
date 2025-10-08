@@ -36,6 +36,9 @@ class SellerRegistrationController extends Controller
             'referral_code'  => $request->referral_code,
         ]);
 
+        // Assign store to user
+        $user->update(['store_id' => $store->id]);
+
         // ✅ Attach categories
         if ($request->has('categories') && is_array($request->categories)) {
             $store->categories()->sync($request->categories);

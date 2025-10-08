@@ -34,7 +34,8 @@ class User extends Authenticatable
         'role',
         'is_active',
         'password',
-        'role'
+        'role',
+        'store_id'
     ];
 
     /**
@@ -62,7 +63,7 @@ class User extends Authenticatable
     }
     public function store()
     {
-        return $this->hasOne(Store::class);
+        return $this->belongsTo(Store::class);
     }
     public function wallet()
     {
@@ -87,62 +88,26 @@ class User extends Authenticatable
     }
 
     /**
-     * Get user's store relationships
+     * Check if user is a seller (has a store)
      */
-    public function storeUsers()
+    public function isSeller(): bool
     {
-        return $this->hasMany(StoreUser::class);
+        return !is_null($this->store_id);
     }
 
     /**
-     * Get stores where user is a member
+     * Check if user owns a specific store
      */
-    public function stores()
+    public function ownsStore(int $storeId): bool
     {
-        return $this->belongsToMany(Store::class, 'store_users')
-            ->withPivot(['role', 'permissions', 'is_active', 'joined_at'])
-            ->withTimestamps();
+        return $this->store_id === $storeId;
     }
 
     /**
-     * Check if user has access to a store
+     * Get user's store ID
      */
-    public function hasStoreAccess(int $storeId): bool
+    public function getStoreId(): ?int
     {
-        return $this->storeUsers()
-            ->where('store_id', $storeId)
-            ->where('is_active', true)
-            ->whereNotNull('joined_at')
-            ->exists();
-    }
-
-    /**
-     * Get user's role in a specific store
-     */
-    public function getStoreRole(int $storeId): ?string
-    {
-        $storeUser = $this->storeUsers()
-            ->where('store_id', $storeId)
-            ->where('is_active', true)
-            ->first();
-
-        return $storeUser?->role;
-    }
-
-    /**
-     * Check if user has permission in a store
-     */
-    public function hasStorePermission(int $storeId, string $permission): bool
-    {
-        $storeUser = $this->storeUsers()
-            ->where('store_id', $storeId)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$storeUser) {
-            return false;
-        }
-
-        return $storeUser->hasPermission($permission);
+        return $this->store_id;
     }
 }
