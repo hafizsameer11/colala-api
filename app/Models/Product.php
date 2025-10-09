@@ -88,8 +88,12 @@ public function reviews() // ✅ correct spelling
 }
 public function getAverageRatingAttribute(): float
 {
-    return $this->reviews()->avg('rating');
+    $average = $this->reviews()->avg('rating');
+    
+    // If there are no reviews, return 0
+    return $average !== null ? (float) $average : 0.0;
 }
+
 public function boost()
 {
     return $this->hasOne(BoostProduct::class, 'product_id');
