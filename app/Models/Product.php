@@ -24,6 +24,9 @@ class Product extends Model
         'is_unavailable',
         'quantity'
     ];
+    protected $appends = [
+        'average_rating',
+    ];
 
     public function store()
     {
@@ -82,6 +85,10 @@ public function reviews() // ✅ correct spelling
         'id',                   // local key on products
         'id'                    // local key on order_items
     );
+}
+public function getAverageRatingAttribute(): float
+{
+    return $this->reviews()->avg('rating');
 }
 public function boost()
 {
