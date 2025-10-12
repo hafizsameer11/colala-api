@@ -320,7 +320,7 @@ class AdminDashboardController extends Controller
      */
     private function getLatestOrders(Request $request = null)
     {
-        $query = StoreOrder::with(['store.user', 'order.user', 'orderItems.product'])
+        $query = StoreOrder::with(['store.user', 'order.user', 'items.product'])
             ->latest();
 
         if ($request) {
@@ -345,7 +345,7 @@ class AdminDashboardController extends Controller
                 'id' => $storeOrder->id,
                 'store_name' => $storeOrder->store->store_name ?? 'Unknown Store',
                 'buyer_name' => $storeOrder->order->user->full_name ?? 'Unknown Buyer',
-                'product_name' => $storeOrder->orderItems->first()->product->name ?? 'Unknown Product',
+                'product_name' => $storeOrder->items->first()->product->name ?? 'Unknown Product',
                 'price' => number_format($storeOrder->total_amount, 2),
                 'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
                 'status' => $storeOrder->status,
@@ -359,7 +359,7 @@ class AdminDashboardController extends Controller
      */
     private function getFilteredOrders($status, $search)
     {
-        $query = StoreOrder::with(['store.user', 'order.user', 'orderItems.product']);
+        $query = StoreOrder::with(['store.user', 'order.user', 'items.product']);
 
         if ($status !== 'all') {
             $query->where('status', $status);
@@ -378,7 +378,7 @@ class AdminDashboardController extends Controller
                 'id' => $storeOrder->id,
                 'store_name' => $storeOrder->store->store_name ?? 'Unknown Store',
                 'buyer_name' => $storeOrder->order->user->full_name ?? 'Unknown Buyer',
-                'product_name' => $storeOrder->orderItems->first()->product->name ?? 'Unknown Product',
+                'product_name' => $storeOrder->items->first()->product->name ?? 'Unknown Product',
                 'price' => number_format($storeOrder->total_amount, 2),
                 'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
                 'status' => $storeOrder->status,
