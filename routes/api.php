@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\WalletWithdrawalController;
 // use App\Http\Controllers\Api\Buyer\LoyaltyController as BuyerLoyalty;
 
 require __DIR__ . '/seller.php';
+require __DIR__ . '/admin.php';
 
 Route::get('/optimize-app', function () {
     Artisan::call('optimize:clear'); // Clears cache, config, route, and view caches
