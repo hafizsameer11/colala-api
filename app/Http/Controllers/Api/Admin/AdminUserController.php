@@ -923,9 +923,9 @@ class AdminUserController extends Controller
                 'type' => ucfirst($transaction->type),
                 'status' => ucfirst($transaction->status),
                 'status_color' => $this->getTransactionStatusColor($transaction->status),
-                'channel' => $transaction->payment_method ?? 'Flutterwave',
-                'description' => $transaction->description ?? 'Transaction',
-                'reference' => $transaction->reference ?? $transaction->tx_id,
+                'channel' => 'Flutterwave', // Transaction model doesn't have payment_method field
+                'description' => 'Transaction', // Transaction model doesn't have description field
+                'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                 'time' => $transaction->created_at->format('F d, Y - h:i A'),
                 'date' => $transaction->created_at->format('d-m-Y'),
                 'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),

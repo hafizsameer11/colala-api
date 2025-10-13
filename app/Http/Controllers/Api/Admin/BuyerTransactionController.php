@@ -89,8 +89,8 @@ class BuyerTransactionController extends Controller
                     'type' => ucfirst($transaction->type),
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Unknown',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
+                    'payment_method' => 'Unknown', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                     'tx_date' => $transaction->created_at->format('d-m-Y/h:iA'),
                     'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),
                     'order' => $transaction->order ? [
@@ -194,8 +194,8 @@ class BuyerTransactionController extends Controller
                     'type' => ucfirst($transaction->type),
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Unknown',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
+                    'payment_method' => 'Unknown', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                     'tx_date' => $transaction->created_at->format('d-m-Y/h:iA'),
                     'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),
                     'order' => $transaction->order ? [
@@ -274,9 +274,9 @@ class BuyerTransactionController extends Controller
                     'type' => ucfirst($transaction->type),
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Unknown',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
-                    'description' => $transaction->description ?? 'Transaction',
+                    'payment_method' => 'Unknown', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
+                    'description' => 'Transaction', // Transaction model doesn't have description field
                     'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),
                     'updated_at' => $transaction->updated_at->format('d-m-Y H:i:s')
                 ],
@@ -307,12 +307,12 @@ class BuyerTransactionController extends Controller
                     'order_date' => $transaction->order->created_at->format('d-m-Y h:iA')
                 ] : null,
                 'payment_details' => [
-                    'method' => $transaction->payment_method ?? 'Unknown',
-                    'channel' => $transaction->payment_channel ?? 'Unknown',
-                    'gateway' => $transaction->gateway ?? 'Unknown',
-                    'gateway_reference' => $transaction->gateway_reference ?? null,
-                    'gateway_response' => $transaction->gateway_response ?? null,
-                    'fees' => $transaction->fees ?? 0,
+                    'method' => 'Unknown', // Transaction model doesn't have payment_method field
+                    'channel' => 'Unknown', // Transaction model doesn't have these fields
+                    'gateway' => 'Unknown',
+                    'gateway_reference' => null,
+                    'gateway_response' => null,
+                    'fees' => 0,
                     'net_amount' => $transaction->net_amount ?? $transaction->amount
                 ],
                 'timeline' => [
@@ -347,7 +347,7 @@ class BuyerTransactionController extends Controller
 
             $transaction->update([
                 'status' => $request->status,
-                'description' => $request->notes ? $transaction->description . ' | Admin Note: ' . $request->notes : $transaction->description
+                'description' => $request->notes ? 'Transaction | Admin Note: ' . $request->notes : 'Transaction' // Transaction model doesn't have description field
             ]);
 
             return ResponseHelper::success(null, 'Transaction status updated successfully');
@@ -402,10 +402,10 @@ class BuyerTransactionController extends Controller
                     'cancelled' => $query->where('status', 'cancelled')->count()
                 ],
                 'by_payment_method' => [
-                    'card' => $query->where('payment_method', 'card')->count(),
-                    'bank_transfer' => $query->where('payment_method', 'bank_transfer')->count(),
-                    'wallet' => $query->where('payment_method', 'wallet')->count(),
-                    'other' => $query->whereNotIn('payment_method', ['card', 'bank_transfer', 'wallet'])->count()
+                    'card' => 0, // Transaction model doesn't have payment_method field
+                    'bank_transfer' => 0,
+                    'wallet' => 0,
+                    'other' => 0
                 ]
             ];
 

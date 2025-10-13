@@ -79,8 +79,8 @@ class SellerTransactionController extends Controller
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
                     'status_icon' => $this->getTransactionStatusIcon($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Bank Transfer',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
+                    'payment_method' => 'Bank Transfer', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                     'channel' => $transaction->channel ?? 'Bank Transfer',
                     'tx_date' => $transaction->created_at->format('d-m-Y/h:iA'),
                     'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),
@@ -147,8 +147,8 @@ class SellerTransactionController extends Controller
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
                     'status_icon' => $this->getTransactionStatusIcon($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Bank Transfer',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
+                    'payment_method' => 'Bank Transfer', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                     'channel' => $transaction->channel ?? 'Bank Transfer',
                     'created_at' => $transaction->created_at->format('d-m-Y H:i:s'),
                     'updated_at' => $transaction->updated_at->format('d-m-Y H:i:s')

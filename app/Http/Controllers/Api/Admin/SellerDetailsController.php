@@ -287,8 +287,8 @@ class SellerDetailsController extends Controller
                     'type' => ucfirst($transaction->type),
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
-                    'payment_method' => $transaction->payment_method ?? 'Unknown',
-                    'reference' => $transaction->reference ?? $transaction->tx_id,
+                    'payment_method' => 'Unknown', // Transaction model doesn't have payment_method field
+                    'reference' => $transaction->tx_id, // Transaction model doesn't have reference field
                     'order' => $transaction->order ? [
                         'id' => $transaction->order->id,
                         'order_no' => $transaction->order->order_no
