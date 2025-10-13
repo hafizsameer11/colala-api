@@ -1171,10 +1171,10 @@ class AdminUserController extends Controller
                 \App\Models\Post::whereIn('id', $postIds)->delete();
                 $message = "Posts deleted successfully";
             } elseif ($action === 'approve') {
-                \App\Models\Post::whereIn('id', $postIds)->update(['is_approved' => true]);
+                \App\Models\Post::whereIn('id', $postIds)->update(['visibility' => 'public']);
                 $message = "Posts approved successfully";
             } else {
-                \App\Models\Post::whereIn('id', $postIds)->update(['is_approved' => false]);
+                \App\Models\Post::whereIn('id', $postIds)->update(['visibility' => 'private']);
                 $message = "Posts rejected successfully";
             }
 
