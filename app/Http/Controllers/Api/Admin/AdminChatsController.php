@@ -106,7 +106,7 @@ class AdminChatsController extends Controller
             $chat = Chat::with([
                 'store.user',
                 'messages.user',
-                'order'
+                'storeOrder.order'
             ])->findOrFail($chatId);
 
             $chatData = [
@@ -125,11 +125,12 @@ class AdminChatsController extends Controller
                     'seller_email' => $chat->store->user->email,
                     'store_location' => $chat->store->store_location,
                 ],
-                'order_info' => $chat->order ? [
-                    'order_id' => $chat->order->id,
-                    'order_no' => $chat->order->order_no,
-                    'grand_total' => $chat->order->grand_total,
-                    'payment_status' => $chat->order->payment_status,
+                'order_info' => $chat->storeOrder ? [
+                    'store_order_id' => $chat->storeOrder->id,
+                    'order_id' => $chat->storeOrder->order_id,
+                    'order_no' => $chat->storeOrder->order->order_no,
+                    'grand_total' => $chat->storeOrder->order->grand_total,
+                    'payment_status' => $chat->storeOrder->order->payment_status,
                 ] : null,
                 'messages' => $chat->messages->map(function ($message) {
                     return [

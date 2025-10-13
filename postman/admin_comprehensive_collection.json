@@ -1,0 +1,1927 @@
+{
+	"info": {
+		"name": "Colala Admin API - Comprehensive Collection",
+		"description": "Complete admin API collection with all endpoints, request bodies, form data, and parameters",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{admin_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "admin_token",
+			"value": "your_admin_bearer_token_here",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Dashboard & Overview",
+			"item": [
+				{
+					"name": "Get Dashboard Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "dashboard"]
+						}
+					}
+				},
+				{
+					"name": "Get Buyer Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/buyer-stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "buyer-stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Seller Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Site Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/site-stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "site-stats"]
+						}
+					}
+				},
+				{
+					"name": "Get Latest Chats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/latest-chats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "latest-chats"]
+						}
+					}
+				},
+				{
+					"name": "Get Latest Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/latest-orders?status=all&search=",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "latest-orders"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Filter by status: all, pending, processing, completed, etc."
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term for orders"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Filter Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders/filter?status=all&search=",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "filter"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Filter by status"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Bulk Action on Orders",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"order_ids\": [1, 2, 3],\n  \"action\": \"update_status\",\n  \"new_status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/bulk-action",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "bulk-action"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "User Management (Buyers)",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users?search=&role=buyer&status=all&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"],
+							"query": [
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search by name, email, or phone"
+								},
+								{
+									"key": "role",
+									"value": "buyer",
+									"description": "User role filter"
+								},
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Status filter: all, active, inactive"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "stats"]
+						}
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/search?search=john",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "search"],
+							"query": [
+								{
+									"key": "search",
+									"value": "john",
+									"description": "Search term (minimum 2 characters)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Bulk Action on Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_ids\": [1, 2, 3],\n  \"action\": \"activate\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/bulk-action",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "bulk-action"]
+						}
+					}
+				},
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/profile",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Get User Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/orders?status=all&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "orders"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Order status filter"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Chats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/chats?status=all&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "chats"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Chat status filter"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Transactions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/transactions?status=all&type=all&date=all&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "transactions"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Transaction status filter"
+								},
+								{
+									"key": "type",
+									"value": "all",
+									"description": "Transaction type filter"
+								},
+								{
+									"key": "date",
+									"value": "all",
+									"description": "Date filter: all, today, week, month"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Posts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/posts?type=all&date=all&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "posts"],
+							"query": [
+								{
+									"key": "type",
+									"value": "all",
+									"description": "Post type filter"
+								},
+								{
+									"key": "date",
+									"value": "all",
+									"description": "Date filter"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create New User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "full_name",
+									"value": "John Doe",
+									"type": "text",
+									"description": "User's full name"
+								},
+								{
+									"key": "user_name",
+									"value": "johndoe",
+									"type": "text",
+									"description": "Username"
+								},
+								{
+									"key": "email",
+									"value": "john@example.com",
+									"type": "text",
+									"description": "Email address"
+								},
+								{
+									"key": "phone",
+									"value": "+1234567890",
+									"type": "text",
+									"description": "Phone number"
+								},
+								{
+									"key": "password",
+									"value": "password123",
+									"type": "text",
+									"description": "Password (min 6 characters)"
+								},
+								{
+									"key": "country",
+									"value": "Nigeria",
+									"type": "text",
+									"description": "Country"
+								},
+								{
+									"key": "state",
+									"value": "Lagos",
+									"type": "text",
+									"description": "State"
+								},
+								{
+									"key": "role",
+									"value": "buyer",
+									"type": "text",
+									"description": "User role: buyer or seller"
+								},
+								{
+									"key": "referral_code",
+									"value": "REF123",
+									"type": "text",
+									"description": "Referral code (optional)"
+								},
+								{
+									"key": "profile_picture",
+									"type": "file",
+									"description": "Profile picture (image file)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "full_name",
+									"value": "John Doe Updated",
+									"type": "text",
+									"description": "Updated full name"
+								},
+								{
+									"key": "email",
+									"value": "john.updated@example.com",
+									"type": "text",
+									"description": "Updated email"
+								},
+								{
+									"key": "phone",
+									"value": "+1234567891",
+									"type": "text",
+									"description": "Updated phone"
+								},
+								{
+									"key": "password",
+									"value": "newpassword123",
+									"type": "text",
+									"description": "New password (optional)"
+								},
+								{
+									"key": "role",
+									"value": "buyer",
+									"type": "text",
+									"description": "User role"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"type": "text",
+									"description": "Active status"
+								},
+								{
+									"key": "country",
+									"value": "Nigeria",
+									"type": "text",
+									"description": "Country"
+								},
+								{
+									"key": "state",
+									"value": "Lagos",
+									"type": "text",
+									"description": "State"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Seller Creation (3-Level Onboarding)",
+			"item": [
+				{
+					"name": "Level 1 Complete (Basic + Media + Categories + Social)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "store_name",
+									"value": "My Store",
+									"type": "text",
+									"description": "Store name"
+								},
+								{
+									"key": "store_email",
+									"value": "store@example.com",
+									"type": "text",
+									"description": "Store email"
+								},
+								{
+									"key": "store_phone",
+									"value": "+1234567890",
+									"type": "text",
+									"description": "Store phone"
+								},
+								{
+									"key": "password",
+									"value": "password123",
+									"type": "text",
+									"description": "Password (min 8 characters)"
+								},
+								{
+									"key": "store_location",
+									"value": "Lagos, Nigeria",
+									"type": "text",
+									"description": "Store location"
+								},
+								{
+									"key": "referral_code",
+									"value": "REF123",
+									"type": "text",
+									"description": "Referral code (optional)"
+								},
+								{
+									"key": "profile_image",
+									"type": "file",
+									"description": "Store profile image (jpeg,png,jpg,gif, max 2MB)"
+								},
+								{
+									"key": "banner_image",
+									"type": "file",
+									"description": "Store banner image (jpeg,png,jpg,gif, max 2MB)"
+								},
+								{
+									"key": "show_phone_on_profile",
+									"value": "true",
+									"type": "text",
+									"description": "Show phone on profile"
+								},
+								{
+									"key": "categories",
+									"value": "[1, 2, 3]",
+									"type": "text",
+									"description": "Array of category IDs"
+								},
+								{
+									"key": "social_links",
+									"value": "[{\"type\":\"instagram\",\"url\":\"https://instagram.com/mystore\"},{\"type\":\"facebook\",\"url\":\"https://facebook.com/mystore\"}]",
+									"type": "text",
+									"description": "JSON array of social links"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/level1/complete",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "level1", "complete"]
+						}
+					}
+				},
+				{
+					"name": "Level 2 Complete (Business Details + Documents)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "store_id",
+									"value": "1",
+									"type": "text",
+									"description": "Store ID"
+								},
+								{
+									"key": "business_name",
+									"value": "My Business Ltd",
+									"type": "text",
+									"description": "Business name"
+								},
+								{
+									"key": "business_type",
+									"value": "Limited Liability Company",
+									"type": "text",
+									"description": "Business type"
+								},
+								{
+									"key": "nin_number",
+									"value": "12345678901",
+									"type": "text",
+									"description": "NIN number"
+								},
+								{
+									"key": "cac_number",
+									"value": "RC123456789",
+									"type": "text",
+									"description": "CAC number (optional)"
+								},
+								{
+									"key": "nin_document",
+									"type": "file",
+									"description": "NIN document (pdf,jpeg,png,jpg, max 5MB)"
+								},
+								{
+									"key": "cac_document",
+									"type": "file",
+									"description": "CAC document (pdf,jpeg,png,jpg, max 5MB)"
+								},
+								{
+									"key": "utility_bill",
+									"type": "file",
+									"description": "Utility bill (pdf,jpeg,png,jpg, max 5MB)"
+								},
+								{
+									"key": "store_video",
+									"type": "file",
+									"description": "Store video (mp4,avi,mov, max 10MB)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/level2/complete",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "level2", "complete"]
+						}
+					}
+				},
+				{
+					"name": "Level 3 Complete (Physical Store + Utility + Address + Delivery + Theme)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "store_id",
+									"value": "1",
+									"type": "text",
+									"description": "Store ID"
+								},
+								{
+									"key": "has_physical_store",
+									"value": "true",
+									"type": "text",
+									"description": "Has physical store"
+								},
+								{
+									"key": "store_video",
+									"type": "file",
+									"description": "Store video (mp4,avi,mov, max 10MB)"
+								},
+								{
+									"key": "utility_bill",
+									"type": "file",
+									"description": "Utility bill (pdf,jpeg,png,jpg, max 5MB)"
+								},
+								{
+									"key": "theme_color",
+									"value": "#FF5733",
+									"type": "text",
+									"description": "Theme color (hex format)"
+								},
+								{
+									"key": "addresses",
+									"value": "[{\"state\":\"Lagos\",\"local_government\":\"Ikeja\",\"full_address\":\"123 Main Street, Ikeja\",\"is_main\":true,\"opening_hours\":{}}]",
+									"type": "text",
+									"description": "JSON array of addresses"
+								},
+								{
+									"key": "delivery_pricing",
+									"value": "[{\"state\":\"Lagos\",\"local_government\":\"Ikeja\",\"variant\":\"Standard\",\"price\":500,\"is_free\":false}]",
+									"type": "text",
+									"description": "JSON array of delivery pricing"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/level3/complete",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "level3", "complete"]
+						}
+					}
+				},
+				{
+					"name": "Set Approval Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"store_id\": 1,\n  \"approval_status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/set-approval-status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "set-approval-status"]
+						}
+					}
+				},
+				{
+					"name": "Get Seller Progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/progress?store_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "progress"],
+							"query": [
+								{
+									"key": "store_id",
+									"value": "1",
+									"description": "Store ID"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Categories",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/create-seller/categories",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "create-seller", "categories"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Seller Product Management",
+			"item": [
+				{
+					"name": "Get Seller Products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1?status=all&category_id=&type=all&date_from=&date_to=&search=&page=1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Product status filter"
+								},
+								{
+									"key": "category_id",
+									"value": "",
+									"description": "Category ID filter"
+								},
+								{
+									"key": "type",
+									"value": "all",
+									"description": "Product type: all, general, sponsored"
+								},
+								{
+									"key": "date_from",
+									"value": "",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "date_to",
+									"value": "",
+									"description": "End date (YYYY-MM-DD)"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Product Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1/1/details",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1", "1", "details"]
+						}
+					}
+				},
+				{
+					"name": "Create Product for Seller",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Product Name",
+									"type": "text",
+									"description": "Product name"
+								},
+								{
+									"key": "category_id",
+									"value": "1",
+									"type": "text",
+									"description": "Category ID"
+								},
+								{
+									"key": "brand",
+									"value": "Brand Name",
+									"type": "text",
+									"description": "Product brand"
+								},
+								{
+									"key": "description",
+									"value": "Product description",
+									"type": "text",
+									"description": "Product description"
+								},
+								{
+									"key": "price",
+									"value": "1000",
+									"type": "text",
+									"description": "Product price"
+								},
+								{
+									"key": "discount_price",
+									"value": "800",
+									"type": "text",
+									"description": "Discount price (optional)"
+								},
+								{
+									"key": "has_variants",
+									"value": "false",
+									"type": "text",
+									"description": "Has variants (true/false)"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text",
+									"description": "Product status: draft, active, inactive"
+								},
+								{
+									"key": "video",
+									"type": "file",
+									"description": "Product video (optional)"
+								},
+								{
+									"key": "coupon_code",
+									"value": "SAVE10",
+									"type": "text",
+									"description": "Coupon code (optional)"
+								},
+								{
+									"key": "discount",
+									"value": "10%",
+									"type": "text",
+									"description": "Discount (optional)"
+								},
+								{
+									"key": "loyality_points_applicable",
+									"value": "true",
+									"type": "text",
+									"description": "Loyalty points applicable"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"description": "Product images (multiple files allowed)"
+								},
+								{
+									"key": "variants",
+									"value": "[{\"sku\":\"SKU001\",\"color\":\"Red\",\"size\":\"M\",\"price\":1000,\"discount_price\":800,\"stock\":10,\"images\":[]}]",
+									"type": "text",
+									"description": "JSON array of variants (if has_variants is true)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Updated Product Name",
+									"type": "text",
+									"description": "Updated product name"
+								},
+								{
+									"key": "description",
+									"value": "Updated description",
+									"type": "text",
+									"description": "Updated description"
+								},
+								{
+									"key": "price",
+									"value": "1200",
+									"type": "text",
+									"description": "Updated price"
+								},
+								{
+									"key": "discount_price",
+									"value": "1000",
+									"type": "text",
+									"description": "Updated discount price"
+								},
+								{
+									"key": "status",
+									"value": "active",
+									"type": "text",
+									"description": "Product status"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"description": "Additional product images"
+								},
+								{
+									"key": "variants",
+									"value": "[{\"id\":1,\"sku\":\"SKU001\",\"color\":\"Red\",\"size\":\"M\",\"price\":1200,\"discount_price\":1000,\"stock\":15}]",
+									"type": "text",
+									"description": "Updated variants JSON"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Product Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"active\",\n  \"is_sold\": false,\n  \"is_unavailable\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1/1/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1", "1", "status"]
+						}
+					}
+				},
+				{
+					"name": "Boost Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product_id\": 1,\n  \"location\": \"Lagos, Nigeria\",\n  \"duration\": 7,\n  \"budget\": 5000,\n  \"start_date\": \"2024-01-01\",\n  \"payment_method\": \"wallet\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1/1/boost",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1", "1", "boost"]
+						}
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-products/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-products", "1", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Seller Announcements & Banners",
+			"item": [
+				{
+					"name": "Get Seller Announcements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-announcements/1?per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-announcements", "1"],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Items per page"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Announcement",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "message",
+									"value": "New announcement message",
+									"type": "text",
+									"description": "Announcement message (max 200 characters)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-announcements/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-announcements", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Announcement",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "message",
+									"value": "Updated announcement message",
+									"type": "text",
+									"description": "Updated announcement message"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-announcements/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-announcements", "1", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Announcement",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-announcements/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-announcements", "1", "1"]
+						}
+					}
+				},
+				{
+					"name": "Get Seller Banners",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-banners/1?per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-banners", "1"],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Items per page"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Banner",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"description": "Banner image (jpg,jpeg,png, max 2MB)"
+								},
+								{
+									"key": "link",
+									"value": "https://example.com",
+									"type": "text",
+									"description": "Banner link (optional)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-banners/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-banners", "1"]
+						}
+					}
+				},
+				{
+					"name": "Update Banner",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"description": "Updated banner image (optional)"
+								},
+								{
+									"key": "link",
+									"value": "https://updated-example.com",
+									"type": "text",
+									"description": "Updated banner link"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/seller-banners/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-banners", "1", "1"]
+						}
+					}
+				},
+				{
+					"name": "Delete Banner",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/seller-banners/1/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "seller-banners", "1", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Order Management",
+			"item": [
+				{
+					"name": "Get All Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders?status=all&date_range=&search=&per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Order status filter"
+								},
+								{
+									"key": "date_range",
+									"value": "",
+									"description": "Date range: today, this_week, this_month"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Items per page"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Order Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/details",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "1", "details"]
+						}
+					}
+				},
+				{
+					"name": "Update Order Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"completed\",\n  \"notes\": \"Order completed successfully\",\n  \"delivery_code\": \"DEL123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "1", "status"]
+						}
+					}
+				},
+				{
+					"name": "Get Order Tracking",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders/1/tracking",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "1", "tracking"]
+						}
+					}
+				},
+				{
+					"name": "Bulk Action on Orders",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"update_status\",\n  \"order_ids\": [1, 2, 3],\n  \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/orders/bulk-action",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "bulk-action"]
+						}
+					}
+				},
+				{
+					"name": "Get Order Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/orders/statistics",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "orders", "statistics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Analytics & Reports",
+			"item": [
+				{
+					"name": "Get Analytics Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/analytics/dashboard?date_from=2024-01-01&date_to=2024-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "analytics", "dashboard"],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2024-01-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "date_to",
+									"value": "2024-12-31",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get User Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/analytics/users?date_from=2024-01-01&date_to=2024-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "analytics", "users"],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2024-01-01",
+									"description": "Start date"
+								},
+								{
+									"key": "date_to",
+									"value": "2024-12-31",
+									"description": "End date"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Revenue Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/analytics/revenue?date_from=2024-01-01&date_to=2024-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "analytics", "revenue"],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2024-01-01",
+									"description": "Start date"
+								},
+								{
+									"key": "date_to",
+									"value": "2024-12-31",
+									"description": "End date"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Product Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/analytics/products?date_from=2024-01-01&date_to=2024-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "analytics", "products"],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2024-01-01",
+									"description": "Start date"
+								},
+								{
+									"key": "date_to",
+									"value": "2024-12-31",
+									"description": "End date"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Support & Tickets",
+			"item": [
+				{
+					"name": "Get All Support Tickets",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets?status=all&priority=all&issue_type=all&date_range=&search=&per_page=20",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets"],
+							"query": [
+								{
+									"key": "status",
+									"value": "all",
+									"description": "Ticket status filter"
+								},
+								{
+									"key": "priority",
+									"value": "all",
+									"description": "Priority filter"
+								},
+								{
+									"key": "issue_type",
+									"value": "all",
+									"description": "Issue type filter"
+								},
+								{
+									"key": "date_range",
+									"value": "",
+									"description": "Date range filter"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search term"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Items per page"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Ticket Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1/details",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1", "details"]
+						}
+					}
+				},
+				{
+					"name": "Reply to Ticket",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Thank you for contacting us. We have received your request and will get back to you soon.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1/reply",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1", "reply"]
+						}
+					}
+				},
+				{
+					"name": "Update Ticket Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"resolved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1", "status"]
+						}
+					}
+				},
+				{
+					"name": "Resolve Ticket",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1/resolve",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1", "resolve"]
+						}
+					}
+				},
+				{
+					"name": "Close Ticket",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1/close",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1", "close"]
+						}
+					}
+				},
+				{
+					"name": "Delete Ticket",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/tickets/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "tickets", "1"]
+						}
+					}
+				},
+				{
+					"name": "Get Support Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/support/analytics?date_from=2024-01-01&date_to=2024-12-31",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "support", "analytics"],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2024-01-01",
+									"description": "Start date"
+								},
+								{
+									"key": "date_to",
+									"value": "2024-12-31",
+									"description": "End date"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
