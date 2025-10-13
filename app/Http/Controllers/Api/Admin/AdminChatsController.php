@@ -146,8 +146,8 @@ class AdminChatsController extends Controller
                 'chat_statistics' => [
                     'total_messages' => $chat->messages->count(),
                     'unread_messages' => $chat->messages->where('is_read', false)->count(),
-                    'user_messages' => $chat->messages->where('sender_type', 'user')->count(),
-                    'admin_messages' => $chat->messages->where('sender_type', 'admin')->count(),
+                    'user_messages' => $chat->messages->where('sender_type', 'buyer')->count(), // ChatMessage enum only allows 'buyer' or 'store'
+                    'admin_messages' => $chat->messages->where('sender_type', 'store')->count(), // Using 'store' for admin messages
                 ],
             ];
 
@@ -179,7 +179,7 @@ class AdminChatsController extends Controller
             ]);
 
             // Mark chat as unread if message is from user
-            if ($request->sender_type === 'user') {
+            if ($request->sender_type === 'buyer') { // ChatMessage enum only allows 'buyer' or 'store'
                 $chat->update(['is_read' => false]);
             }
 
@@ -293,8 +293,8 @@ class AdminChatsController extends Controller
             $messageStats = ChatMessage::selectRaw('
                 DATE(created_at) as date,
                 COUNT(*) as total_messages,
-                SUM(CASE WHEN sender_type = "user" THEN 1 ELSE 0 END) as user_messages,
-                SUM(CASE WHEN sender_type = "admin" THEN 1 ELSE 0 END) as admin_messages
+                SUM(CASE WHEN sender_type = "buyer" THEN 1 ELSE 0 END) as user_messages,
+                SUM(CASE WHEN sender_type = "store" THEN 1 ELSE 0 END) as admin_messages
             ')
             ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->groupBy('date')

@@ -1174,7 +1174,7 @@ class AdminUserController extends Controller
                 \App\Models\Post::whereIn('id', $postIds)->update(['visibility' => 'public']);
                 $message = "Posts approved successfully";
             } else {
-                \App\Models\Post::whereIn('id', $postIds)->update(['visibility' => 'private']);
+                \App\Models\Post::whereIn('id', $postIds)->update(['visibility' => 'followers']); // Post model enum only allows 'public' or 'followers'
                 $message = "Posts rejected successfully";
             }
 
