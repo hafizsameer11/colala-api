@@ -276,7 +276,19 @@ class AdminUserController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($orders, 'User orders retrieved successfully');
+            // Get order statistics for this user
+            $orderStats = $this->getUserOrderStats($user);
+
+            return ResponseHelper::success([
+                'orders' => $orders,
+                'statistics' => $orderStats,
+                'pagination' => [
+                    'current_page' => $orders->currentPage(),
+                    'last_page' => $orders->lastPage(),
+                    'per_page' => $orders->perPage(),
+                    'total' => $orders->total(),
+                ]
+            ], 'User orders retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -326,7 +338,17 @@ class AdminUserController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($orders, 'Filtered orders retrieved successfully');
+            // Get order statistics for this user
+            $orderStats = $this->getUserOrderStats($user);
+
+            return ResponseHelper::success([
+                'orders' => $orders,
+                'statistics' => $orderStats,
+                'filters' => [
+                    'status' => $status,
+                    'search' => $search
+                ]
+            ], 'Filtered orders retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -438,6 +460,64 @@ class AdminUserController extends Controller
         ];
 
         return $colors[$status] ?? 'gray';
+    }
+
+    /**
+     * Get user order statistics
+     */
+    private function getUserOrderStats($user)
+    {
+        $totalOrders = $user->orders()->count();
+        $pendingOrders = $user->orders()->whereHas('storeOrders', function ($q) {
+            $q->whereIn('status', ['pending', 'processing', 'shipped']);
+        })->count();
+        $completedOrders = $user->orders()->whereHas('storeOrders', function ($q) {
+            $q->where('status', 'delivered');
+        })->count();
+
+        // Calculate percentage increase from last month
+        $lastMonth = now()->subMonth();
+        $currentMonth = now();
+        
+        $lastMonthOrders = $user->orders()->whereBetween('created_at', [
+            $lastMonth->startOfMonth(),
+            $lastMonth->endOfMonth()
+        ])->count();
+        
+        $currentMonthOrders = $user->orders()->whereBetween('created_at', [
+            $currentMonth->startOfMonth(),
+            $currentMonth->endOfMonth()
+        ])->count();
+
+        $totalIncrease = $lastMonthOrders > 0 ? 
+            round((($currentMonthOrders - $lastMonthOrders) / $lastMonthOrders) * 100, 1) : 0;
+        
+        $pendingIncrease = 5; // Mock data for pending orders increase
+        $completedIncrease = 5; // Mock data for completed orders increase
+
+        return [
+            'total_orders' => [
+                'value' => $totalOrders,
+                'increase' => $totalIncrease,
+                'icon' => 'shopping-cart',
+                'color' => 'blue',
+                'label' => 'Total Orders'
+            ],
+            'pending_orders' => [
+                'value' => $pendingOrders,
+                'increase' => $pendingIncrease,
+                'icon' => 'clock',
+                'color' => 'yellow',
+                'label' => 'Pending Orders'
+            ],
+            'completed_orders' => [
+                'value' => $completedOrders,
+                'increase' => $completedIncrease,
+                'icon' => 'check-circle',
+                'color' => 'green',
+                'label' => 'Completed Orders'
+            ]
+        ];
     }
 
     /**
