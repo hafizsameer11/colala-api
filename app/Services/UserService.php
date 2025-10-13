@@ -29,7 +29,7 @@ class UserService
     public function login($data){
         $user=User::where('email', $data['email'])->first();
         if(!$user){
-            throw new \Exception('Email is not registered');
+            throw new \Exception('Email is not registered'.$data['email']);
         }
         //now match password
         if($user && Hash::check($data['password'], $user->password)){
