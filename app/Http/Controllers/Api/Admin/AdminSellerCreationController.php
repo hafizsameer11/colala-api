@@ -524,7 +524,7 @@ class AdminSellerCreationController extends Controller
                 'delivery_pricing' => 'nullable|array',
                 'delivery_pricing.*.state' => 'required_with:delivery_pricing|string|max:100',
                 'delivery_pricing.*.local_government' => 'required_with:delivery_pricing|string|max:100',
-                'delivery_pricing.*.variant' => 'required_with:delivery_pricing|string|max:50',
+                'delivery_pricing.*.variant' => 'required_with:delivery_pricing|string|max:50', // Will be mapped to enum values
                 'delivery_pricing.*.price' => 'required_with:delivery_pricing|numeric|min:0',
                 'delivery_pricing.*.is_free' => 'boolean'
             ]);
@@ -579,7 +579,7 @@ class AdminSellerCreationController extends Controller
                         'store_id' => $store->id,
                         'state' => $pricingData['state'],
                         'local_government' => $pricingData['local_government'],
-                        'variant' => $pricingData['variant'],
+                        'variant' => $this->mapDeliveryVariant($pricingData['variant']),
                         'price' => $pricingData['price'],
                         'is_free' => $pricingData['is_free'] ?? false
                     ]);
@@ -754,7 +754,7 @@ class AdminSellerCreationController extends Controller
                 'store_id' => 'required|exists:stores,id',
                 'state' => 'required|string|max:100',
                 'local_government' => 'required|string|max:100',
-                'variant' => 'required|string|max:50',
+                'variant' => 'required|string|max:50', // Will be mapped to enum values
                 'price' => 'required|numeric|min:0',
                 'is_free' => 'boolean'
             ]);
@@ -769,7 +769,7 @@ class AdminSellerCreationController extends Controller
                 'store_id' => $store->id,
                 'state' => $request->state,
                 'local_government' => $request->local_government,
-                'variant' => $request->variant,
+                'variant' => $this->mapDeliveryVariant($request->variant),
                 'price' => $request->price,
                 'is_free' => $request->boolean('is_free')
             ]);
@@ -1079,7 +1079,7 @@ class AdminSellerCreationController extends Controller
                         'id' => $pricing->id,
                         'state' => $pricing->state,
                         'local_government' => $pricing->local_government,
-                        'variant' => $pricing->variant,
+                        'variant' => $this->mapDeliveryVariant($pricing->variant),
                         'price' => $pricing->price,
                         'formatted_price' => 'N' . number_format($pricing->price, 0),
                         'is_free' => $pricing->is_free,
@@ -1104,7 +1104,7 @@ class AdminSellerCreationController extends Controller
                 'store_id' => 'required|exists:stores,id',
                 'state' => 'required|string|max:100',
                 'local_government' => 'required|string|max:100',
-                'variant' => 'required|string|max:50',
+                'variant' => 'required|string|max:50', // Will be mapped to enum values
                 'price' => 'required|numeric|min:0',
                 'is_free' => 'boolean'
             ]);
@@ -1119,7 +1119,7 @@ class AdminSellerCreationController extends Controller
             $pricing->update([
                 'state' => $request->state,
                 'local_government' => $request->local_government,
-                'variant' => $request->variant,
+                'variant' => $this->mapDeliveryVariant($request->variant),
                 'price' => $request->price,
                 'is_free' => $request->boolean('is_free')
             ]);
@@ -1129,7 +1129,7 @@ class AdminSellerCreationController extends Controller
                     'id' => $pricing->id,
                     'state' => $pricing->state,
                     'local_government' => $pricing->local_government,
-                    'variant' => $pricing->variant,
+                    'variant' => $this->mapDeliveryVariant($pricing->variant),
                     'price' => $pricing->price,
                     'formatted_price' => 'N' . number_format($pricing->price, 0),
                     'is_free' => $pricing->is_free,
@@ -1234,5 +1234,31 @@ class AdminSellerCreationController extends Controller
         ];
 
         return $mapping[$businessType] ?? 'BN'; // Default to BN if not found
+    }
+
+    /**
+     * Map delivery variant to database enum values
+     */
+    private function mapDeliveryVariant($variant)
+    {
+        $mapping = [
+            'light' => 'light',
+            'medium' => 'medium',
+            'heavy' => 'heavy',
+            'Light' => 'light',
+            'Medium' => 'medium',
+            'Heavy' => 'heavy',
+            'LIGHT' => 'light',
+            'MEDIUM' => 'medium',
+            'HEAVY' => 'heavy',
+            'small' => 'light',
+            'large' => 'heavy',
+            'standard' => 'medium',
+            'express' => 'light',
+            'regular' => 'medium',
+            'bulk' => 'heavy'
+        ];
+
+        return $mapping[$variant] ?? 'medium'; // Default to medium if not found
     }
 }
