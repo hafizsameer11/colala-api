@@ -310,7 +310,7 @@ class AdminSocialFeedController extends Controller
                 'top_posts' => $topPosts->map(function ($post) {
                     return [
                         'id' => $post->id,
-                        'content' => $post->content,
+                        'content' => $post->body,
                         'user_name' => $post->user->full_name,
                         'store_name' => $post->user->store->store_name ?? null,
                         'likes_count' => $post->likes_count,

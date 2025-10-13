@@ -329,7 +329,7 @@ class SellerDetailsController extends Controller
             $posts->getCollection()->transform(function ($post) {
                 return [
                     'id' => $post->id,
-                    'content' => $post->content,
+                    'content' => $post->body,
                     'media' => $post->media->map(function ($media) {
                         return [
                             'id' => $media->id,
@@ -447,12 +447,8 @@ class SellerDetailsController extends Controller
             $announcements->getCollection()->transform(function ($announcement) {
                 return [
                     'id' => $announcement->id,
-                    'title' => $announcement->title,
-                    'content' => $announcement->content,
-                    'type' => ucfirst($announcement->type),
-                    'is_active' => $announcement->is_active,
-                    'start_date' => $announcement->start_date ? $announcement->start_date->format('d-m-Y') : null,
-                    'end_date' => $announcement->end_date ? $announcement->end_date->format('d-m-Y') : null,
+                    'message' => $announcement->message,
+                    'impressions' => $announcement->impressions,
                     'created_at' => $announcement->created_at->format('d-m-Y H:i:s')
                 ];
             });

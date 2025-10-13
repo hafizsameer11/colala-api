@@ -118,7 +118,7 @@ class AdminStoreKYCController extends Controller
                     'location' => $store->store_location,
                     'kyc_status' => $store->kyc_status,
                     'onboarding_level' => $store->onboarding_level,
-                    'is_active' => $store->is_active,
+                    'status' => $store->status,
                     'created_at' => $store->created_at,
                     'updated_at' => $store->updated_at,
                 ],
@@ -135,7 +135,7 @@ class AdminStoreKYCController extends Controller
                     'categories' => $store->categories->map(function ($category) {
                         return [
                             'id' => $category->id,
-                            'name' => $category->name,
+                            'name' => $category->title,
                         ];
                     }),
                     'social_links' => $store->socialLinks->map(function ($link) {
@@ -164,19 +164,20 @@ class AdminStoreKYCController extends Controller
                     'addresses' => $store->addresses->map(function ($address) {
                         return [
                             'id' => $address->id,
-                            'name' => $address->name,
-                            'address' => $address->address,
-                            'phone' => $address->phone,
-                            'is_default' => $address->is_default,
+                            'full_address' => $address->full_address,
+                            'state' => $address->state,
+                            'local_government' => $address->local_government,
+                            'is_main' => $address->is_main,
                         ];
                     }),
                     'delivery_pricing' => $store->deliveryPricing->map(function ($pricing) {
                         return [
                             'id' => $pricing->id,
-                            'name' => $pricing->name,
+                            'state' => $pricing->state,
                             'price' => $pricing->price,
-                            'estimated_days' => $pricing->estimated_days,
-                            'is_default' => $pricing->is_default,
+                            'local_government' => $pricing->local_government,
+                            'variant' => $pricing->variant,
+                            'is_free' => $pricing->is_free,
                         ];
                     }),
                     'theme_color' => $store->theme_color,
@@ -404,7 +405,7 @@ class AdminStoreKYCController extends Controller
                 'owner_email' => $store->user->email,
                 'kyc_status' => $store->kyc_status,
                 'onboarding_level' => $store->onboarding_level,
-                'is_active' => $store->is_active,
+                'status' => $store->status,
                 'created_at' => $store->created_at,
                 'formatted_date' => $store->created_at->format('d-m-Y H:i A'),
                 'status_color' => $this->getKYCStatusColor($store->kyc_status),

@@ -597,7 +597,7 @@ class AdminUserController extends Controller
                 'messages' => function($query) {
                     $query->latest();
                 },
-                'order.storeOrders.items.product'
+                'storeOrder.order.storeOrders.items.product'
             ])->findOrFail($chatId);
 
             $chatDetails = [
@@ -616,12 +616,12 @@ class AdminUserController extends Controller
                     'phone' => $chat->user->phone,
                     'profile_image' => $chat->user->profile_picture ? asset('storage/' . $chat->user->profile_picture) : null
                 ],
-                'order' => $chat->order ? [
-                    'id' => $chat->order->id,
-                    'order_no' => $chat->order->order_no,
-                    'status' => $chat->order->storeOrders->first()->status ?? 'unknown',
-                    'total_amount' => number_format($chat->order->grand_total, 2),
-                    'items' => $chat->order->storeOrders->first() ? $chat->order->storeOrders->first()->items->map(function ($item) {
+                'order' => $chat->storeOrder ? [
+                    'id' => $chat->storeOrder->order->id,
+                    'order_no' => $chat->storeOrder->order->order_no,
+                    'status' => $chat->storeOrder->status ?? 'unknown',
+                    'total_amount' => number_format($chat->storeOrder->order->grand_total, 2),
+                    'items' => $chat->storeOrder->items->map(function ($item) {
                         return [
                             'id' => $item->id,
                             'product_name' => $item->product->name,
@@ -631,7 +631,7 @@ class AdminUserController extends Controller
                             'product_image' => $item->product->images->first() ? 
                                 asset('storage/' . $item->product->images->first()->path) : null
                         ];
-                    }) : []
+                    })
                 ] : null,
                 'messages' => $chat->messages->map(function ($message) {
                     return [
@@ -671,7 +671,7 @@ class AdminUserController extends Controller
             $message = \App\Models\ChatMessage::create([
                 'chat_id' => $chat->id,
                 'message' => $request->message,
-                'sender_type' => 'admin', // Admin sending message
+                'sender_type' => 'store', // Admin sending message (using store as admin)
                 'is_read' => false
             ]);
 
@@ -1023,8 +1023,8 @@ class AdminUserController extends Controller
                     'type' => $this->getPostActivityType($post),
                     'post' => [
                         'id' => $post->id,
-                        'content' => $post->content,
-                        'title' => $post->title,
+                        'content' => $post->body,
+                        'title' => 'Post', // Post model doesn't have title field
                         'media' => $post->media->map(function ($media) {
                             return [
                                 'id' => $media->id,
@@ -1127,8 +1127,8 @@ class AdminUserController extends Controller
                         'type' => $this->getPostActivityType($post),
                         'post' => [
                             'id' => $post->id,
-                            'content' => $post->content,
-                            'title' => $post->title,
+                            'content' => $post->body,
+                            'title' => 'Post', // Post model doesn't have title field
                             'media' => $post->media->map(function ($media) {
                                 return [
                                     'id' => $media->id,
@@ -1212,8 +1212,8 @@ class AdminUserController extends Controller
                     'time_ago' => $post->created_at->diffForHumans()
                 ],
                 'content' => [
-                    'title' => $post->title,
-                    'description' => $post->content,
+                    'title' => 'Post', // Post model doesn't have title field
+                    'description' => $post->body,
                     'media' => $post->media->map(function ($media) {
                         return [
                             'id' => $media->id,
@@ -1236,7 +1236,7 @@ class AdminUserController extends Controller
                             'name' => $comment->user->full_name,
                             'profile_image' => $comment->user->profile_picture ? asset('storage/' . $comment->user->profile_picture) : null
                         ],
-                        'content' => $comment->content,
+                        'content' => $comment->body,
                         'time_ago' => $comment->created_at->diffForHumans(),
                         'replies_count' => $comment->replies ? $comment->replies->count() : 0
                     ];
@@ -1292,7 +1292,7 @@ class AdminUserController extends Controller
                         'name' => $comment->user->full_name,
                         'profile_image' => $comment->user->profile_picture ? asset('storage/' . $comment->user->profile_picture) : null
                     ],
-                    'content' => $comment->content,
+                    'content' => $comment->body,
                     'time_ago' => $comment->created_at->diffForHumans(),
                     'created_at' => $comment->created_at->format('d-m-Y H:i:s')
                 ];

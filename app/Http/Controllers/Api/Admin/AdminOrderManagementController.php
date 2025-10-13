@@ -154,7 +154,7 @@ class AdminOrderManagementController extends Controller
                 ],
                 'delivery_info' => $storeOrder->deliveryPricing ? [
                     'delivery_pricing_id' => $storeOrder->deliveryPricing->id,
-                    'name' => $storeOrder->deliveryPricing->name,
+                    'state' => $storeOrder->deliveryPricing->state,
                     'price' => $storeOrder->deliveryPricing->price,
                     'estimated_days' => $storeOrder->deliveryPricing->estimated_days,
                 ] : null,

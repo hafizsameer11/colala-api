@@ -165,7 +165,7 @@ class AdminChatsController extends Controller
         try {
             $request->validate([
                 'message' => 'required|string|max:1000',
-                'sender_type' => 'required|in:admin,user',
+                'sender_type' => 'required|in:buyer,store',
             ]);
 
             $chat = Chat::findOrFail($chatId);
