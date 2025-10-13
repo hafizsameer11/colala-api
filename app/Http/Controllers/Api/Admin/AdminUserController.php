@@ -981,7 +981,7 @@ class AdminUserController extends Controller
                         $q->where('user_id', $id);
                     });
                 } elseif ($request->type === 'saved') {
-                    $query->whereHas('saves', function ($q) use ($id) {
+                    $query->whereHas('shares', function ($q) use ($id) {
                         $q->where('user_id', $id);
                     });
                 }
@@ -1007,7 +1007,7 @@ class AdminUserController extends Controller
                 });
             }
 
-            $posts = $query->with(['user', 'media', 'likes', 'comments', 'saves'])
+            $posts = $query->with(['user', 'media', 'likes', 'comments', 'shares'])
                 ->latest()
                 ->paginate(15);
 
@@ -1035,7 +1035,7 @@ class AdminUserController extends Controller
                         }),
                         'likes_count' => $post->likes->count(),
                         'comments_count' => $post->comments->count(),
-                        'shares_count' => $post->saves->count()
+                        'shares_count' => $post->shares->count()
                     ],
                     'date' => $post->created_at->format('d-m-Y / h:i A'),
                     'created_at' => $post->created_at->format('d-m-Y H:i:s')
@@ -1094,7 +1094,7 @@ class AdminUserController extends Controller
                         $q->where('user_id', $id);
                     });
                 } elseif ($type === 'saved') {
-                    $query->whereHas('saves', function ($q) use ($id) {
+                    $query->whereHas('shares', function ($q) use ($id) {
                         $q->where('user_id', $id);
                     });
                 }
@@ -1117,7 +1117,7 @@ class AdminUserController extends Controller
                 });
             }
 
-            $posts = $query->with(['user', 'media', 'likes', 'comments', 'saves'])
+            $posts = $query->with(['user', 'media', 'likes', 'comments', 'shares'])
                 ->latest()
                 ->get()
                 ->map(function ($post) {
@@ -1139,7 +1139,7 @@ class AdminUserController extends Controller
                             }),
                             'likes_count' => $post->likes->count(),
                             'comments_count' => $post->comments->count(),
-                            'shares_count' => $post->saves->count()
+                            'shares_count' => $post->shares->count()
                         ],
                         'date' => $post->created_at->format('d-m-Y / h:i A'),
                         'created_at' => $post->created_at->format('d-m-Y H:i:s')
@@ -1199,7 +1199,7 @@ class AdminUserController extends Controller
                 'comments' => function($query) {
                     $query->with('user')->latest();
                 },
-                'saves'
+                'shares'
             ])->findOrFail($postId);
 
             $postDetails = [
@@ -1226,7 +1226,7 @@ class AdminUserController extends Controller
                 'engagement' => [
                     'likes' => $post->likes->count(),
                     'comments' => $post->comments->count(),
-                    'shares' => $post->saves->count()
+                    'shares' => $post->shares->count()
                 ],
                 'comments' => $post->comments->map(function ($comment) {
                     return [
