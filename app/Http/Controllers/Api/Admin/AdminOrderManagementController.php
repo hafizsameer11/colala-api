@@ -140,8 +140,8 @@ class AdminOrderManagementController extends Controller
                         'product_images' => $item->product->images->map(function ($image) {
                             return [
                                 'id' => $image->id,
-                                'url' => asset('storage/' . $image->image_path),
-                                'is_primary' => $image->is_primary,
+                                'url' => asset('storage/' . $image->path),
+                                'is_main' => $image->is_main,
                             ];
                         }),
                     ];

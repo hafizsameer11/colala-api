@@ -403,7 +403,7 @@ class SellerDetailsController extends Controller
                         return [
                             'id' => $image->id,
                             'url' => asset('storage/' . $image->url),
-                            'is_primary' => $image->is_primary
+                            'is_main' => $image->is_main
                         ];
                     }),
                     'variants_count' => $product->variants->count(),

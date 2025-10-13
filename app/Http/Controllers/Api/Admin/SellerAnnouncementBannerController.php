@@ -272,7 +272,7 @@ class SellerAnnouncementBannerController extends Controller
             if ($request->hasFile('image')) {
                 // Delete old image if exists
                 if ($banner->image_path && Storage::disk('public')->exists($banner->image_path)) {
-                    Storage::disk('public')->delete($banner->image_path);
+                    Storage::disk('public')->delete($banner->image_path); // keep as model uses image_path
                 }
                 
                 $path = $request->file('image')->store('banners', 'public');

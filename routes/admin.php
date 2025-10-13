@@ -656,4 +656,22 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::delete('/support/tickets/{ticketId}', [AdminSupportController::class, 'deleteTicket']);
     // Get support analytics and trends
     Route::get('/support/analytics', [AdminSupportController::class, 'getSupportAnalytics']);
+
+    // ========================================
+    // RATINGS & REVIEWS MODULE
+    // ========================================
+    // Summary cards: totals and averages
+    Route::get('/ratings-reviews/summary', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'summary']);
+    // List product reviews with filters and pagination
+    Route::get('/ratings-reviews/products', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'listProductReviews']);
+    // Product review details
+    Route::get('/ratings-reviews/products/{reviewId}/details', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'productReviewDetails']);
+    // Delete product review
+    Route::delete('/ratings-reviews/products/{reviewId}', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'deleteProductReview']);
+    // List store reviews with filters and pagination
+    Route::get('/ratings-reviews/stores', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'listStoreReviews']);
+    // Store review details
+    Route::get('/ratings-reviews/stores/{reviewId}/details', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'storeReviewDetails']);
+    // Delete store review
+    Route::delete('/ratings-reviews/stores/{reviewId}', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'deleteStoreReview']);
 });

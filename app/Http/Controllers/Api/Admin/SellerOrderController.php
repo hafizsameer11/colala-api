@@ -211,7 +211,7 @@ class SellerOrderController extends Controller
                             return [
                                 'id' => $image->id,
                                 'url' => asset('storage/' . $image->url),
-                                'is_primary' => $image->is_primary
+                                'is_main' => $image->is_main
                             ];
                         }),
                         'product_variants' => $item->product->variants->map(function ($variant) {

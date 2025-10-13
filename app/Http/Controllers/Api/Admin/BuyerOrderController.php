@@ -321,7 +321,7 @@ class BuyerOrderController extends Controller
                                 return [
                                     'id' => $image->id,
                                     'path' => asset('storage/' . $image->path),
-                                    'is_primary' => $image->is_primary
+                                    'is_main' => $image->is_main
                                 ];
                             })
                         ],
