@@ -150,4 +150,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(UserActivity::class);
     }
+    public function chats()
+    {
+        return $this->hasMany(Chat::class);
+    }
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
 }
