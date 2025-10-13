@@ -4,12 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships; // ✅ add this
 
 
 class Store extends Model
 {
     //
+    use SoftDeletes;
+
     use HasRelationships; // ✅ very important
     protected $fillable = [
         'user_id',
