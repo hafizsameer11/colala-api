@@ -1,0 +1,3131 @@
+{
+  "info": {
+    "name": "Colala Admin API - Complete Collection",
+    "description": "Complete admin API collection for Colala Mall management system",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "your_admin_token_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Buyer Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Site Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/site-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "site-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Latest Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/latest-chats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "latest-chats"]
+            }
+          }
+        },
+        {
+          "name": "Get Latest Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/latest-orders",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "latest-orders"]
+            }
+          }
+        },
+        {
+          "name": "Filter Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders/filter?status=all&type=all&date=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "filter"],
+              "query": [
+                {"key": "status", "value": "all"},
+                {"key": "type", "value": "all"},
+                {"key": "date", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"order_ids\": [1, 2, 3],\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/orders/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "bulk-action"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management (Buyers)",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/search?q=john&role=buyer",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "search"],
+              "query": [
+                {"key": "q", "value": "john"},
+                {"key": "role", "value": "buyer"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"activate\",\n  \"user_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"07012345678\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"role\": \"buyer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Smith\",\n  \"email\": \"johnsmith@example.com\",\n  \"phone\": \"07012345679\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get User Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/orders?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "orders"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/chats?page=1&type=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "chats"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "type", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/transactions?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/posts?page=1&visibility=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{user_id}}", "posts"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "visibility", "value": "all"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer Order Management",
+      "item": [
+        {
+          "name": "Get All Buyer Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Buyer Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders/filter?status=pending&type=all&date=today",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders", "filter"],
+              "query": [
+                {"key": "status", "value": "pending"},
+                {"key": "type", "value": "all"},
+                {"key": "date", "value": "today"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Buyer Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"order_ids\": [1, 2, 3],\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders/{{order_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders", "{{order_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders", "{{order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Tracking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-orders/{{order_id}}/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-orders", "{{order_id}}", "tracking"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer Transaction Management",
+      "item": [
+        {
+          "name": "Get All Buyer Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filter Buyer Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions/filter?status=successful&type=deposit&date=today",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions", "filter"],
+              "query": [
+                {"key": "status", "value": "successful"},
+                {"key": "type", "value": "deposit"},
+                {"key": "date", "value": "today"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Buyer Transactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"transaction_ids\": [1, 2, 3],\n  \"status\": \"successful\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions/{{transaction_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions", "{{transaction_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Transaction Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"successful\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions/{{transaction_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions", "{{transaction_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-transactions/analytics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-transactions", "analytics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller User Management",
+      "item": [
+        {
+          "name": "Get All Sellers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Search Sellers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/search?q=store&status=active",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "search"],
+              "query": [
+                {"key": "q", "value": "store"},
+                {"key": "status", "value": "active"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Sellers",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"block\",\n  \"seller_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/{{seller_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "{{seller_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/{{seller_id}}/transactions?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "{{seller_id}}", "transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Toggle Block/Unblock Seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"block\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/{{seller_id}}/toggle-block",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "{{seller_id}}", "toggle-block"]
+            }
+          }
+        },
+        {
+          "name": "Remove Seller",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-users/{{seller_id}}/remove",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-users", "{{seller_id}}", "remove"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Seller Creation (3-Level Onboarding)",
+      "item": [
+        {
+          "name": "Level 1 Complete (Basic Info + Profile + Categories + Social)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Seller\",\n  \"email\": \"seller@example.com\",\n  \"phone\": \"07012345678\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"store_name\": \"Tech Store\",\n  \"store_email\": \"store@example.com\",\n  \"store_phone\": \"07012345678\",\n  \"store_location\": \"Lagos, Nigeria\",\n  \"profile_image\": \"file\",\n  \"banner_image\": \"file\",\n  \"categories\": [1, 2, 3],\n  \"social_links\": [\n    {\"platform\": \"facebook\", \"url\": \"https://facebook.com/store\"},\n    {\"platform\": \"instagram\", \"url\": \"https://instagram.com/store\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/level1/complete",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "level1", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Level 2 Complete (Business Details + Documents)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_name\": \"Tech Store Ltd\",\n  \"business_type\": \"retail\",\n  \"business_registration_number\": \"RC123456\",\n  \"tax_identification_number\": \"TIN123456\",\n  \"business_address\": \"123 Business Street, Lagos\",\n  \"business_phone\": \"07012345678\",\n  \"business_email\": \"business@example.com\",\n  \"documents\": [\n    {\"type\": \"certificate\", \"file\": \"file\"},\n    {\"type\": \"tax_clearance\", \"file\": \"file\"}\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/level2/complete",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "level2", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Level 3 Complete (Physical Store + Utility + Address + Delivery + Theme)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"physical_store_address\": \"123 Physical Store, Lagos\",\n  \"store_phone\": \"07012345678\",\n  \"store_hours\": \"9AM-6PM\",\n  \"utility_bill\": \"file\",\n  \"addresses\": [\n    {\n      \"name\": \"Main Store\",\n      \"address\": \"123 Main Street, Lagos\",\n      \"phone\": \"07012345678\",\n      \"is_default\": true\n    }\n  ],\n  \"delivery_pricing\": [\n    {\n      \"name\": \"Standard Delivery\",\n      \"price\": 2000,\n      \"estimated_days\": 3,\n      \"is_default\": true\n    }\n  ],\n  \"theme_color\": \"#FF5722\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/level3/complete",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "level3", "complete"]
+            }
+          }
+        },
+        {
+          "name": "Set Approval Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seller_id\": 1,\n  \"status\": \"approved\",\n  \"notes\": \"All documents verified\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/set-approval-status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "set-approval-status"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/progress?seller_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "progress"],
+              "query": [
+                {"key": "seller_id", "value": "1"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/create-seller/categories",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create-seller", "categories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Details Management",
+      "item": [
+        {
+          "name": "Get Seller Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/orders?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "orders"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/chats?page=1&type=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "chats"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "type", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/transactions?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Social Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/social-feed?page=1&visibility=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "social-feed"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "visibility", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/products?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "products"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Announcements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/announcements?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "announcements"],
+              "query": [
+                {"key": "page", "value": "1"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Activities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/activities?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "activities"],
+              "query": [
+                {"key": "page", "value": "1"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Seller Wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"topup\",\n  \"amount\": 10000,\n  \"description\": \"Admin topup\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/wallet",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "wallet"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Seller Block",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"block\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}/toggle-block",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}", "toggle-block"]
+            }
+          }
+        },
+        {
+          "name": "Delete Seller",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-details/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-details", "{{seller_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Order Management",
+      "item": [
+        {
+          "name": "Get Seller Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}/{{order_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}", "{{order_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}/{{order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}", "{{order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Mark Order Out for Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_code\": \"DEL123456\",\n  \"estimated_delivery\": \"2025-01-25 18:00:00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}/{{order_id}}/out-for-delivery",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}", "{{order_id}}", "out-for-delivery"]
+            }
+          }
+        },
+        {
+          "name": "Verify Delivery Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_code\": \"DEL123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-orders/{{seller_id}}/{{order_id}}/verify-delivery",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-orders", "{{seller_id}}", "{{order_id}}", "verify-delivery"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Chat Management",
+      "item": [
+        {
+          "name": "Get Seller Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}?page=1&type=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "type", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Chat Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Chat Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/{{chat_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "{{chat_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello! How can I help you today?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/{{chat_id}}/send-message",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "{{chat_id}}", "send-message"]
+            }
+          }
+        },
+        {
+          "name": "Mark Messages as Read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/{{chat_id}}/mark-read",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "{{chat_id}}", "mark-read"]
+            }
+          }
+        },
+        {
+          "name": "Create New Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"type\": \"general\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/create",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "create"]
+            }
+          }
+        },
+        {
+          "name": "Delete Chat",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-chats/{{seller_id}}/{{chat_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-chats", "{{seller_id}}", "{{chat_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Transaction Management",
+      "item": [
+        {
+          "name": "Get Seller Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-transactions/{{seller_id}}?page=1&status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-transactions", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-transactions/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-transactions", "{{seller_id}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-transactions/{{seller_id}}/{{transaction_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-transactions", "{{seller_id}}", "{{transaction_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Transaction Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"successful\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-transactions/{{seller_id}}/{{transaction_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-transactions", "{{seller_id}}", "{{transaction_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Download Transaction Receipt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-transactions/{{seller_id}}/{{transaction_id}}/receipt",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-transactions", "{{seller_id}}", "{{transaction_id}}", "receipt"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Social Feed Management",
+      "item": [
+        {
+          "name": "Get Seller Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}?page=1&visibility=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "visibility", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Social Feed Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/{{post_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "{{post_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/{{post_id}}/comments?page=1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "{{post_id}}", "comments"],
+              "query": [
+                {"key": "page", "value": "1"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Post Visibility",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visibility\": \"public\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/{{post_id}}/visibility",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "{{post_id}}", "visibility"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "{{post_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/{{post_id}}/{{comment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "{{post_id}}", "{{comment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Engagement Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-social-feed/{{seller_id}}/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-social-feed", "{{seller_id}}", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Product Management",
+      "item": [
+        {
+          "name": "Get Seller Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}?page=1&status=all&type=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "status", "value": "all"},
+                {"key": "type", "value": "all"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Create Product for Seller",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "iPhone 16 Pro Max",
+                  "type": "text"
+                },
+                {
+                  "key": "category_id",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "brand",
+                  "value": "Apple",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Latest iPhone with advanced features",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "200000",
+                  "type": "text"
+                },
+                {
+                  "key": "discount_price",
+                  "value": "180000",
+                  "type": "text"
+                },
+                {
+                  "key": "has_variants",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text"
+                },
+                {
+                  "key": "images[]",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Updated iPhone 16 Pro Max",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "210000",
+                  "type": "text"
+                },
+                {
+                  "key": "discount_price",
+                  "value": "190000",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Product Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"is_sold\": false,\n  \"is_unavailable\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Update Product Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 200\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/quantity",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "quantity"]
+            }
+          }
+        },
+        {
+          "name": "Boost Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"location\": \"Lagos, Nigeria\",\n  \"duration\": 30,\n  \"budget\": 10000,\n  \"start_date\": \"2025-01-20\",\n  \"payment_method\": \"wallet\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/boost",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "boost"]
+            }
+          }
+        },
+        {
+          "name": "Mark Product as Sold",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/mark-sold",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "mark-sold"]
+            }
+          }
+        },
+        {
+          "name": "Mark Product as Unavailable",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/mark-unavailable",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "mark-unavailable"]
+            }
+          }
+        },
+        {
+          "name": "Mark Product as Available",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}/mark-available",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}", "mark-available"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-products/{{seller_id}}/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-products", "{{seller_id}}", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Announcements & Banners Management",
+      "item": [
+        {
+          "name": "Get Seller Announcements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Announcement Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}/{{announcement_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}", "{{announcement_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"New product launch! Check out our latest collection.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Announcement",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Updated announcement message\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}/{{announcement_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}", "{{announcement_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Announcement",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}/{{announcement_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}", "{{announcement_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Announcements",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"delete\",\n  \"announcement_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements/{{seller_id}}/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements", "{{seller_id}}", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Banner Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}/{{banner_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}", "{{banner_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create Banner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "link",
+                  "value": "https://example.com/promotion",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Banner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "link",
+                  "value": "https://example.com/updated-promotion",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}/{{banner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}", "{{banner_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Banner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}/{{banner_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}", "{{banner_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Banners",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"delete\",\n  \"banner_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-banners/{{seller_id}}/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-banners", "{{seller_id}}", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Announcements & Banners Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-announcements-banners/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-announcements-banners", "{{seller_id}}", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Coupons & Loyalty Management",
+      "item": [
+        {
+          "name": "Get Seller Coupons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}?page=1&per_page=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Coupon Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}/{{coupon_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}", "{{coupon_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create Coupon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE20\",\n  \"discount_type\": 1,\n  \"discount_value\": 20,\n  \"max_usage\": 100,\n  \"usage_per_user\": 1,\n  \"expiry_date\": \"2025-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Coupon",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SAVE25\",\n  \"discount_type\": 1,\n  \"discount_value\": 25,\n  \"max_usage\": 150,\n  \"usage_per_user\": 2,\n  \"expiry_date\": \"2025-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}/{{coupon_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}", "{{coupon_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Coupon",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}/{{coupon_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}", "{{coupon_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Coupons",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"activate\",\n  \"coupon_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Coupon Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons/{{seller_id}}/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons", "{{seller_id}}", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Loyalty Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-loyalty-settings/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-loyalty-settings", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Loyalty Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points_per_order\": 10,\n  \"points_per_referral\": 50,\n  \"enable_order_points\": true,\n  \"enable_referral_points\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-loyalty-settings/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-loyalty-settings", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Customer Points",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-loyalty-customers/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-loyalty-customers", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Coupons & Loyalty Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-coupons-loyalty/{{seller_id}}/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-coupons-loyalty", "{{seller_id}}", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Management",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders?page=1&per_page=20&status=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "status", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders/{{store_order_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "{{store_order_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"out_for_delivery\",\n  \"notes\": \"Package is out for delivery\",\n  \"delivery_code\": \"DEL123456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/orders/{{store_order_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "{{store_order_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Tracking",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders/{{store_order_id}}/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "{{store_order_id}}", "tracking"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"order_ids\": [1, 2, 3],\n  \"status\": \"delivered\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/orders/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transaction Management",
+      "item": [
+        {
+          "name": "Get All Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/transactions?page=1&per_page=20&status=all&type=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "status", "value": "all"},
+                {"key": "type", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/transactions/{{transaction_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions", "{{transaction_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Transaction Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"successful\",\n  \"notes\": \"Transaction completed successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/transactions/{{transaction_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions", "{{transaction_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Transactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"transaction_ids\": [1, 2, 3],\n  \"status\": \"successful\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/transactions/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/transactions/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/transactions/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "transactions", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Store KYC & Details Management",
+      "item": [
+        {
+          "name": "Get All Stores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/stores?page=1&per_page=20&kyc_status=all&level=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "kyc_status", "value": "all"},
+                {"key": "level", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Store Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/stores/{{store_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores", "{{store_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Store KYC Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kyc_status\": \"approved\",\n  \"notes\": \"All documents verified successfully\",\n  \"send_notification\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/stores/{{store_id}}/kyc-status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores", "{{store_id}}", "kyc-status"]
+            }
+          }
+        },
+        {
+          "name": "Update Store Level",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onboarding_level\": 3,\n  \"notes\": \"Store has completed all onboarding requirements\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/stores/{{store_id}}/level",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores", "{{store_id}}", "level"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Stores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_kyc_status\",\n  \"store_ids\": [1, 2, 3],\n  \"kyc_status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/stores/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get KYC Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/stores/kyc-statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "stores", "kyc-statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscription Management",
+      "item": [
+        {
+          "name": "Get All Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions?page=1&per_page=20&plan_type=all&status=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "plan_type", "value": "all"},
+                {"key": "status", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/{{subscription_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "{{subscription_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Subscription Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"notes\": \"Subscription activated by admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/{{subscription_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "{{subscription_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update_status\",\n  \"subscription_ids\": [1, 2, 3],\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/subscriptions/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscriptions", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscription Plans Management",
+      "item": [
+        {
+          "name": "Get All Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscription-plans"]
+            }
+          }
+        },
+        {
+          "name": "Create New Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium Plan\",\n  \"price\": 15000,\n  \"currency\": \"NGN\",\n  \"duration_days\": 30,\n  \"features\": [\n    \"Unlimited products\",\n    \"Advanced analytics\",\n    \"Priority support\",\n    \"Custom branding\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscription-plans"]
+            }
+          }
+        },
+        {
+          "name": "Update Plan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ultra Plan\",\n  \"price\": 20000,\n  \"currency\": \"NGN\",\n  \"duration_days\": 30,\n  \"features\": [\n    \"Unlimited products\",\n    \"Advanced analytics\",\n    \"Priority support\",\n    \"Custom branding\",\n    \"API access\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscription-plans", "{{plan_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Plan",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/subscription-plans/{{plan_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "subscription-plans", "{{plan_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Promotions Management (Boosted Products)",
+      "item": [
+        {
+          "name": "Get All Promotions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/promotions?page=1&per_page=20&status=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "status", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Promotion Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/promotions/{{promotion_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions", "{{promotion_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Promotion Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Promotion approved by admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/promotions/{{promotion_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions", "{{promotion_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Extend Promotion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additional_days\": 7,\n  \"additional_budget\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/promotions/{{promotion_id}}/extend",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions", "{{promotion_id}}", "extend"]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Promotions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"approve\",\n  \"promotion_ids\": [1, 2, 3]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/promotions/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Promotion Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/promotions/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "promotions", "statistics"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social Feed Management",
+      "item": [
+        {
+          "name": "Get All Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed?page=1&per_page=20&store_name=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "store_name", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/{{post_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "{{post_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Post Visibility",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visibility\": \"public\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/{{post_id}}/visibility",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "{{post_id}}", "visibility"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/{{post_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "{{post_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/{{post_id}}/comments",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "{{post_id}}", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/{{post_id}}/comments/{{comment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "{{post_id}}", "comments", "{{comment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Social Feed Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "statistics"]
+            }
+          }
+        },
+        {
+          "name": "Get Top Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/social-feed/top-posts?limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "social-feed", "top-posts"],
+              "query": [
+                {"key": "limit", "value": "10"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products Management",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/products?page=1&per_page=20&status=all&category=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "status", "value": "all"},
+                {"key": "category", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "{{product_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Product Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_active\": true,\n  \"is_featured\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "{{product_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Boost Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 30,\n  \"budget\": 10000,\n  \"location\": \"Lagos, Nigeria\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}/boost",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "{{product_id}}", "boost"]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Product Name\",\n  \"description\": \"Updated product description\",\n  \"price\": 50000,\n  \"discount_price\": 45000,\n  \"stock_quantity\": 100,\n  \"is_active\": true,\n  \"is_featured\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/products/{{product_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "{{product_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Product Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/products/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "products", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services Management",
+      "item": [
+        {
+          "name": "Get All Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/services?page=1&per_page=20&status=all&category=all&date_range=today&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "per_page", "value": "20"},
+                {"key": "status", "value": "all"},
+                {"key": "category", "value": "all"},
+                {"key": "date_range", "value": "today"},
+                {"key": "search", "value": ""}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Service Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/services/{{service_id}}/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services", "{{service_id}}", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Service Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\",\n  \"is_sold\": false,\n  \"is_unavailable\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/services/{{service_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services", "{{service_id}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Service Name\",\n  \"short_description\": \"Updated short description\",\n  \"full_description\": \"Updated full description\",\n  \"price_from\": 5000,\n  \"price_to\": 10000,\n  \"discount_price\": 4500,\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/services/{{service_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services", "{{service_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/services/{{service_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services", "{{service_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Service Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/services/analytics?date_from=2025-01-01&date_to=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "services", "analytics"],
+              "query": [
+                {"key": "date_from", "value": "2025-01-01"},
+                {"key": "date_to", "value": "2025-01-31"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Services Management",
+      "item": [
+        {
+          "name": "Get Seller Services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-services/{{seller_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-services", "{{seller_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Seller Service",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Service Name\",\n  \"short_description\": \"Updated short description\",\n  \"full_description\": \"Updated full description\",\n  \"price_from\": 5000,\n  \"price_to\": 10000,\n  \"discount_price\": 4500,\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/seller-services/{{seller_id}}/{{service_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-services", "{{seller_id}}", "{{service_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Seller Service",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-services/{{seller_id}}/{{service_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-services", "{{seller_id}}", "{{service_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

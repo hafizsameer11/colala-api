@@ -1,0 +1,65 @@
+# Simplified Admin Routes (Without User ID)
+# More efficient and cleaner approach
+
+## Admin Dashboard
+GET    /api/admin/dashboard
+GET    /api/admin/buyer-stats
+GET    /api/admin/seller-stats
+GET    /api/admin/site-stats
+GET    /api/admin/latest-chats
+GET    /api/admin/latest-orders
+GET    /api/admin/orders/filter
+POST   /api/admin/orders/bulk-action
+
+## User Management
+GET    /api/admin/users
+GET    /api/admin/users/stats
+GET    /api/admin/users/search
+POST   /api/admin/users/bulk-action
+GET    /api/admin/users/{id}/profile
+GET    /api/admin/users/{id}/details
+POST   /api/admin/users
+PUT    /api/admin/users/{id}
+DELETE /api/admin/users/{id}
+
+## Orders Management (Simplified)
+GET    /api/admin/orders
+GET    /api/admin/orders/filter
+POST   /api/admin/orders/bulk-action
+GET    /api/admin/orders/{orderId}/details
+PUT    /api/admin/orders/{orderId}/status
+
+## Chats Management (Simplified)
+GET    /api/admin/chats
+GET    /api/admin/chats/filter
+POST   /api/admin/chats/bulk-action
+GET    /api/admin/chats/{chatId}/details
+POST   /api/admin/chats/{chatId}/send
+
+## Transactions Management (Simplified)
+GET    /api/admin/transactions
+GET    /api/admin/transactions/filter
+POST   /api/admin/transactions/bulk-action
+GET    /api/admin/transactions/{transactionId}/details
+
+## Posts Management (Simplified)
+GET    /api/admin/posts
+GET    /api/admin/posts/filter
+POST   /api/admin/posts/bulk-action
+GET    /api/admin/posts/{postId}/details
+DELETE /api/admin/posts/{postId}
+GET    /api/admin/posts/{postId}/comments
+DELETE /api/admin/posts/{postId}/comments/{commentId}
+
+# Benefits of Simplified Approach:
+# 1. Cleaner URLs
+# 2. Easier to remember
+# 3. More RESTful
+# 4. Admin has full access anyway
+# 5. Can still filter by user_id in query params if needed
+
+# Example with User Filtering:
+GET /api/admin/orders?user_id=1&status=pending
+GET /api/admin/transactions?user_id=1&type=deposit
+GET /api/admin/chats?user_id=1&status=unread
+GET /api/admin/posts?user_id=1&type=liked_posts

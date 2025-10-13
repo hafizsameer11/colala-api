@@ -1,0 +1,144 @@
+# Colala API - Admin Panel Routes
+# Copy and paste these routes into your existing Admin folder
+
+## Admin Dashboard
+GET    /api/admin/dashboard
+GET    /api/admin/buyer-stats
+GET    /api/admin/seller-stats
+GET    /api/admin/site-stats
+GET    /api/admin/latest-chats
+GET    /api/admin/latest-orders
+GET    /api/admin/orders/filter
+POST   /api/admin/orders/bulk-action
+
+## User Management
+GET    /api/admin/users
+GET    /api/admin/users/stats
+GET    /api/admin/users/search
+POST   /api/admin/users/bulk-action
+GET    /api/admin/users/{id}/profile
+GET    /api/admin/users/{id}/details
+POST   /api/admin/users
+PUT    /api/admin/users/{id}
+DELETE /api/admin/users/{id}
+
+## User Orders
+GET    /api/admin/users/{id}/orders
+GET    /api/admin/users/{id}/orders/filter
+POST   /api/admin/users/{id}/orders/bulk-action
+GET    /api/admin/users/{id}/orders/{orderId}/details
+PUT    /api/admin/users/{id}/orders/{orderId}/status
+
+## User Chats
+GET    /api/admin/users/{id}/chats
+GET    /api/admin/users/{id}/chats/filter
+POST   /api/admin/users/{id}/chats/bulk-action
+GET    /api/admin/users/{id}/chats/{chatId}/details
+POST   /api/admin/users/{id}/chats/{chatId}/send
+
+## User Transactions
+GET    /api/admin/users/{id}/transactions
+GET    /api/admin/users/{id}/transactions/filter
+POST   /api/admin/users/{id}/transactions/bulk-action
+GET    /api/admin/users/{id}/transactions/{transactionId}/details
+
+## User Social Feed
+GET    /api/admin/users/{id}/posts
+GET    /api/admin/users/{id}/posts/filter
+POST   /api/admin/users/{id}/posts/bulk-action
+GET    /api/admin/users/{id}/posts/{postId}/details
+DELETE /api/admin/users/{id}/posts/{postId}
+GET    /api/admin/users/{id}/posts/{postId}/comments
+DELETE /api/admin/users/{id}/posts/{postId}/comments/{commentId}
+
+# Sample Request Bodies for POST/PUT requests:
+
+## Create User
+POST /api/admin/users
+{
+  "full_name": "John Doe",
+  "user_name": "johndoe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "password": "password123",
+  "country": "Nigeria",
+  "state": "Lagos",
+  "role": "buyer"
+}
+
+## Update User
+PUT /api/admin/users/{id}
+{
+  "full_name": "John Smith",
+  "email": "johnsmith@example.com",
+  "is_active": true
+}
+
+## Bulk Order Action
+POST /api/admin/orders/bulk-action
+{
+  "order_ids": [1, 2, 3],
+  "action": "update_status",
+  "status": "completed"
+}
+
+## Update Order Status
+PUT /api/admin/users/{id}/orders/{orderId}/status
+{
+  "status": "completed"
+}
+
+## Bulk Chat Action
+POST /api/admin/users/{id}/chats/bulk-action
+{
+  "chat_ids": [1, 2, 3],
+  "action": "mark_read"
+}
+
+## Send Message
+POST /api/admin/users/{id}/chats/{chatId}/send
+{
+  "message": "Hello, how can I help you?"
+}
+
+## Bulk Transaction Action
+POST /api/admin/users/{id}/transactions/bulk-action
+{
+  "transaction_ids": [1, 2, 3],
+  "action": "approve"
+}
+
+## Bulk Post Action
+POST /api/admin/users/{id}/posts/bulk-action
+{
+  "post_ids": [1, 2, 3],
+  "action": "delete"
+}
+
+# Query Parameters Examples:
+
+## Filter Orders
+GET /api/admin/orders/filter?status=pending&date=today
+
+## Search Users
+GET /api/admin/users/search?q=john&role=buyer
+
+## Filter User Orders
+GET /api/admin/users/{id}/orders/filter?status=pending&date=today
+
+## Filter User Chats
+GET /api/admin/users/{id}/chats/filter?status=unread&search=store
+
+## Filter User Transactions
+GET /api/admin/users/{id}/transactions/filter?status=successful&type=deposit&date=today
+
+## Filter User Posts
+GET /api/admin/users/{id}/posts/filter?type=liked_posts&date=today&search=product
+
+# Pagination Examples:
+GET /api/admin/users?page=1&per_page=15
+GET /api/admin/users/{id}/orders?page=1&per_page=15
+GET /api/admin/users/{id}/chats?page=1&per_page=15
+GET /api/admin/users/{id}/transactions?page=1&per_page=15
+GET /api/admin/users/{id}/posts?page=1&per_page=15
+GET /api/admin/users/{id}/posts/{postId}/comments?page=1&per_page=20
