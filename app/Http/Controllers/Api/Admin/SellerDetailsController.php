@@ -538,9 +538,7 @@ class SellerDetailsController extends Controller
             // Log activity
             UserActivity::create([
                 'user_id' => $user->id,
-                'activity' => $request->action === 'topup' ? 'Wallet topped up by admin' : 'Amount withdrawn by admin',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
+                'message' => $request->action === 'topup' ? 'Wallet topped up by admin' : 'Amount withdrawn by admin',
             ]);
 
             return ResponseHelper::success([
@@ -583,9 +581,7 @@ class SellerDetailsController extends Controller
             // Log activity
             UserActivity::create([
                 'user_id' => $user->id,
-                'activity' => $request->action === 'block' ? 'Account blocked by admin' : 'Account unblocked by admin',
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent()
+                'message' => $request->action === 'block' ? 'Account blocked by admin' : 'Account unblocked by admin',
             ]);
 
             return ResponseHelper::success([
