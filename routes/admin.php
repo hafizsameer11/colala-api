@@ -674,4 +674,47 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/ratings-reviews/stores/{reviewId}/details', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'storeReviewDetails']);
     // Delete store review
     Route::delete('/ratings-reviews/stores/{reviewId}', [\App\Http\Controllers\Api\Admin\AdminRatingsReviewsController::class, 'deleteStoreReview']);
+
+    // ========================================
+    // REFERRAL MANAGEMENT ROUTES
+    // ========================================
+    
+    // Get referral dashboard with statistics and referrers list
+    Route::get('/referrals', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralDashboard']);
+    
+    // Get users referred by a specific referrer
+    Route::get('/referrals/{userId}/referred-users', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferredUsers']);
+    
+    // Get detailed referral information for a specific user
+    Route::get('/referrals/{userId}/details', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralDetails']);
+    
+    // Get referral settings (bonus amounts, percentages, etc.)
+    Route::get('/referrals/settings', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralSettings']);
+    
+    // Update referral settings
+    Route::post('/referrals/settings', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralSettings']);
+    
+    // Get referral analytics and trends
+    Route::get('/referrals/analytics', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralAnalytics']);
+    
+    // Update individual referral status
+    Route::put('/referrals/{referralId}/status', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralStatus']);
+    
+    // Bulk update referral status
+    Route::put('/referrals/bulk-status', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'bulkUpdateReferralStatus']);
+    
+    // Get referral FAQs
+    Route::get('/referrals/faqs', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralFaqs']);
+    
+    // Create referral FAQ
+    Route::post('/referrals/faqs', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'createReferralFaq']);
+    
+    // Update referral FAQ
+    Route::put('/referrals/faqs/{faqId}', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralFaq']);
+    
+    // Delete referral FAQ
+    Route::delete('/referrals/faqs/{faqId}', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'deleteReferralFaq']);
+    
+    // Export referral data
+    Route::get('/referrals/export', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'exportReferralData']);
 });

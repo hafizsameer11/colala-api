@@ -354,14 +354,17 @@ public function overview(Request $req)
             'services'=>$services,
             'storeReveiws'=>$storeReveiws
         ],
-        'business' => optional($store->businessDetails)->only([
-            'registered_name','business_type','nin_number','bn_number','cac_number','has_physical_store'
-        ]) + [
-            'nin_document_url' => $this->url(optional($store->businessDetails)->nin_document),
-            'cac_document_url' => $this->url(optional($store->businessDetails)->cac_document),
-            'utility_bill_url' => $this->url(optional($store->businessDetails)->utility_bill),
-            'store_video_url'  => $this->url(optional($store->businessDetails)->store_video),
-        ],
+        'business' => array_merge(
+            optional($store->businessDetails)->only([
+                'registered_name','business_type','nin_number','bn_number','cac_number','has_physical_store'
+            ]) ?? [],
+            [
+                'nin_document_url' => $this->url(optional($store->businessDetails)->nin_document),
+                'cac_document_url' => $this->url(optional($store->businessDetails)->cac_document),
+                'utility_bill_url' => $this->url(optional($store->businessDetails)->utility_bill),
+                'store_video_url'  => $this->url(optional($store->businessDetails)->store_video),
+            ]
+        ),
         'addresses' => $store->addresses->map->only(['id','state','local_government','full_address','is_main','opening_hours']),
         'delivery'  => $store->deliveryPricing->map->only(['id','state','local_government','variant','price','is_free']),
         'progress'  => [
