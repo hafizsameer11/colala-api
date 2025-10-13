@@ -218,7 +218,7 @@ class AdminUserController extends Controller
                 'recent_activities' => $user->userActivities->map(function ($activity) {
                     return [
                         'id' => $activity->id,
-                        'description' => $activity->activity_type,
+                        'description' => $activity->message,
                         'created_at' => $activity->created_at->format('d/m/y - h:i A')
                     ];
                 })
