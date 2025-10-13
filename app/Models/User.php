@@ -146,4 +146,8 @@ class User extends Authenticatable
 
         return $storeUser->hasPermission($permission);
     }
+    public function userActivities()
+    {
+        return $this->hasMany(UserActivity::class);
+    }
 }
