@@ -354,13 +354,13 @@ class AdminSellerCreationController extends Controller
             $validator = Validator::make($request->all(), [
                 'store_id' => 'required|exists:stores,id',
                 'business_name' => 'required|string|max:255',
-                'business_type' => 'required|string|max:100',
+                'business_type' => 'required|string|max:100', // Will be mapped to enum values
                 'nin_number' => 'required|string|max:20',
                 'cac_number' => 'nullable|string|max:50',
-                'nin_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'cac_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:10240'
+                'nin_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'cac_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:5120' // Reduced from 10MB to 5MB
             ]);
 
             if ($validator->fails()) {
@@ -372,7 +372,7 @@ class AdminSellerCreationController extends Controller
 
             // Business details
             $payload['registered_name'] = $request->business_name;
-            $payload['business_type'] = $request->business_type;
+            $payload['business_type'] = $this->mapBusinessType($request->business_type);
             $payload['nin_number'] = $request->nin_number;
             $payload['cac_number'] = $request->cac_number;
 
@@ -414,7 +414,7 @@ class AdminSellerCreationController extends Controller
             $validator = Validator::make($request->all(), [
                 'store_id' => 'required|exists:stores,id',
                 'business_name' => 'required|string|max:255',
-                'business_type' => 'required|string|max:100',
+                'business_type' => 'required|string|max:100', // Will be mapped to enum values
                 'nin_number' => 'required|string|max:20',
                 'cac_number' => 'nullable|string|max:50'
             ]);
@@ -429,7 +429,7 @@ class AdminSellerCreationController extends Controller
                 ['store_id' => $store->id],
                 [
                     'registered_name' => $request->business_name,
-                    'business_type' => $request->business_type,
+                    'business_type' => $this->mapBusinessType($request->business_type),
                     'nin_number' => $request->nin_number,
                     'cac_number' => $request->cac_number
                 ]
@@ -461,10 +461,10 @@ class AdminSellerCreationController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'store_id' => 'required|exists:stores,id',
-                'nin_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'cac_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
-                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:10240'
+                'nin_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'cac_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048', // Reduced from 5MB to 2MB
+                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:5120' // Reduced from 10MB to 5MB
             ]);
 
             if ($validator->fails()) {
@@ -1213,5 +1213,26 @@ class AdminSellerCreationController extends Controller
                 $sk
             );
         }
+    }
+
+    /**
+     * Map business type to database enum values
+     */
+    private function mapBusinessType($businessType)
+    {
+        $mapping = [
+            'Limited Liability Company' => 'LTD',
+            'Limited Liability' => 'LTD',
+            'LTD' => 'LTD',
+            'Ltd' => 'LTD',
+            'Limited' => 'LTD',
+            'Business Name' => 'BN',
+            'BN' => 'BN',
+            'Sole Proprietorship' => 'BN',
+            'Partnership' => 'BN',
+            'Individual' => 'BN'
+        ];
+
+        return $mapping[$businessType] ?? 'BN'; // Default to BN if not found
     }
 }
