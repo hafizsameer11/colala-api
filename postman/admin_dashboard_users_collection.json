@@ -1,0 +1,687 @@
+{
+  "info": {
+    "name": "Admin Dashboard & Users Collection",
+    "description": "Postman collection for Admin Dashboard and User Management modules (routes 38-117)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "your_admin_token_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Dashboard Module",
+      "item": [
+        {
+          "name": "Get Dashboard Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "dashboard"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/dashboard",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "dashboard"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Dashboard data retrieved successfully\",\n  \"data\": {\n    \"buyer_stats\": {\n      \"total_buyers\": {\n        \"value\": 150,\n        \"increase\": 5,\n        \"icon\": \"users\",\n        \"color\": \"blue\"\n      },\n      \"active_buyers\": {\n        \"value\": 120,\n        \"increase\": 3,\n        \"icon\": \"users\",\n        \"color\": \"green\"\n      }\n    },\n    \"seller_stats\": {\n      \"total_sellers\": {\n        \"value\": 50,\n        \"increase\": 2,\n        \"icon\": \"store\",\n        \"color\": \"purple\"\n      },\n      \"active_sellers\": {\n        \"value\": 45,\n        \"increase\": 1,\n        \"icon\": \"store\",\n        \"color\": \"green\"\n      }\n    },\n    \"site_stats\": {\n      \"total_orders\": {\n        \"value\": 500,\n        \"increase\": 10,\n        \"icon\": \"shopping-cart\",\n        \"color\": \"orange\"\n      },\n      \"total_revenue\": {\n        \"value\": 25000,\n        \"increase\": 15,\n        \"icon\": \"dollar-sign\",\n        \"color\": \"green\"\n      }\n    },\n    \"latest_chats\": [\n      {\n        \"id\": 1,\n        \"user_name\": \"John Doe\",\n        \"store_name\": \"Tech Store\",\n        \"last_message\": \"Hello, I need help with my order\",\n        \"unread_count\": 2,\n        \"created_at\": \"2025-01-13 10:30:00\"\n      }\n    ],\n    \"latest_orders\": [\n      {\n        \"id\": 1,\n        \"order_no\": \"ORD-001\",\n        \"customer_name\": \"Jane Smith\",\n        \"product_name\": \"iPhone 15\",\n        \"total_amount\": 999.99,\n        \"status\": \"pending\",\n        \"created_at\": \"2025-01-13 09:15:00\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Buyer Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/buyer-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "buyer-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/seller-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "seller-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Site Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/site-stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "site-stats"]
+            }
+          }
+        },
+        {
+          "name": "Get Latest Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/latest-chats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "latest-chats"]
+            }
+          }
+        },
+        {
+          "name": "Get Latest Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/latest-orders",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "latest-orders"]
+            }
+          }
+        },
+        {
+          "name": "Filter Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/orders/filter?status=pending&date=today",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "filter"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "date",
+                  "value": "today"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [1, 2, 3],\n  \"action\": \"update_status\",\n  \"new_status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/orders/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "orders", "bulk-action"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management Module",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users?page=1&per_page=15",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/users?page=1&per_page=15",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "per_page",
+                      "value": "15"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "cookie": [],
+              "body": "{\n  \"status\": \"success\",\n  \"message\": \"Users retrieved successfully\",\n  \"data\": {\n    \"current_page\": 1,\n    \"data\": [\n      {\n        \"id\": 1,\n        \"full_name\": \"John Doe\",\n        \"email\": \"john@example.com\",\n        \"phone\": \"+1234567890\",\n        \"profile_picture\": null,\n        \"role\": \"buyer\",\n        \"is_active\": true,\n        \"wallet_balance\": \"150.00\",\n        \"created_at\": \"2025-01-13 10:30:00\"\n      }\n    ],\n    \"total\": 150,\n    \"per_page\": 15,\n    \"last_page\": 10\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/stats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Search Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/search?search=john",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "search"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "john"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_ids\": [1, 2, 3],\n  \"action\": \"activate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/profile",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get User Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/orders",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "orders"]
+            }
+          }
+        },
+        {
+          "name": "Filter User Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/orders/filter?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "orders", "filter"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on User Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_ids\": [1, 2, 3],\n  \"action\": \"update_status\",\n  \"new_status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/orders/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "orders", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/orders/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "orders", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/orders/1/status",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "orders", "1", "status"]
+            }
+          }
+        },
+        {
+          "name": "Get User Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/chats",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "chats"]
+            }
+          }
+        },
+        {
+          "name": "Filter User Chats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/chats/filter?status=unread",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "chats", "filter"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "unread"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on User Chats",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chat_ids\": [1, 2, 3],\n  \"action\": \"mark_read\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/chats/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "chats", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Chat Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/chats/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "chats", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Send Message in Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello, how can I help you?\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/chats/1/send",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "chats", "1", "send"]
+            }
+          }
+        },
+        {
+          "name": "Get User Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Filter User Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/transactions/filter?status=successful",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "transactions", "filter"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "successful"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on User Transactions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_ids\": [1, 2, 3],\n  \"action\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/transactions/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "transactions", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/transactions/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "transactions", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Get User Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts"]
+            }
+          }
+        },
+        {
+          "name": "Filter User Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/filter?type=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "filter"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "all"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Bulk Action on User Posts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_ids\": [1, 2, 3],\n  \"action\": \"approve\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/bulk-action",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "bulk-action"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/1/comments",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "1", "comments"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/posts/1/comments/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "posts", "1", "comments", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/details",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "details"]
+            }
+          }
+        },
+        {
+          "name": "Create New User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Doe\",\n  \"user_name\": \"johndoe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1234567890\",\n  \"password\": \"password123\",\n  \"country\": \"USA\",\n  \"state\": \"California\",\n  \"role\": \"buyer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Smith\",\n  \"email\": \"johnsmith@example.com\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
