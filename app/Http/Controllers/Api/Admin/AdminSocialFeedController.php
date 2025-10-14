@@ -264,15 +264,27 @@ class AdminSocialFeedController extends Controller
 
             // Daily engagement trends
             $dailyStats = Post::selectRaw('
-                DATE(created_at) as date,
-                COUNT(*) as posts_count,
-                (SELECT COUNT(*) FROM post_likes pl WHERE DATE(pl.created_at) = DATE(posts.created_at)) as likes_count,
-                (SELECT COUNT(*) FROM post_comments pc WHERE DATE(pc.created_at) = DATE(posts.created_at)) as comments_count,
-                (SELECT COUNT(*) FROM post_shares ps WHERE DATE(ps.created_at) = DATE(posts.created_at)) as shares_count
+                DATE(posts.created_at) as date,
+                COUNT(DISTINCT posts.id) as posts_count,
+                COUNT(DISTINCT post_likes.id) as likes_count,
+                COUNT(DISTINCT post_comments.id) as comments_count,
+                COUNT(DISTINCT post_shares.id) as shares_count
             ')
-            ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy(DB::raw('DATE(created_at)'))
-            ->orderBy(DB::raw('DATE(created_at)'))
+            ->leftJoin('post_likes', function($join) {
+                $join->on('posts.id', '=', 'post_likes.post_id')
+                     ->whereRaw('DATE(post_likes.created_at) = DATE(posts.created_at)');
+            })
+            ->leftJoin('post_comments', function($join) {
+                $join->on('posts.id', '=', 'post_comments.post_id')
+                     ->whereRaw('DATE(post_comments.created_at) = DATE(posts.created_at)');
+            })
+            ->leftJoin('post_shares', function($join) {
+                $join->on('posts.id', '=', 'post_shares.post_id')
+                     ->whereRaw('DATE(post_shares.created_at) = DATE(posts.created_at)');
+            })
+            ->where('posts.created_at', '>=', now()->subDays(30))
+            ->groupBy(DB::raw('DATE(posts.created_at)'))
+            ->orderBy(DB::raw('DATE(posts.created_at)'))
             ->get();
 
             return ResponseHelper::success([
