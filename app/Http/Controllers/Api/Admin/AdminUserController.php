@@ -445,12 +445,61 @@ class AdminUserController extends Controller
                 'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
                         'id' => $item->id,
-                        'compelete'=>[
-                            'product'=>$item->product,
-                            'images'=>$item->product->images,
-                            'variant'=>$item->product->variants,
-                            'store'=>$storeOrder->store,
-                            'reviews'=>$item->product->reviews,
+                        'complete' => [
+                            'product' => [
+                                'id' => $item->product->id,
+                                'name' => $item->product->name,
+                                'description' => $item->product->description,
+                                'price' => $item->product->price,
+                                'discount_price' => $item->product->discount_price,
+                                'quantity' => $item->product->quantity,
+                                'status' => $item->product->status,
+                                'is_featured' => $item->product->is_featured,
+                                'created_at' => $item->product->created_at->format('d-m-Y H:i:s')
+                            ],
+                            'images' => $item->product->images->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'path' => asset('storage/' . $image->path),
+                                    'is_main' => $image->is_main,
+                                    'type' => $image->type
+                                ];
+                            }),
+                            'variants' => $item->product->variants->map(function ($variant) {
+                                return [
+                                    'id' => $variant->id,
+                                    'name' => $variant->name,
+                                    'price' => $variant->price,
+                                    'stock' => $variant->stock,
+                                    'is_active' => $variant->is_active
+                                ];
+                            }),
+                            'store' => [
+                                'id' => $storeOrder->store->id,
+                                'store_name' => $storeOrder->store->store_name,
+                                'store_email' => $storeOrder->store->store_email,
+                                'store_phone' => $storeOrder->store->store_phone,
+                                'store_location' => $storeOrder->store->store_location,
+                                'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
+                                'banner_image' => $storeOrder->store->banner_image ? asset('storage/' . $storeOrder->store->banner_image) : null,
+                                'theme_color' => $storeOrder->store->theme_color,
+                                'average_rating' => $storeOrder->store->average_rating,
+                                'total_sold' => $storeOrder->store->total_sold,
+                                'followers_count' => $storeOrder->store->followers_count
+                            ],
+                            'reviews' => $item->product->reviews->map(function ($review) {
+                                return [
+                                    'id' => $review->id,
+                                    'user' => [
+                                        'id' => $review->user->id,
+                                        'name' => $review->user->full_name,
+                                        'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null
+                                    ],
+                                    'rating' => $review->rating,
+                                    'comment' => $review->comment,
+                                    'created_at' => $review->created_at->format('d-m-Y H:i:s')
+                                ];
+                            })
                         ],
                         'product' => [
                             'id' => $item->product->id,
@@ -612,6 +661,62 @@ class AdminUserController extends Controller
     }
 
     /**
+     * Get user chat statistics
+     */
+    private function getUserChatStats($user)
+    {
+        $totalChats = $user->chats()->count();
+        $unreadChats = $user->chats()->whereHas('messages', function ($q) {
+            $q->where('is_read', false);
+        })->count();
+        $disputeChats = $user->chats()->where('is_dispute', true)->count();
+
+        // Calculate percentage increase from last month
+        $lastMonth = now()->subMonth();
+        $currentMonth = now();
+        
+        $lastMonthChats = $user->chats()->whereBetween('created_at', [
+            $lastMonth->startOfMonth(),
+            $lastMonth->endOfMonth()
+        ])->count();
+        
+        $currentMonthChats = $user->chats()->whereBetween('created_at', [
+            $currentMonth->startOfMonth(),
+            $currentMonth->endOfMonth()
+        ])->count();
+
+        $totalIncrease = $lastMonthChats > 0 ? 
+            round((($currentMonthChats - $lastMonthChats) / $lastMonthChats) * 100, 1) : 0;
+        
+        $unreadIncrease = 5; // Mock data for unread chats increase
+        $disputeIncrease = 5; // Mock data for dispute chats increase
+
+        return [
+            'total_chats' => [
+                'value' => $totalChats,
+                'increase' => $totalIncrease,
+                'icon' => 'message-circle',
+                'color' => 'blue',
+                'label' => 'Total Chats'
+            ],
+            'unread_chats' => [
+                'value' => $unreadChats,
+                'increase' => $unreadIncrease,
+                'icon' => 'mail',
+                'color' => 'red',
+                'label' => 'Unread Chats'
+            ],
+            'dispute_chats' => [
+                'value' => $disputeChats,
+                'increase' => $disputeIncrease,
+                'icon' => 'alert-triangle',
+                'color' => 'orange',
+                'label' => 'Dispute'
+            ]
+        ];
+    }
+
+    /**
      * Get user chats
      */
     public function userChats(Request $request, $id)
@@ -660,7 +765,19 @@ class AdminUserController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($chats, 'User chats retrieved successfully');
+            // Get chat statistics for this user
+            $chatStats = $this->getUserChatStats($user);
+
+            return ResponseHelper::success([
+                'chats' => $chats,
+                'statistics' => $chatStats,
+                'pagination' => [
+                    'current_page' => $chats->currentPage(),
+                    'last_page' => $chats->lastPage(),
+                    'per_page' => $chats->perPage(),
+                    'total' => $chats->total(),
+                ]
+            ], 'User chats retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -714,7 +831,17 @@ class AdminUserController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($chats, 'Filtered chats retrieved successfully');
+            // Get chat statistics for this user
+            $chatStats = $this->getUserChatStats($user);
+
+            return ResponseHelper::success([
+                'chats' => $chats,
+                'statistics' => $chatStats,
+                'filters' => [
+                    'status' => $status,
+                    'search' => $search
+                ]
+            ], 'Filtered chats retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
