@@ -21,18 +21,18 @@ class AdminProductsController extends Controller
     public function getAllProducts(Request $request)
     {
         try {
-            $query = Product::with(['store.user', 'images', 'variants', 'reviews', 'boostProducts']);
+            $query = Product::with(['store.user', 'images', 'variants', 'reviews', 'boost']);
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 switch ($request->status) {
                     case 'general':
-                        $query->whereDoesntHave('boostProducts', function ($q) {
+                        $query->whereDoesntHave('boost', function ($q) {
                             $q->where('status', 'active');
                         });
                         break;
                     case 'sponsored':
-                        $query->whereHas('boostProducts', function ($q) {
+                        $query->whereHas('boost', function ($q) {
                             $q->where('status', 'active');
                         });
                         break;
@@ -79,10 +79,10 @@ class AdminProductsController extends Controller
             // Get summary statistics
             $stats = [
                 'total_products' => Product::count(),
-                'general_products' => Product::whereDoesntHave('boostProducts', function ($q) {
+                'general_products' => Product::whereDoesntHave('boost', function ($q) {
                     $q->where('status', 'active');
                 })->count(),
-                'sponsored_products' => Product::whereHas('boostProducts', function ($q) {
+                'sponsored_products' => Product::whereHas('boost', function ($q) {
                     $q->where('status', 'active');
                 })->count(),
                 'active_products' => Product::where('status', 'active')->count(),
@@ -115,7 +115,7 @@ class AdminProductsController extends Controller
                 'images',
                 'variants',
                 'reviews.user',
-                'boostProducts',
+                'boost',
                 'stats'
             ])->findOrFail($productId);
 
@@ -165,19 +165,17 @@ class AdminProductsController extends Controller
                         'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
                     ];
                 }),
-                'boost_info' => $product->boostProducts->map(function ($boost) {
-                    return [
-                        'id' => $boost->id,
-                        'status' => $boost->status,
-                        'start_date' => $boost->start_date,
-                        'duration' => $boost->duration,
-                        'budget' => $boost->budget,
-                        'total_amount' => $boost->total_amount,
-                        'reach' => $boost->reach,
-                        'impressions' => $boost->impressions,
-                        'clicks' => $boost->clicks,
-                    ];
-                }),
+                'boost_info' => $product->boost ? [
+                    'id' => $product->boost->id,
+                    'status' => $product->boost->status,
+                    'start_date' => $product->boost->start_date,
+                    'duration' => $product->boost->duration,
+                    'budget' => $product->boost->budget,
+                    'total_amount' => $product->boost->total_amount,
+                    'reach' => $product->boost->reach,
+                    'impressions' => $product->boost->impressions,
+                    'clicks' => $product->boost->clicks,
+                ] : null,
                 'statistics' => $this->getProductStatistics($product),
             ];
 
@@ -321,7 +319,7 @@ class AdminProductsController extends Controller
             $product->variants()->delete();
             $product->reviews()->delete();
             $product->stats()->delete();
-            $product->boostProducts()->delete();
+            $product->boost()->delete();
             $product->delete();
 
             return ResponseHelper::success(null, 'Product deleted successfully');
@@ -346,8 +344,8 @@ class AdminProductsController extends Controller
             'total_engagement' => array_sum($stats),
             'average_rating' => $product->reviews->avg('rating') ?? 0,
             'total_reviews' => $product->reviews->count(),
-            'boost_count' => $product->boostProducts->count(),
-            'active_boost' => $product->boostProducts()->where('status', 'active')->exists(),
+            'boost_count' => $product->boost ? 1 : 0,
+            'active_boost' => $product->boost && $product->boost->status === 'active',
         ];
     }
 
@@ -402,7 +400,7 @@ class AdminProductsController extends Controller
     private function formatProductsData($products)
     {
         return $products->map(function ($product) {
-            $isSponsored = $product->boostProducts()->where('status', 'active')->exists();
+            $isSponsored = $product->boost && $product->boost->status === 'active';
             
             return [
                 'id' => $product->id,
