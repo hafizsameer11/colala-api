@@ -22,16 +22,16 @@ class AdminStoreKYCController extends Controller
             $query = Store::with(['user', 'businessDetails', 'addresses', 'deliveryPricing']);
 
             // Apply filters
-            if ($request->has('kyc_status') && $request->kyc_status !== 'all') {
-                switch ($request->kyc_status) {
+            if ($request->has('status') && $request->status !== 'all') {
+                switch ($request->status) {
                     case 'pending':
-                        $query->where('kyc_status', 'pending');
+                        $query->where('status', 'pending');
                         break;
                     case 'approved':
-                        $query->where('kyc_status', 'approved');
+                        $query->where('status', 'approved');
                         break;
                     case 'rejected':
-                        $query->where('kyc_status', 'rejected');
+                        $query->where('status', 'rejected');
                         break;
                 }
             }
@@ -70,9 +70,9 @@ class AdminStoreKYCController extends Controller
             // Get summary statistics
             $stats = [
                 'total_stores' => Store::count(),
-                'pending_kyc' => Store::where('kyc_status', 'pending')->count(),
-                'approved_kyc' => Store::where('kyc_status', 'approved')->count(),
-                'rejected_kyc' => Store::where('kyc_status', 'rejected')->count(),
+                'pending_kyc' => Store::where('status', 'pending')->count(),
+                'approved_kyc' => Store::where('status', 'approved')->count(),
+                'rejected_kyc' => Store::where('status', 'rejected')->count(),
                 'level_1_stores' => Store::where('onboarding_level', 1)->count(),
                 'level_2_stores' => Store::where('onboarding_level', 2)->count(),
                 'level_3_stores' => Store::where('onboarding_level', 3)->count(),
@@ -116,9 +116,8 @@ class AdminStoreKYCController extends Controller
                     'email' => $store->email,
                     'phone' => $store->phone,
                     'location' => $store->store_location,
-                    'kyc_status' => $store->kyc_status,
-                    'onboarding_level' => $store->onboarding_level,
                     'status' => $store->status,
+                    'onboarding_level' => $store->onboarding_level,
                     'created_at' => $store->created_at,
                     'updated_at' => $store->updated_at,
                 ],
@@ -203,28 +202,28 @@ class AdminStoreKYCController extends Controller
     {
         try {
             $request->validate([
-                'kyc_status' => 'required|in:pending,approved,rejected',
+                'status' => 'required|in:pending,approved,rejected',
                 'notes' => 'nullable|string|max:500',
                 'send_notification' => 'boolean',
             ]);
 
             $store = Store::with('user')->findOrFail($storeId);
-            $oldStatus = $store->kyc_status;
+            $oldStatus = $store->status;
             
             $store->update([
-                'kyc_status' => $request->kyc_status,
+                'status' => $request->status,
             ]);
 
             // Send notification to user if requested
             if ($request->get('send_notification', true)) {
-                $this->sendKYCStatusNotification($store->user, $request->kyc_status, $request->notes);
+                $this->sendKYCStatusNotification($store->user, $request->status, $request->notes);
             }
 
             return ResponseHelper::success([
                 'store_id' => $store->id,
                 'store_name' => $store->store_name,
                 'old_status' => $oldStatus,
-                'new_status' => $request->kyc_status,
+                'new_status' => $request->status,
                 'notification_sent' => $request->get('send_notification', true),
                 'updated_at' => $store->updated_at,
             ], 'Store KYC status updated successfully');
@@ -273,10 +272,10 @@ class AdminStoreKYCController extends Controller
     {
         try {
             $request->validate([
-                'action' => 'required|in:update_kyc_status,update_level,activate,deactivate',
+                'action' => 'required|in:update_status,update_level,activate,deactivate',
                 'store_ids' => 'required|array|min:1',
                 'store_ids.*' => 'integer|exists:stores,id',
-                'kyc_status' => 'required_if:action,update_kyc_status|in:pending,approved,rejected',
+                'status' => 'required_if:action,update_status|in:pending,approved,rejected',
                 'onboarding_level' => 'required_if:action,update_level|integer|min:1|max:3',
             ]);
 
@@ -284,9 +283,9 @@ class AdminStoreKYCController extends Controller
             $action = $request->action;
 
             switch ($action) {
-                case 'update_kyc_status':
-                    Store::whereIn('id', $storeIds)->update(['kyc_status' => $request->kyc_status]);
-                    return ResponseHelper::success(null, "Stores KYC status updated to {$request->kyc_status}");
+                case 'update_status':
+                    Store::whereIn('id', $storeIds)->update(['status' => $request->status]);
+                    return ResponseHelper::success(null, "Stores KYC status updated to {$request->status}");
                 
                 case 'update_level':
                     Store::whereIn('id', $storeIds)->update(['onboarding_level' => $request->onboarding_level]);
@@ -313,9 +312,9 @@ class AdminStoreKYCController extends Controller
         try {
             $stats = [
                 'total_stores' => Store::count(),
-                'pending_kyc' => Store::where('kyc_status', 'pending')->count(),
-                'approved_kyc' => Store::where('kyc_status', 'approved')->count(),
-                'rejected_kyc' => Store::where('kyc_status', 'rejected')->count(),
+                'pending_kyc' => Store::where('status', 'pending')->count(),
+                'approved_kyc' => Store::where('status', 'approved')->count(),
+                'rejected_kyc' => Store::where('status', 'rejected')->count(),
                 'level_1_stores' => Store::where('onboarding_level', 1)->count(),
                 'level_2_stores' => Store::where('onboarding_level', 2)->count(),
                 'level_3_stores' => Store::where('onboarding_level', 3)->count(),
@@ -327,8 +326,8 @@ class AdminStoreKYCController extends Controller
             $monthlyStats = Store::selectRaw('
                 DATE_FORMAT(created_at, "%Y-%m") as month,
                 COUNT(*) as total_stores,
-                SUM(CASE WHEN kyc_status = "approved" THEN 1 ELSE 0 END) as approved_count,
-                SUM(CASE WHEN kyc_status = "pending" THEN 1 ELSE 0 END) as pending_count
+                SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as approved_count,
+                SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_count
             ')
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
@@ -403,12 +402,11 @@ class AdminStoreKYCController extends Controller
                 'phone' => $store->phone,
                 'owner_name' => $store->user->full_name,
                 'owner_email' => $store->user->email,
-                'kyc_status' => $store->kyc_status,
-                'onboarding_level' => $store->onboarding_level,
                 'status' => $store->status,
+                'onboarding_level' => $store->onboarding_level,
                 'created_at' => $store->created_at,
                 'formatted_date' => $store->created_at->format('d-m-Y H:i A'),
-                'status_color' => $this->getKYCStatusColor($store->kyc_status),
+                'status_color' => $this->getKYCStatusColor($store->status),
             ];
         });
     }
