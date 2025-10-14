@@ -266,13 +266,13 @@ class AdminSocialFeedController extends Controller
             $dailyStats = Post::selectRaw('
                 DATE(created_at) as date,
                 COUNT(*) as posts_count,
-                (SELECT COUNT(*) FROM post_likes WHERE DATE(created_at) = DATE(posts.created_at)) as likes_count,
-                (SELECT COUNT(*) FROM post_comments WHERE DATE(created_at) = DATE(posts.created_at)) as comments_count,
-                (SELECT COUNT(*) FROM post_shares WHERE DATE(created_at) = DATE(posts.created_at)) as shares_count
+                (SELECT COUNT(*) FROM post_likes pl WHERE DATE(pl.created_at) = DATE(posts.created_at)) as likes_count,
+                (SELECT COUNT(*) FROM post_comments pc WHERE DATE(pc.created_at) = DATE(posts.created_at)) as comments_count,
+                (SELECT COUNT(*) FROM post_shares ps WHERE DATE(ps.created_at) = DATE(posts.created_at)) as shares_count
             ')
             ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy('date')
-            ->orderBy('date')
+            ->groupBy(DB::raw('DATE(created_at)'))
+            ->orderBy(DB::raw('DATE(created_at)'))
             ->get();
 
             return ResponseHelper::success([
