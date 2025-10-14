@@ -112,11 +112,11 @@ class AdminStoreKYCController extends Controller
                 'store_info' => [
                     'id' => $store->id,
                     'name' => $store->store_name,
-                    'email' => $store->email,
-                    'phone' => $store->phone,
+                    'email' => $store->store_email,
+                    'phone' => $store->store_phone,
                     'location' => $store->store_location,
                     'status' => $store->status,
-                    'onboarding_level' => $store->onboarding_level,
+                    'onboarding_level' => $store->onboarding_level ?? 0,
                     'created_at' => $store->created_at,
                     'updated_at' => $store->updated_at,
                 ],
@@ -139,26 +139,26 @@ class AdminStoreKYCController extends Controller
                     'social_links' => $store->socialLinks->map(function ($link) {
                         return [
                             'id' => $link->id,
-                            'platform' => $link->platform,
+                            'type' => $link->type,
                             'url' => $link->url,
                         ];
                     }),
                 ],
                 'level_2_data' => $store->businessDetails ? [
-                    'business_name' => $store->businessDetails->business_name,
+                    'business_name' => $store->businessDetails->registered_name,
                     'business_type' => $store->businessDetails->business_type,
-                    'business_registration_number' => $store->businessDetails->business_registration_number,
-                    'tax_identification_number' => $store->businessDetails->tax_identification_number,
-                    'business_address' => $store->businessDetails->business_address,
-                    'business_phone' => $store->businessDetails->business_phone,
-                    'business_email' => $store->businessDetails->business_email,
-                    'documents' => $store->businessDetails->documents ?? [],
+                    'nin_number' => $store->businessDetails->nin_number,
+                    'bn_number' => $store->businessDetails->bn_number,
+                    'cac_number' => $store->businessDetails->cac_number,
+                    'nin_document' => $store->businessDetails->nin_document,
+                    'cac_document' => $store->businessDetails->cac_document,
+                    'utility_bill' => $store->businessDetails->utility_bill,
+                    'store_video' => $store->businessDetails->store_video,
+                    'has_physical_store' => $store->businessDetails->has_physical_store,
                 ] : null,
                 'level_3_data' => [
-                    'physical_store_address' => $store->physical_store_address,
                     'store_phone' => $store->store_phone,
-                    'store_hours' => $store->store_hours,
-                    'utility_bill' => $store->utility_bill,
+                    'store_location' => $store->store_location,
                     'addresses' => $store->addresses->map(function ($address) {
                         return [
                             'id' => $address->id,
