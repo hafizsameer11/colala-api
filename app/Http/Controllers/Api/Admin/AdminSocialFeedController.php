@@ -22,7 +22,7 @@ class AdminSocialFeedController extends Controller
     public function getAllPosts(Request $request)
     {
         try {
-            $query = Post::with(['user', 'media', 'likes', 'comments', 'shares']);
+            $query = Post::with(['user.store', 'media', 'likes', 'comments.user', 'shares']);
 
             // Apply filters
             if ($request->has('store_name') && $request->store_name !== 'all') {
@@ -348,9 +348,6 @@ class AdminSocialFeedController extends Controller
             return [
                 'id' => $post->id,
                 'body' => $post->body,
-                'user_name' => $post->user->full_name,
-                'store_name' => $post->user->store->store_name ?? null,
-                'location' => $post->user->store->store_location ?? null,
                 'visibility' => $post->visibility,
                 'likes_count' => $post->likes->count(),
                 'comments_count' => $post->comments->count(),
@@ -359,6 +356,48 @@ class AdminSocialFeedController extends Controller
                 'created_at' => $post->created_at,
                 'formatted_date' => $post->created_at->diffForHumans(),
                 'time_ago' => $post->created_at->diffForHumans(),
+                
+                // User details
+                'user' => [
+                    'id' => $post->user->id,
+                    'full_name' => $post->user->full_name,
+                    'email' => $post->user->email,
+                    'profile_image' => $post->user->profile_image ? asset('storage/' . $post->user->profile_image) : null,
+                ],
+                
+                // Store details
+                'store' => $post->user->store ? [
+                    'id' => $post->user->store->id,
+                    'store_name' => $post->user->store->store_name,
+                    'store_email' => $post->user->store->store_email,
+                    'store_phone' => $post->user->store->store_phone,
+                    'store_location' => $post->user->store->store_location,
+                    'profile_image' => $post->user->store->profile_image ? asset('storage/' . $post->user->store->profile_image) : null,
+                    'banner_image' => $post->user->store->banner_image ? asset('storage/' . $post->user->store->banner_image) : null,
+                    'theme_color' => $post->user->store->theme_color,
+                    'average_rating' => $post->user->store->average_rating,
+                ] : null,
+                
+                // Media details
+                'media' => $post->media->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'type' => $media->type,
+                        'url' => asset('storage/' . $media->path),
+                        'position' => $media->position,
+                    ];
+                }),
+                
+                // Recent comments (last 3)
+                'recent_comments' => $post->comments->take(3)->map(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'comment' => $comment->comment,
+                        'user_name' => $comment->user->full_name,
+                        'created_at' => $comment->created_at,
+                        'formatted_date' => $comment->created_at->diffForHumans(),
+                    ];
+                }),
             ];
         });
     }
