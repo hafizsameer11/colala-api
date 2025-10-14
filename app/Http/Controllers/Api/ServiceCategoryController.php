@@ -42,7 +42,7 @@ class ServiceCategoryController extends Controller
     public function show($id)
     {
         try {
-            $category = ServiceCategory::with('services.store')->findOrFail($id);
+            $category = ServiceCategory::with('services.store','services.media','services.subServices')->findOrFail($id);
             return ResponseHelper::success($category);
         } catch (Exception $e) {
             Log::error($e->getMessage());
