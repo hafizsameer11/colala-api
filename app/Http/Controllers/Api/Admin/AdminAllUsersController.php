@@ -88,7 +88,7 @@ class AdminAllUsersController extends Controller
                 'store',
                 'orders',
                 'transactions',
-                'loyaltyPoints'
+                'loyaltyPoints','activities'
             ])->findOrFail($userId);
 
             $userData = [
@@ -138,6 +138,13 @@ class AdminAllUsersController extends Controller
                         'payment_status' => $order->payment_status,
                         'created_at' => $order->created_at,
                         'formatted_date' => $order->created_at->format('d-m-Y H:i A'),
+                    ];
+                }),
+                'activities' => $user->activities->map(function ($activity) {
+                    return [
+                        'id' => $activity->id,
+                        'activity' => $activity->message,
+                        'created_at' => $activity->created_at,
                     ];
                 }),
                 'recent_transactions' => $user->transactions()->latest()->limit(5)->get()->map(function ($transaction) {
