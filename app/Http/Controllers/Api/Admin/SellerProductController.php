@@ -279,10 +279,12 @@ class SellerProductController extends Controller
                 'delivery_options' => $product->deliveryOptions->map(function ($option) {
                     return [
                         'id' => $option->id,
-                        'name' => $option->name,
+                        'state' => $option->state,
+                        'local_government' => $option->local_government,
+                        'variant' => $option->variant,
                         'price' => $option->price,
                         'formatted_price' => 'N' . number_format($option->price, 0),
-                        'estimated_days' => $option->estimated_days
+                        'is_free' => $option->is_free
                     ];
                 }),
                 'stats' => [
