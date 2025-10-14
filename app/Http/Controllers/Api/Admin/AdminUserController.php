@@ -239,40 +239,40 @@ class AdminUserController extends Controller
         try {
             $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
             
-            $query = $user->orders()->with(['storeOrders.store', 'storeOrders.items.product']);
+            // Get store orders directly instead of through main orders
+            $query = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                $q->where('user_id', $id);
+            })->with(['store', 'order', 'items.product']);
 
             // Status filter
             if ($request->has('status') && $request->status !== 'all') {
-                $query->whereHas('storeOrders', function ($q) use ($request) {
-                    $q->where('status', $request->status);
-                });
+                $query->where('status', $request->status);
             }
 
             // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
-                $query->whereHas('storeOrders.store', function ($q) use ($search) {
+                $query->whereHas('store', function ($q) use ($search) {
                     $q->where('store_name', 'like', "%{$search}%");
-                })->orWhereHas('storeOrders.items.product', function ($q) use ($search) {
+                })->orWhereHas('items.product', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
             }
 
-            $orders = $query->latest()->paginate(15);
+            $storeOrders = $query->latest()->paginate(15);
 
-            $orders->getCollection()->transform(function ($order) {
-                $storeOrder = $order->storeOrders->first();
-                $product = $storeOrder ? $storeOrder->items->first() : null;
+            $storeOrders->getCollection()->transform(function ($storeOrder) {
+                $product = $storeOrder->items->first();
                 
                 return [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'store_name' => $storeOrder ? $storeOrder->store->store_name : 'Unknown Store',
+                    'id' => $storeOrder->id, // StoreOrder ID
+                    'order_no' => $storeOrder->order->order_no,
+                    'store_name' => $storeOrder->store->store_name,
                     'product_name' => $product ? $product->product->name : 'Unknown Product',
-                    'price' => number_format($order->grand_total, 2),
-                    'order_date' => $order->created_at->format('d-m-Y H:i:s'),
-                    'status' => $storeOrder ? $storeOrder->status : 'unknown',
-                    'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown')
+                    'price' => number_format($storeOrder->subtotal_with_shipping, 2),
+                    'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                    'status' => $storeOrder->status,
+                    'status_color' => $this->getOrderStatusColor($storeOrder->status)
                 ];
             });
 
@@ -280,13 +280,13 @@ class AdminUserController extends Controller
             $orderStats = $this->getUserOrderStats($user);
 
             return ResponseHelper::success([
-                'orders' => $orders,
+                'orders' => $storeOrders,
                 'statistics' => $orderStats,
                 'pagination' => [
-                    'current_page' => $orders->currentPage(),
-                    'last_page' => $orders->lastPage(),
-                    'per_page' => $orders->perPage(),
-                    'total' => $orders->total(),
+                    'current_page' => $storeOrders->currentPage(),
+                    'last_page' => $storeOrders->lastPage(),
+                    'per_page' => $storeOrders->perPage(),
+                    'total' => $storeOrders->total(),
                 ]
             ], 'User orders retrieved successfully');
         } catch (\Exception $e) {
@@ -303,38 +303,38 @@ class AdminUserController extends Controller
         try {
             $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
             
-            $query = $user->orders()->with(['storeOrders.store', 'storeOrders.items.product']);
+            // Get store orders directly instead of through main orders
+            $query = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                $q->where('user_id', $id);
+            })->with(['store', 'order', 'items.product']);
 
             $status = $request->get('status', 'all');
             $search = $request->get('search', '');
 
             if ($status !== 'all') {
-                $query->whereHas('storeOrders', function ($q) use ($status) {
-                    $q->where('status', $status);
-                });
+                $query->where('status', $status);
             }
 
             if ($search) {
-                $query->whereHas('storeOrders.store', function ($q) use ($search) {
+                $query->whereHas('store', function ($q) use ($search) {
                     $q->where('store_name', 'like', "%{$search}%");
-                })->orWhereHas('storeOrders.items.product', function ($q) use ($search) {
+                })->orWhereHas('items.product', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
                 });
             }
 
-            $orders = $query->latest()->get()->map(function ($order) {
-                $storeOrder = $order->storeOrders->first();
-                $product = $storeOrder ? $storeOrder->items->first() : null;
+            $storeOrders = $query->latest()->get()->map(function ($storeOrder) {
+                $product = $storeOrder->items->first();
                 
                 return [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'store_name' => $storeOrder ? $storeOrder->store->store_name : 'Unknown Store',
+                    'id' => $storeOrder->id, // StoreOrder ID
+                    'order_no' => $storeOrder->order->order_no,
+                    'store_name' => $storeOrder->store->store_name,
                     'product_name' => $product ? $product->product->name : 'Unknown Product',
-                    'price' => number_format($order->grand_total, 2),
-                    'order_date' => $order->created_at->format('d-m-Y H:i:s'),
-                    'status' => $storeOrder ? $storeOrder->status : 'unknown',
-                    'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown')
+                    'price' => number_format($storeOrder->subtotal_with_shipping, 2),
+                    'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                    'status' => $storeOrder->status,
+                    'status_color' => $this->getOrderStatusColor($storeOrder->status)
                 ];
             });
 
@@ -342,7 +342,7 @@ class AdminUserController extends Controller
             $orderStats = $this->getUserOrderStats($user);
 
             return ResponseHelper::success([
-                'orders' => $orders,
+                'orders' => $storeOrders,
                 'statistics' => $orderStats,
                 'filters' => [
                     'status' => $status,
@@ -356,7 +356,7 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Bulk action on user orders
+     * Bulk action on user orders (using StoreOrder IDs)
      */
     public function bulkOrderAction(Request $request, $id)
     {
@@ -374,11 +374,15 @@ class AdminUserController extends Controller
                 $newStatus = $request->new_status;
                 
                 // Update store orders status
-                \App\Models\StoreOrder::whereIn('order_id', $orderIds)->update(['status' => $newStatus]);
+                \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                    $q->where('user_id', $id);
+                })->whereIn('id', $orderIds)->update(['status' => $newStatus]);
                 $message = "Orders status updated to {$newStatus}";
             } else {
-                // Delete orders
-                \App\Models\Order::whereIn('id', $orderIds)->delete();
+                // Delete store orders
+                \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                    $q->where('user_id', $id);
+                })->whereIn('id', $orderIds)->delete();
                 $message = "Orders deleted successfully";
             }
 
@@ -390,25 +394,101 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Get complete order details (following same pattern as existing order details)
+     * Get complete order details (using StoreOrder ID)
      */
     public function orderDetails($id, $orderId)
     {
         try {
             $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
-            $order = $user->orders()->findOrFail($orderId);
             
-            // Load complete order details following the same pattern as Buyer OrderService
-            $completeOrder = $order->load([
-                'storeOrders.store',
-                'storeOrders.items.product.images',
-                'storeOrders.items.variant',
-                'storeOrders.orderTracking',
-                'deliveryAddress',
-                'storeOrders.chat'
-            ]);
+            // Find StoreOrder by ID and ensure it belongs to the user
+            $storeOrder = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                $q->where('user_id', $id);
+            })->with([
+                'store',
+                'order.deliveryAddress',
+                'items.product.images',
+                'items.variant',
+                'orderTracking',
+                'chat'
+            ])->findOrFail($orderId);
+            
+            // Format the complete order details
+            $orderDetails = [
+                'id' => $storeOrder->id,
+                'order_no' => $storeOrder->order->order_no,
+                'status' => $storeOrder->status,
+                'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                'store' => [
+                    'id' => $storeOrder->store->id,
+                    'name' => $storeOrder->store->store_name,
+                    'email' => $storeOrder->store->store_email,
+                    'phone' => $storeOrder->store->store_phone,
+                    'location' => $storeOrder->store->store_location,
+                ],
+                'customer' => [
+                    'id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ],
+                'delivery_address' => $storeOrder->order->deliveryAddress ? [
+                    'id' => $storeOrder->order->deliveryAddress->id,
+                    'full_address' => $storeOrder->order->deliveryAddress->full_address,
+                    'state' => $storeOrder->order->deliveryAddress->state,
+                    'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                    'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone,
+                ] : null,
+                'items' => $storeOrder->items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'images' => $item->product->images->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'path' => asset('storage/' . $image->path),
+                                    'is_main' => $image->is_main
+                                ];
+                            })
+                        ],
+                        'variant' => $item->variant ? [
+                            'id' => $item->variant->id,
+                            'name' => $item->variant->name,
+                            'price' => $item->variant->price
+                        ] : null,
+                        'quantity' => $item->qty,
+                        'price' => $item->price,
+                        'total' => $item->price * $item->qty
+                    ];
+                }),
+                'pricing' => [
+                    'items_subtotal' => $storeOrder->items_subtotal,
+                    'shipping_fee' => $storeOrder->shipping_fee,
+                    'discount' => $storeOrder->discount,
+                    'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping,
+                ],
+                'tracking' => $storeOrder->orderTracking->map(function ($tracking) {
+                    return [
+                        'id' => $tracking->id,
+                        'status' => $tracking->status,
+                        'description' => $tracking->description,
+                        'location' => $tracking->location,
+                        'created_at' => $tracking->created_at->format('d-m-Y H:i:s')
+                    ];
+                }),
+                'chat' => $storeOrder->chat ? [
+                    'id' => $storeOrder->chat->id,
+                    'is_dispute' => $storeOrder->chat->is_dispute ?? false,
+                    'last_message' => $storeOrder->chat->messages()->latest()->first()?->message
+                ] : null,
+                'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
+            ];
 
-            return ResponseHelper::success($completeOrder, 'Complete order details retrieved successfully');
+            return ResponseHelper::success($orderDetails, 'Complete order details retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -416,7 +496,7 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Update order status
+     * Update order status (using StoreOrder ID)
      */
     public function updateOrderStatus(Request $request, $id, $orderId)
     {
@@ -426,16 +506,17 @@ class AdminUserController extends Controller
             ]);
 
             $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
-            $order = $user->orders()->findOrFail($orderId);
+            
+            // Find StoreOrder by ID and ensure it belongs to the user
+            $storeOrder = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
+                $q->where('user_id', $id);
+            })->findOrFail($orderId);
             
             // Update store order status
-            $storeOrder = $order->storeOrders->first();
-            if ($storeOrder) {
-                $storeOrder->update(['status' => $request->status]);
-            }
+            $storeOrder->update(['status' => $request->status]);
 
             return ResponseHelper::success([
-                'order_id' => $order->id,
+                'order_id' => $storeOrder->id,
                 'new_status' => $request->status,
                 'status_color' => $this->getOrderStatusColor($request->status)
             ], 'Order status updated successfully');
@@ -463,28 +544,29 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Get user order statistics
+     * Get user order statistics (based on StoreOrders)
      */
     private function getUserOrderStats($user)
     {
-        $totalOrders = $user->orders()->count();
-        $pendingOrders = $user->orders()->whereHas('storeOrders', function ($q) {
-            $q->whereIn('status', ['pending', 'processing', 'shipped']);
-        })->count();
-        $completedOrders = $user->orders()->whereHas('storeOrders', function ($q) {
-            $q->where('status', 'delivered');
-        })->count();
+        // Get StoreOrders for this user
+        $storeOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        });
+
+        $totalOrders = $storeOrdersQuery->count();
+        $pendingOrders = $storeOrdersQuery->whereIn('status', ['pending', 'processing', 'shipped'])->count();
+        $completedOrders = $storeOrdersQuery->where('status', 'delivered')->count();
 
         // Calculate percentage increase from last month
         $lastMonth = now()->subMonth();
         $currentMonth = now();
         
-        $lastMonthOrders = $user->orders()->whereBetween('created_at', [
+        $lastMonthOrders = $storeOrdersQuery->whereBetween('created_at', [
             $lastMonth->startOfMonth(),
             $lastMonth->endOfMonth()
         ])->count();
         
-        $currentMonthOrders = $user->orders()->whereBetween('created_at', [
+        $currentMonthOrders = $storeOrdersQuery->whereBetween('created_at', [
             $currentMonth->startOfMonth(),
             $currentMonth->endOfMonth()
         ])->count();
