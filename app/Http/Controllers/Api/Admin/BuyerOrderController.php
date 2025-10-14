@@ -347,41 +347,22 @@ class BuyerOrderController extends Controller
             })->findOrFail($storeOrderId);
             
             $orderDetails = [
-                'store_order_info' => [
-                    'id' => $storeOrder->id,
-                    'order_no' => $storeOrder->order->order_no,
-                    'status' => $this->formatOrderStatus($storeOrder->status),
-                    'status_color' => $this->getOrderStatusColor($storeOrder->status),
-                    'total_amount' => 'N' . number_format($storeOrder->subtotal_with_shipping, 2),
-                    'order_date' => $storeOrder->created_at->format('d-m-Y h:iA'),
-                    'updated_at' => $storeOrder->updated_at->format('d-m-Y h:iA')
-                ],
-                'buyer_info' => [
-                    'id' => $storeOrder->order->user->id,
-                    'name' => $storeOrder->order->user->full_name,
-                    'email' => $storeOrder->order->user->email,
-                    'phone' => $storeOrder->order->user->phone,
-                    'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
-                ],
-                'store_info' => [
+                'id' => $storeOrder->id,
+                'order_no' => $storeOrder->order->order_no,
+                'status' => $storeOrder->status,
+                'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                'store' => [
                     'id' => $storeOrder->store->id,
                     'name' => $storeOrder->store->store_name,
                     'email' => $storeOrder->store->store_email,
                     'phone' => $storeOrder->store->store_phone,
                     'location' => $storeOrder->store->store_location,
-                    'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
-                    'banner_image' => $storeOrder->store->banner_image ? asset('storage/' . $storeOrder->store->banner_image) : null,
-                    'theme_color' => $storeOrder->store->theme_color,
-                    'average_rating' => $storeOrder->store->average_rating,
-                    'total_sold' => $storeOrder->store->total_sold,
-                    'followers_count' => $storeOrder->store->followers_count,
-                    'seller' => [
-                        'id' => $storeOrder->store->user->id,
-                        'name' => $storeOrder->store->user->full_name,
-                        'email' => $storeOrder->store->user->email,
-                        'phone' => $storeOrder->store->user->phone,
-                        'profile_picture' => $storeOrder->store->user->profile_picture ? asset('storage/' . $storeOrder->store->user->profile_picture) : null
-                    ]
+                ],
+                'customer' => [
+                    'id' => $storeOrder->order->user->id,
+                    'name' => $storeOrder->order->user->full_name,
+                    'email' => $storeOrder->order->user->email,
+                    'phone' => $storeOrder->order->user->phone,
                 ],
                 'delivery_address' => $storeOrder->order->deliveryAddress ? [
                     'id' => $storeOrder->order->deliveryAddress->id,
@@ -389,21 +370,23 @@ class BuyerOrderController extends Controller
                     'state' => $storeOrder->order->deliveryAddress->state,
                     'local_government' => $storeOrder->order->deliveryAddress->local_government,
                     'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
-                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
+                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone,
                 ] : null,
-                'order_items' => $storeOrder->items->map(function ($item) {
+                'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
                         'id' => $item->id,
-                        'product' => [
-                            'id' => $item->product->id,
-                            'name' => $item->product->name,
-                            'description' => $item->product->description,
-                            'price' => $item->product->price,
-                            'discount_price' => $item->product->discount_price,
-                            'quantity' => $item->product->quantity,
-                            'status' => $item->product->status,
-                            'is_featured' => $item->product->is_featured,
-                            'created_at' => $item->product->created_at->format('d-m-Y H:i:s'),
+                        'complete' => [
+                            'product' => [
+                                'id' => $item->product->id,
+                                'name' => $item->product->name,
+                                'description' => $item->product->description,
+                                'price' => $item->product->price,
+                                'discount_price' => $item->product->discount_price,
+                                'quantity' => $item->product->quantity,
+                                'status' => $item->product->status,
+                                'is_featured' => $item->product->is_featured,
+                                'created_at' => $item->product->created_at->format('d-m-Y H:i:s')
+                            ],
                             'images' => $item->product->images->map(function ($image) {
                                 return [
                                     'id' => $image->id,
@@ -412,7 +395,28 @@ class BuyerOrderController extends Controller
                                     'type' => $image->type
                                 ];
                             }),
-                            'variants' => $item->product->variants,
+                            'variants' => $item->product->variants->map(function ($variant) {
+                                return [
+                                    'id' => $variant->id,
+                                    'name' => $variant->name,
+                                    'price' => $variant->price,
+                                    'stock' => $variant->stock,
+                                    'is_active' => $variant->is_active
+                                ];
+                            }),
+                            'store' => [
+                                'id' => $storeOrder->store->id,
+                                'store_name' => $storeOrder->store->store_name,
+                                'store_email' => $storeOrder->store->store_email,
+                                'store_phone' => $storeOrder->store->store_phone,
+                                'store_location' => $storeOrder->store->store_location,
+                                'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
+                                'banner_image' => $storeOrder->store->banner_image ? asset('storage/' . $storeOrder->store->banner_image) : null,
+                                'theme_color' => $storeOrder->store->theme_color,
+                                'average_rating' => $storeOrder->store->average_rating,
+                                'total_sold' => $storeOrder->store->total_sold,
+                                'followers_count' => $storeOrder->store->followers_count
+                            ],
                             'reviews' => $item->product->reviews->map(function ($review) {
                                 return [
                                     'id' => $review->id,
@@ -427,47 +431,52 @@ class BuyerOrderController extends Controller
                                 ];
                             })
                         ],
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'images' => $item->product->images->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'path' => asset('storage/' . $image->path),
+                                    'is_main' => $image->is_main
+                                ];
+                            })
+                        ],
                         'variant' => $item->variant ? [
                             'id' => $item->variant->id,
                             'name' => $item->variant->name,
-                            'value' => $item->variant->value,
                             'price' => $item->variant->price
                         ] : null,
                         'quantity' => $item->qty,
-                        'unit_price' => $item->price,
-                        'total_price' => $item->price * $item->qty
+                        'price' => $item->price,
+                        'total' => $item->price * $item->qty
                     ];
                 }),
-                'tracking_info' => $storeOrder->orderTracking->isNotEmpty() ? [
-                    'current_status' => $storeOrder->orderTracking->first()->status,
-                    'tracking_number' => $storeOrder->orderTracking->first()->tracking_number,
-                    'carrier' => $storeOrder->orderTracking->first()->carrier,
-                    'estimated_delivery' => $storeOrder->orderTracking->first()->estimated_delivery,
-                    'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA'),
-                    'notes' => $storeOrder->orderTracking->first()->notes
-                ] : null,
                 'pricing' => [
                     'items_subtotal' => $storeOrder->items_subtotal,
                     'shipping_fee' => $storeOrder->shipping_fee,
                     'discount' => $storeOrder->discount,
-                    'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping
+                    'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping,
                 ],
-                'payment_info' => [
-                    'payment_method' => $storeOrder->order->payment_method ?? 'Unknown',
-                    'payment_status' => $storeOrder->order->payment_status ?? 'Unknown',
-                    'transaction_id' => $storeOrder->order->transaction_id ?? null
-                ],
+                'tracking' => $storeOrder->orderTracking->map(function ($tracking) {
+                    return [
+                        'id' => $tracking->id,
+                        'status' => $tracking->status,
+                        'description' => $tracking->description,
+                        'location' => $tracking->location,
+                        'created_at' => $tracking->created_at->format('d-m-Y H:i:s')
+                    ];
+                }),
                 'chat' => $storeOrder->chat ? [
                     'id' => $storeOrder->chat->id,
                     'is_dispute' => $storeOrder->chat->dispute ? true : false,
-                    'last_message' => $storeOrder->chat->messages->first()?->message,
-                    'unread_count' => $storeOrder->chat->messages()->where('is_read', false)->count()
+                    'last_message' => $storeOrder->chat->messages()->latest()->first()?->message
                 ] : null,
                 'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
                 'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
             ];
 
-            return ResponseHelper::success($orderDetails, 'Store order details retrieved successfully');
+            return ResponseHelper::success($orderDetails, 'Complete order details retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
