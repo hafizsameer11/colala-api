@@ -161,101 +161,137 @@ class SellerOrderController extends Controller
               ->findOrFail($storeOrderId);
 
             $orderDetails = [
-                'order_info' => [
-                    'id' => $storeOrder->id,
-                    'order_id' => $storeOrder->order_id,
-                    'order_no' => $storeOrder->order->order_no,
-                    'status' => ucfirst(str_replace('_', ' ', $storeOrder->status)),
-                    'status_color' => $this->getOrderStatusColor($storeOrder->status),
-                    'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
-                    'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
-                ],
-                'store_info' => [
+                'id' => $storeOrder->id,
+                'order_no' => $storeOrder->order->order_no,
+                'status' => $storeOrder->status,
+                'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                'store' => [
                     'id' => $storeOrder->store->id,
-                    'store_name' => $storeOrder->store->store_name,
-                    'store_email' => $storeOrder->store->store_email,
-                    'store_phone' => $storeOrder->store->store_phone,
-                    'store_address' => $storeOrder->store->addresses->first()?->full_address
+                    'name' => $storeOrder->store->store_name,
+                    'email' => $storeOrder->store->store_email,
+                    'phone' => $storeOrder->store->store_phone,
+                    'location' => $storeOrder->store->addresses->first()?->full_address
                 ],
-                'customer_info' => [
+                'customer' => [
                     'id' => $storeOrder->order->user->id,
                     'name' => $storeOrder->order->user->full_name,
                     'email' => $storeOrder->order->user->email,
                     'phone' => $storeOrder->order->user->phone,
                     'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
                 ],
-                'delivery_info' => [
-                    'address' => $storeOrder->order->deliveryAddress ? [
-                        'full_address' => $storeOrder->order->deliveryAddress->full_address,
-                        'state' => $storeOrder->order->deliveryAddress->state,
-                        'local_government' => $storeOrder->order->deliveryAddress->local_government,
-                        'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
-                        'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
-                    ] : null,
-                    'tracking' => $storeOrder->orderTracking && $storeOrder->orderTracking->isNotEmpty() ? [
-                        'delivery_code' => $storeOrder->orderTracking->first()->delivery_code,
-                        'status' => $storeOrder->orderTracking->first()->status,
-                        'delivery_notes' => $storeOrder->orderTracking->first()->delivery_notes ?? null,
-                        'created_at' => $storeOrder->orderTracking->first()->created_at->format('d-m-Y H:i:s'),
-                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
-                    ] : null
-                ],
-                'items' => $storeOrder->items->map(function ($item) {
+                'delivery_address' => $storeOrder->order->deliveryAddress ? [
+                    'id' => $storeOrder->order->deliveryAddress->id,
+                    'full_address' => $storeOrder->order->deliveryAddress->full_address,
+                    'state' => $storeOrder->order->deliveryAddress->state,
+                    'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                    'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
+                ] : null,
+                'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
                         'id' => $item->id,
-                        'product_id' => $item->product_id,
-                        'product_name' => $item->product->name ?? 'Unknown Product',
-                        'product_description' => $item->product->description,
+                        'complete' => [
+                            'product' => [
+                                'id' => $item->product->id,
+                                'name' => $item->product->name,
+                                'description' => $item->product->description,
+                                'price' => $item->product->price,
+                                'discount_price' => $item->product->discount_price,
+                                'quantity' => $item->product->quantity,
+                                'status' => $item->product->status,
+                                'is_featured' => $item->product->is_featured,
+                                'created_at' => $item->product->created_at->format('d-m-Y H:i:s')
+                            ],
+                            'images' => $item->product->images->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'path' => asset('storage/' . ($image->path ?? $image->url)),
+                                    'is_main' => $image->is_main,
+                                    'type' => $image->type ?? null
+                                ];
+                            }),
+                            'variants' => $item->product->variants->map(function ($variant) {
+                                return [
+                                    'id' => $variant->id,
+                                    'name' => $variant->name,
+                                    'price' => $variant->price ?? ($variant->price_adjustment ?? null),
+                                    'stock' => $variant->stock ?? null,
+                                    'is_active' => $variant->is_active ?? null
+                                ];
+                            }),
+                            'store' => [
+                                'id' => $storeOrder->store->id,
+                                'store_name' => $storeOrder->store->store_name,
+                                'store_email' => $storeOrder->store->store_email,
+                                'store_phone' => $storeOrder->store->store_phone,
+                                'store_location' => $storeOrder->store->store_location,
+                                'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
+                                'banner_image' => $storeOrder->store->banner_image ? asset('storage/' . $storeOrder->store->banner_image) : null,
+                                'theme_color' => $storeOrder->store->theme_color,
+                                'average_rating' => $storeOrder->store->average_rating,
+                                'total_sold' => $storeOrder->store->total_sold,
+                                'followers_count' => $storeOrder->store->followers_count
+                            ],
+                            'reviews' => $item->product->reviews->map(function ($review) {
+                                return [
+                                    'id' => $review->id,
+                                    'user' => [
+                                        'id' => $review->user->id,
+                                        'name' => $review->user->full_name,
+                                        'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null
+                                    ],
+                                    'rating' => $review->rating,
+                                    'comment' => $review->comment,
+                                    'created_at' => $review->created_at->format('d-m-Y H:i:s')
+                                ];
+                            })
+                        ],
+                        'product' => [
+                            'id' => $item->product->id,
+                            'name' => $item->product->name,
+                            'images' => $item->product->images->map(function ($image) {
+                                return [
+                                    'id' => $image->id,
+                                    'path' => asset('storage/' . ($image->path ?? $image->url)),
+                                    'is_main' => $image->is_main
+                                ];
+                            })
+                        ],
+                        'variant' => $item->variant ? [
+                            'id' => $item->variant->id,
+                            'name' => $item->variant->name,
+                            'price' => $item->variant->price
+                        ] : null,
                         'quantity' => $item->qty ?? $item->quantity,
-                        'unit_price' => 'N' . number_format($item->price, 0),
-                        'total_price' => 'N' . number_format(($item->price * ($item->qty ?? $item->quantity)), 0),
-                        'product_images' => $item->product->images->map(function ($image) {
-                            return [
-                                'id' => $image->id,
-                                'url' => asset('storage/' . ($image->url ?? $image->path)),
-                                'is_main' => $image->is_main
-                            ];
-                        }),
-                        'product_variants' => $item->product->variants->map(function ($variant) {
-                            return [
-                                'id' => $variant->id,
-                                'name' => $variant->name,
-                                'value' => $variant->value ?? null,
-                                'price' => $variant->price ?? ($variant->price_adjustment ?? null)
-                            ];
-                        })
+                        'price' => $item->price,
+                        'total' => $item->price * ($item->qty ?? $item->quantity)
                     ];
                 }),
-                'financial_info' => [
-                    'items_subtotal' => [
-                        'amount' => $storeOrder->items_subtotal,
-                        'formatted' => 'N' . number_format($storeOrder->items_subtotal, 0)
-                    ],
-                    'shipping_fee' => [
-                        'amount' => $storeOrder->shipping_fee,
-                        'formatted' => 'N' . number_format($storeOrder->shipping_fee, 0)
-                    ],
-                    'discount' => [
-                        'amount' => $storeOrder->discount,
-                        'formatted' => 'N' . number_format($storeOrder->discount, 0)
-                    ],
-                    'total' => [
-                        'amount' => $storeOrder->subtotal_with_shipping,
-                        'formatted' => 'N' . number_format($storeOrder->subtotal_with_shipping, 0)
-                    ],
-                    'escrow_amount' => $storeOrder->escrows->sum('amount'),
-                    'escrow_status' => $storeOrder->escrows->first()?->status ?? 'pending'
+                'pricing' => [
+                    'items_subtotal' => $storeOrder->items_subtotal,
+                    'shipping_fee' => $storeOrder->shipping_fee,
+                    'discount' => $storeOrder->discount,
+                    'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping,
                 ],
-                'chat_info' => $storeOrder->chat ? [
+                'tracking' => $storeOrder->orderTracking->map(function ($tracking) {
+                    return [
+                        'id' => $tracking->id,
+                        'status' => $tracking->status,
+                        'description' => $tracking->description,
+                        'location' => $tracking->location,
+                        'created_at' => $tracking->created_at->format('d-m-Y H:i:s')
+                    ];
+                }),
+                'chat' => $storeOrder->chat ? [
                     'id' => $storeOrder->chat->id,
-                    'last_message' => $storeOrder->chat->messages->first()?->message,
-                    'unread_count' => $storeOrder->chat->messages()->where('is_read', false)->count(),
-                    'created_at' => $storeOrder->chat->created_at->format('d-m-Y H:i:s')
+                    'is_dispute' => $storeOrder->chat->dispute ? true : false,
+                    'last_message' => $storeOrder->chat->messages()->latest()->first()?->message
                 ] : null,
-                'timeline' => $this->getOrderTimeline($storeOrder)
+                'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
             ];
 
-            return ResponseHelper::success($orderDetails, 'Order details retrieved successfully');
+            return ResponseHelper::success($orderDetails, 'Complete order details retrieved successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());
