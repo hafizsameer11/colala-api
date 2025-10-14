@@ -412,16 +412,7 @@ class BuyerOrderController extends Controller
                                     'type' => $image->type
                                 ];
                             }),
-                            'variants' => $item->product->variants->map(function ($variant) {
-                                return [
-                                    'id' => $variant->id,
-                                    'name' => $variant->name,
-                                    'value' => $variant->value,
-                                    'price' => $variant->price,
-                                    'stock' => $variant->stock,
-                                    'is_active' => $variant->is_active
-                                ];
-                            }),
+                            'variants' => $item->product->variants,
                             'reviews' => $item->product->reviews->map(function ($review) {
                                 return [
                                     'id' => $review->id,
