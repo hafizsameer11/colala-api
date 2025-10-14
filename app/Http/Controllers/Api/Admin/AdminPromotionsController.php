@@ -108,7 +108,7 @@ class AdminPromotionsController extends Controller
                     'payment_status' => $promotion->payment_status,
                     'created_at' => $promotion->created_at,
                 ],
-                'product_info' => [
+                'product_info' => $promotion->product ? [
                     'product_id' => $promotion->product->id,
                     'name' => $promotion->product->name,
                     'price' => $promotion->product->price,
@@ -129,13 +129,13 @@ class AdminPromotionsController extends Controller
                             'price' => $variant->price,
                         ];
                     }),
-                ],
-                'store_info' => [
+                ] : null,
+                'store_info' => $promotion->store ? [
                     'store_id' => $promotion->store->id,
                     'store_name' => $promotion->store->store_name,
-                    'seller_name' => $promotion->store->user->full_name,
-                    'seller_email' => $promotion->store->user->email,
-                ],
+                    'seller_name' => $promotion->store->user?->full_name,
+                    'seller_email' => $promotion->store->user?->email,
+                ] : null,
                 'performance_metrics' => [
                     'reach' => $promotion->reach,
                     'impressions' => $promotion->impressions,
@@ -145,15 +145,15 @@ class AdminPromotionsController extends Controller
                     'amount_spent' => $promotion->total_amount,
                     'remaining_budget' => $promotion->budget - $promotion->total_amount,
                 ],
-                'reviews_info' => $promotion->product->reviews->map(function ($review) {
+                'reviews_info' => $promotion->product?->reviews?->map(function ($review) {
                     return [
                         'id' => $review->id,
                         'rating' => $review->rating,
                         'comment' => $review->comment,
-                        'user_name' => $review->user->full_name,
+                        'user_name' => $review->user?->full_name,
                         'created_at' => $review->created_at,
                     ];
-                }),
+                }) ?? [],
             ];
 
             return ResponseHelper::success($promotionData);
@@ -319,11 +319,11 @@ class AdminPromotionsController extends Controller
         return $promotions->map(function ($promotion) {
             return [
                 'id' => $promotion->id,
-                'product_name' => $promotion->product->name,
-                'product_image' => $promotion->product->images->first() ? 
+                'product_name' => $promotion->product?->name,
+                'product_image' => $promotion->product?->images?->first() ? 
                     asset('storage/' . $promotion->product->images->first()->path) : null,
-                'store_name' => $promotion->store->store_name,
-                'seller_name' => $promotion->store->user->full_name,
+                'store_name' => $promotion->store?->store_name,
+                'seller_name' => $promotion->store?->user?->full_name,
                 'amount' => $promotion->total_amount,
                 'duration' => $promotion->duration,
                 'status' => $promotion->status,
