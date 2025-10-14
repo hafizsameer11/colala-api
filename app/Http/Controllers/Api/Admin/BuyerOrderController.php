@@ -100,9 +100,9 @@ class BuyerOrderController extends Controller
                     'order_date' => $order->created_at->format('d-m-Y/h:iA'),
                     'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
                     'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'tracking' => $storeOrder && $storeOrder->orderTracking ? [
-                        'current_status' => $storeOrder->orderTracking->status,
-                        'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA')
+                    'tracking' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? [
+                        'current_status' => $storeOrder->orderTracking->first()->status,
+                        'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA')
                     ] : null
                 ];
             });
@@ -201,9 +201,9 @@ class BuyerOrderController extends Controller
                     'order_date' => $order->created_at->format('d-m-Y/h:iA'),
                     'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
                     'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'tracking' => $storeOrder && $storeOrder->orderTracking ? [
-                        'current_status' => $storeOrder->orderTracking->status,
-                        'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA')
+                    'tracking' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? [
+                        'current_status' => $storeOrder->orderTracking->first()->status,
+                        'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA')
                     ] : null
                 ];
             });
@@ -338,13 +338,13 @@ class BuyerOrderController extends Controller
                         'total_price' => 'N' . number_format($item->price * $item->qty, 2)
                     ];
                 }) : [],
-                'tracking_info' => $storeOrder && $storeOrder->orderTracking ? [
-                    'current_status' => $storeOrder->orderTracking->status,
-                    'tracking_number' => $storeOrder->orderTracking->tracking_number,
-                    'carrier' => $storeOrder->orderTracking->carrier,
-                    'estimated_delivery' => $storeOrder->orderTracking->estimated_delivery,
-                    'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA'),
-                    'notes' => $storeOrder->orderTracking->notes
+                'tracking_info' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? [
+                    'current_status' => $storeOrder->orderTracking->first()->status,
+                    'tracking_number' => $storeOrder->orderTracking->first()->tracking_number,
+                    'carrier' => $storeOrder->orderTracking->first()->carrier,
+                    'estimated_delivery' => $storeOrder->orderTracking->first()->estimated_delivery,
+                    'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA'),
+                    'notes' => $storeOrder->orderTracking->first()->notes
                 ] : null,
                 'payment_info' => [
                     'payment_method' => $order->payment_method ?? 'Unknown',
@@ -422,12 +422,12 @@ class BuyerOrderController extends Controller
             
             $trackingInfo = [
                 'order_no' => $order->order_no,
-                'current_status' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->status : 'Unknown',
-                'tracking_number' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->tracking_number : null,
-                'carrier' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->carrier : null,
-                'estimated_delivery' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->estimated_delivery : null,
-                'last_updated' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA') : null,
-                'notes' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->notes : null,
+                'current_status' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->status : 'Unknown',
+                'tracking_number' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->tracking_number : null,
+                'carrier' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->carrier : null,
+                'estimated_delivery' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->estimated_delivery : null,
+                'last_updated' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA') : null,
+                'notes' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->notes : null,
                 'status_history' => $this->getStatusHistory($order)
             ];
 
