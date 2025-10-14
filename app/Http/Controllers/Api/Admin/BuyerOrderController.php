@@ -23,7 +23,7 @@ class BuyerOrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Order::with(['user', 'storeOrders.store', 'orderTracking'])
+            $query = Order::with(['user', 'storeOrders.store', 'storeOrders.orderTracking'])
                 ->whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
                 });
@@ -100,9 +100,9 @@ class BuyerOrderController extends Controller
                     'order_date' => $order->created_at->format('d-m-Y/h:iA'),
                     'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
                     'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'tracking' => $order->orderTracking ? [
-                        'current_status' => $order->orderTracking->status,
-                        'last_updated' => $order->orderTracking->updated_at->format('d-m-Y h:iA')
+                    'tracking' => $storeOrder && $storeOrder->orderTracking ? [
+                        'current_status' => $storeOrder->orderTracking->status,
+                        'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA')
                     ] : null
                 ];
             });
@@ -141,7 +141,7 @@ class BuyerOrderController extends Controller
     public function filter(Request $request)
     {
         try {
-            $query = Order::with(['user', 'storeOrders.store', 'orderTracking'])
+            $query = Order::with(['user', 'storeOrders.store', 'storeOrders.orderTracking'])
                 ->whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
                 });
@@ -201,9 +201,9 @@ class BuyerOrderController extends Controller
                     'order_date' => $order->created_at->format('d-m-Y/h:iA'),
                     'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
                     'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'tracking' => $order->orderTracking ? [
-                        'current_status' => $order->orderTracking->status,
-                        'last_updated' => $order->orderTracking->updated_at->format('d-m-Y h:iA')
+                    'tracking' => $storeOrder && $storeOrder->orderTracking ? [
+                        'current_status' => $storeOrder->orderTracking->status,
+                        'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA')
                     ] : null
                 ];
             });
@@ -264,7 +264,7 @@ class BuyerOrderController extends Controller
                 'storeOrders.store.user',
                 'storeOrders.items.product.images',
                 'storeOrders.items.product.variants',
-                'orderTracking',
+                'storeOrders.orderTracking',
                 'deliveryAddress'
             ])->whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
@@ -338,13 +338,13 @@ class BuyerOrderController extends Controller
                         'total_price' => 'N' . number_format($item->price * $item->qty, 2)
                     ];
                 }) : [],
-                'tracking_info' => $order->orderTracking ? [
-                    'current_status' => $order->orderTracking->status,
-                    'tracking_number' => $order->orderTracking->tracking_number,
-                    'carrier' => $order->orderTracking->carrier,
-                    'estimated_delivery' => $order->orderTracking->estimated_delivery,
-                    'last_updated' => $order->orderTracking->updated_at->format('d-m-Y h:iA'),
-                    'notes' => $order->orderTracking->notes
+                'tracking_info' => $storeOrder && $storeOrder->orderTracking ? [
+                    'current_status' => $storeOrder->orderTracking->status,
+                    'tracking_number' => $storeOrder->orderTracking->tracking_number,
+                    'carrier' => $storeOrder->orderTracking->carrier,
+                    'estimated_delivery' => $storeOrder->orderTracking->estimated_delivery,
+                    'last_updated' => $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA'),
+                    'notes' => $storeOrder->orderTracking->notes
                 ] : null,
                 'payment_info' => [
                     'payment_method' => $order->payment_method ?? 'Unknown',
@@ -384,19 +384,21 @@ class BuyerOrderController extends Controller
             }
 
             // Update or create tracking info
-            $trackingData = [
-                'order_id' => $order->id,
-                'status' => $request->status,
-                'tracking_number' => $request->tracking_number,
-                'carrier' => $request->carrier,
-                'estimated_delivery' => $request->estimated_delivery,
-                'notes' => $request->notes
-            ];
+            if ($storeOrder) {
+                $trackingData = [
+                    'store_order_id' => $storeOrder->id,
+                    'status' => $request->status,
+                    'tracking_number' => $request->tracking_number,
+                    'carrier' => $request->carrier,
+                    'estimated_delivery' => $request->estimated_delivery,
+                    'notes' => $request->notes
+                ];
 
-            OrderTracking::updateOrCreate(
-                ['order_id' => $order->id],
-                $trackingData
-            );
+                OrderTracking::updateOrCreate(
+                    ['store_order_id' => $storeOrder->id],
+                    $trackingData
+                );
+            }
 
             return ResponseHelper::success(null, 'Order status updated successfully');
         } catch (\Exception $e) {
@@ -411,19 +413,21 @@ class BuyerOrderController extends Controller
     public function orderTracking($orderId)
     {
         try {
-            $order = Order::with(['orderTracking', 'storeOrders'])
+            $order = Order::with(['storeOrders.orderTracking', 'storeOrders'])
                 ->whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
                 })->findOrFail($orderId);
             
+            $storeOrder = $order->storeOrders->first();
+            
             $trackingInfo = [
                 'order_no' => $order->order_no,
-                'current_status' => $order->orderTracking ? $order->orderTracking->status : 'Unknown',
-                'tracking_number' => $order->orderTracking ? $order->orderTracking->tracking_number : null,
-                'carrier' => $order->orderTracking ? $order->orderTracking->carrier : null,
-                'estimated_delivery' => $order->orderTracking ? $order->orderTracking->estimated_delivery : null,
-                'last_updated' => $order->orderTracking ? $order->orderTracking->updated_at->format('d-m-Y h:iA') : null,
-                'notes' => $order->orderTracking ? $order->orderTracking->notes : null,
+                'current_status' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->status : 'Unknown',
+                'tracking_number' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->tracking_number : null,
+                'carrier' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->carrier : null,
+                'estimated_delivery' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->estimated_delivery : null,
+                'last_updated' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->updated_at->format('d-m-Y h:iA') : null,
+                'notes' => $storeOrder && $storeOrder->orderTracking ? $storeOrder->orderTracking->notes : null,
                 'status_history' => $this->getStatusHistory($order)
             ];
 
