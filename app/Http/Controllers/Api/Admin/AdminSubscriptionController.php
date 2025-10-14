@@ -65,7 +65,9 @@ class AdminSubscriptionController extends Controller
                 'active_subscriptions' => Subscription::where('status', 'active')->count(),
                 'expired_subscriptions' => Subscription::where('status', 'expired')->count(),
                 'cancelled_subscriptions' => Subscription::where('status', 'cancelled')->count(),
-                'total_revenue' => Subscription::where('status', 'active')->sum('plan.price'),
+                'total_revenue' => Subscription::where('status', 'active')
+                    ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
+                    ->sum('subscription_plans.price'),
                 'basic_plan_stores' => Subscription::whereHas('plan', function ($q) {
                     $q->where('name', 'like', '%basic%');
                 })->where('status', 'active')->count(),
