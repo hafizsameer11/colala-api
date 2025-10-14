@@ -160,6 +160,7 @@ class SellerOrderController extends Controller
             ])->where('store_id', $store->id)
               ->findOrFail($storeOrderId);
 
+            // Build order details
             $orderDetails = [
                 'id' => $storeOrder->id,
                 'order_no' => $storeOrder->order->order_no,
@@ -289,6 +290,39 @@ class SellerOrderController extends Controller
                 ] : null,
                 'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
                 'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
+            ];
+
+            // Attach statistics for the seller's store (for cards)
+            $totalOrders = StoreOrder::where('store_id', $store->id)->count();
+            $pendingOrders = StoreOrder::where('store_id', $store->id)
+                ->whereIn('status', ['pending','processing','out_for_delivery'])
+                ->count();
+            $completedOrders = StoreOrder::where('store_id', $store->id)
+                ->where('status', 'delivered')
+                ->count();
+
+            $orderDetails['statistics'] = [
+                'total_orders' => [
+                    'value' => $totalOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Total Orders'
+                ],
+                'pending_orders' => [
+                    'value' => $pendingOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Pending Orders'
+                ],
+                'completed_orders' => [
+                    'value' => $completedOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Completed Orders'
+                ]
             ];
 
             return ResponseHelper::success($orderDetails, 'Complete order details retrieved successfully');
