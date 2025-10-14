@@ -336,11 +336,11 @@ class AdminProductsController extends Controller
         $stats = $product->statsSummary();
         
         return [
-            'views' => $stats['view'],
-            'impressions' => $stats['impression'],
-            'clicks' => $stats['click'],
-            'chats' => $stats['chat'],
-            'phone_views' => $stats['phone_view'],
+            'views' => $stats['view'] ?? 0,
+            'impressions' => $stats['impression'] ?? 0,
+            'clicks' => $stats['click'] ?? 0,
+            'chats' => $stats['chat'] ?? 0,
+            'phone_views' => $stats['phone_view'] ?? 0,
             'total_engagement' => array_sum($stats),
             'average_rating' => $product->reviews->avg('rating') ?? 0,
             'total_reviews' => $product->reviews->count(),
