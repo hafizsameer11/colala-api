@@ -11,6 +11,7 @@ use App\Models\Escrow;
 use App\Models\UserActivity;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Models\StoreOrder;
 use App\Models\Chat;
 use App\Models\Post;
 use App\Models\Product;
@@ -133,9 +134,14 @@ class SellerDetailsController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $query = Order::whereHas('storeOrders', function ($q) use ($store) {
-                $q->where('store_id', $store->id);
-            })->with(['user', 'storeOrders.items.product']);
+            // Treat each StoreOrder as a separate order for seller context
+            $query = StoreOrder::with([
+                'order.user',
+                'store',
+                'items.product.images',
+                'items.variant',
+                'orderTracking'
+            ])->where('store_id', $store->id);
 
             // Filter by date range
             if ($request->has('date_from') && $request->date_from) {
@@ -152,38 +158,35 @@ class SellerDetailsController extends Controller
 
             $orders = $query->latest()->paginate(15);
 
-            $orders->getCollection()->transform(function ($order) {
+            $orders->getCollection()->transform(function ($storeOrder) {
+                $firstItem = $storeOrder->items->first();
                 return [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'customer_name' => $order->user->full_name,
-                    'customer_email' => $order->user->email,
-                    'total_amount' => 'N' . number_format($order->grand_total, 0),
-                    'status' => ucfirst($order->status),
-                    'status_color' => $this->getOrderStatusColor($order->status),
-                    'items_count' => $order->storeOrders->sum(function ($storeOrder) {
-                        return $storeOrder->items->count();
-                    }),
-                    'created_at' => $order->created_at->format('d-m-Y H:i:s'),
-                    'store_orders' => $order->storeOrders->map(function ($storeOrder) {
+                    'id' => $storeOrder->id,
+                    'order_no' => $storeOrder->order->order_no,
+                    'customer_name' => $storeOrder->order->user->full_name,
+                    'customer_email' => $storeOrder->order->user->email,
+                    'store_name' => $storeOrder->store->store_name,
+                    'subtotal' => 'N' . number_format($storeOrder->items_subtotal, 0),
+                    'delivery_fee' => 'N' . number_format($storeOrder->shipping_fee, 0),
+                    'discount' => 'N' . number_format($storeOrder->discount, 0),
+                    'total' => 'N' . number_format($storeOrder->subtotal_with_shipping, 0),
+                    'status' => ucfirst($storeOrder->status),
+                    'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                    'items_count' => $storeOrder->items->count(),
+                    'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                    'items' => $storeOrder->items->map(function ($item) {
                         return [
-                            'id' => $storeOrder->id,
-                            'store_name' => $storeOrder->store->store_name,
-                            'subtotal' => 'N' . number_format($storeOrder->subtotal, 0),
-                            'delivery_fee' => 'N' . number_format($storeOrder->delivery_fee, 0),
-                            'total' => 'N' . number_format($storeOrder->total, 0),
-                            'status' => ucfirst($storeOrder->status),
-                            'items' => $storeOrder->items->map(function ($item) {
-                                return [
-                                    'id' => $item->id,
-                                    'product_name' => $item->product->name ?? 'Unknown Product',
-                                    'quantity' => $item->quantity,
-                                    'price' => 'N' . number_format($item->price, 0),
-                                    'total' => 'N' . number_format($item->total, 0)
-                                ];
-                            })
+                            'id' => $item->id,
+                            'product_name' => $item->product->name ?? 'Unknown Product',
+                            'quantity' => $item->qty ?? $item->quantity,
+                            'price' => 'N' . number_format($item->price, 0),
+                            'total' => 'N' . number_format(($item->price * ($item->qty ?? $item->quantity)), 0)
                         ];
-                    })
+                    }),
+                    'tracking' => $storeOrder->orderTracking->isNotEmpty() ? [
+                        'status' => $storeOrder->orderTracking->first()->status,
+                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
+                    ] : null,
                 ];
             });
 

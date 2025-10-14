@@ -84,22 +84,24 @@ class SellerOrderController extends Controller
                     'customer_phone' => $storeOrder->order->user->phone,
                     'product_name' => $storeOrder->items->first()?->product?->name ?? 'Multiple Products',
                     'product_count' => $storeOrder->items->count(),
-                    'subtotal' => 'N' . number_format($storeOrder->subtotal, 0),
-                    'delivery_fee' => 'N' . number_format($storeOrder->delivery_fee, 0),
-                    'total' => 'N' . number_format($storeOrder->total, 0),
+                    'items_subtotal' => 'N' . number_format($storeOrder->items_subtotal, 0),
+                    'shipping_fee' => 'N' . number_format($storeOrder->shipping_fee, 0),
+                    'discount' => 'N' . number_format($storeOrder->discount, 0),
+                    'total' => 'N' . number_format($storeOrder->subtotal_with_shipping, 0),
                     'status' => ucfirst(str_replace('_', ' ', $storeOrder->status)),
                     'status_color' => $this->getOrderStatusColor($storeOrder->status),
                     'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
                     'delivery_address' => $storeOrder->order->deliveryAddress ? [
-                        'address' => $storeOrder->order->deliveryAddress->address,
-                        'city' => $storeOrder->order->deliveryAddress->city,
+                        'full_address' => $storeOrder->order->deliveryAddress->full_address,
                         'state' => $storeOrder->order->deliveryAddress->state,
-                        'phone' => $storeOrder->order->deliveryAddress->phone
+                        'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                        'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                        'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
                     ] : null,
-                    'tracking' => $storeOrder->orderTracking ? [
-                        'delivery_code' => $storeOrder->orderTracking->delivery_code,
-                        'status' => $storeOrder->orderTracking->status,
-                        'updated_at' => $storeOrder->orderTracking->updated_at->format('d-m-Y H:i:s')
+                    'tracking' => $storeOrder->orderTracking && $storeOrder->orderTracking->isNotEmpty() ? [
+                        'delivery_code' => $storeOrder->orderTracking->first()->delivery_code,
+                        'status' => $storeOrder->orderTracking->first()->status,
+                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
                     ] : null,
                     'chat_available' => $storeOrder->chat ? true : false,
                     'chat_id' => $storeOrder->chat?->id
@@ -184,18 +186,18 @@ class SellerOrderController extends Controller
                 ],
                 'delivery_info' => [
                     'address' => $storeOrder->order->deliveryAddress ? [
-                        'full_address' => $storeOrder->order->deliveryAddress->address,
-                        'city' => $storeOrder->order->deliveryAddress->city,
+                        'full_address' => $storeOrder->order->deliveryAddress->full_address,
                         'state' => $storeOrder->order->deliveryAddress->state,
-                        'phone' => $storeOrder->order->deliveryAddress->phone,
-                        'landmark' => $storeOrder->order->deliveryAddress->landmark
+                        'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                        'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                        'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
                     ] : null,
-                    'tracking' => $storeOrder->orderTracking ? [
-                        'delivery_code' => $storeOrder->orderTracking->delivery_code,
-                        'status' => $storeOrder->orderTracking->status,
-                        'delivery_notes' => $storeOrder->orderTracking->delivery_notes,
-                        'created_at' => $storeOrder->orderTracking->created_at->format('d-m-Y H:i:s'),
-                        'updated_at' => $storeOrder->orderTracking->updated_at->format('d-m-Y H:i:s')
+                    'tracking' => $storeOrder->orderTracking && $storeOrder->orderTracking->isNotEmpty() ? [
+                        'delivery_code' => $storeOrder->orderTracking->first()->delivery_code,
+                        'status' => $storeOrder->orderTracking->first()->status,
+                        'delivery_notes' => $storeOrder->orderTracking->first()->delivery_notes ?? null,
+                        'created_at' => $storeOrder->orderTracking->first()->created_at->format('d-m-Y H:i:s'),
+                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
                     ] : null
                 ],
                 'items' => $storeOrder->items->map(function ($item) {
@@ -204,13 +206,13 @@ class SellerOrderController extends Controller
                         'product_id' => $item->product_id,
                         'product_name' => $item->product->name ?? 'Unknown Product',
                         'product_description' => $item->product->description,
-                        'quantity' => $item->quantity,
+                        'quantity' => $item->qty ?? $item->quantity,
                         'unit_price' => 'N' . number_format($item->price, 0),
-                        'total_price' => 'N' . number_format($item->total, 0),
+                        'total_price' => 'N' . number_format(($item->price * ($item->qty ?? $item->quantity)), 0),
                         'product_images' => $item->product->images->map(function ($image) {
                             return [
                                 'id' => $image->id,
-                                'url' => asset('storage/' . $image->url),
+                                'url' => asset('storage/' . ($image->url ?? $image->path)),
                                 'is_main' => $image->is_main
                             ];
                         }),
@@ -218,24 +220,28 @@ class SellerOrderController extends Controller
                             return [
                                 'id' => $variant->id,
                                 'name' => $variant->name,
-                                'value' => $variant->value,
-                                'price_adjustment' => $variant->price_adjustment
+                                'value' => $variant->value ?? null,
+                                'price' => $variant->price ?? ($variant->price_adjustment ?? null)
                             ];
                         })
                     ];
                 }),
                 'financial_info' => [
-                    'subtotal' => [
-                        'amount' => $storeOrder->subtotal,
-                        'formatted' => 'N' . number_format($storeOrder->subtotal, 0)
+                    'items_subtotal' => [
+                        'amount' => $storeOrder->items_subtotal,
+                        'formatted' => 'N' . number_format($storeOrder->items_subtotal, 0)
                     ],
-                    'delivery_fee' => [
-                        'amount' => $storeOrder->delivery_fee,
-                        'formatted' => 'N' . number_format($storeOrder->delivery_fee, 0)
+                    'shipping_fee' => [
+                        'amount' => $storeOrder->shipping_fee,
+                        'formatted' => 'N' . number_format($storeOrder->shipping_fee, 0)
+                    ],
+                    'discount' => [
+                        'amount' => $storeOrder->discount,
+                        'formatted' => 'N' . number_format($storeOrder->discount, 0)
                     ],
                     'total' => [
-                        'amount' => $storeOrder->total,
-                        'formatted' => 'N' . number_format($storeOrder->total, 0)
+                        'amount' => $storeOrder->subtotal_with_shipping,
+                        'formatted' => 'N' . number_format($storeOrder->subtotal_with_shipping, 0)
                     ],
                     'escrow_amount' => $storeOrder->escrows->sum('amount'),
                     'escrow_status' => $storeOrder->escrows->first()?->status ?? 'pending'
