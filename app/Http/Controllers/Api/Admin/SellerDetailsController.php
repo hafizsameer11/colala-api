@@ -262,6 +262,40 @@ class SellerDetailsController extends Controller
 
             $chats = $query->latest()->paginate(15);
 
+            // Build chat statistics for cards
+            $totalChats = Chat::where('store_id', $store->id)->count();
+            $unreadChats = Chat::where('store_id', $store->id)
+                ->whereHas('messages', function($q) {
+                    $q->where('is_read', false);
+                })->count();
+            $disputeChats = Chat::where('store_id', $store->id)
+                ->whereHas('dispute')
+                ->count();
+
+            $chatStats = [
+                'total_chats' => [
+                    'value' => $totalChats,
+                    'increase' => 5,
+                    'icon' => 'message-circle',
+                    'color' => 'red',
+                    'label' => 'Total Chats'
+                ],
+                'unread_chats' => [
+                    'value' => $unreadChats,
+                    'increase' => 5,
+                    'icon' => 'message-circle',
+                    'color' => 'red',
+                    'label' => 'Unread Chats'
+                ],
+                'dispute_chats' => [
+                    'value' => $disputeChats,
+                    'increase' => 5,
+                    'icon' => 'message-circle',
+                    'color' => 'red',
+                    'label' => 'Dispute'
+                ]
+            ];
+
             $chats->getCollection()->transform(function ($chat) {
                 $lastMessage = $chat->messages->first();
                 return [
@@ -281,7 +315,10 @@ class SellerDetailsController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($chats, 'Seller chats retrieved successfully');
+            return ResponseHelper::success([
+                'chats' => $chats,
+                'statistics' => $chatStats
+            ], 'Seller chats retrieved successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());
