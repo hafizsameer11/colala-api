@@ -116,7 +116,7 @@ class AdminProductsController extends Controller
                 'variants',
                 'reviews.user',
                 'boost',
-                'stats'
+                'productStats'
             ])->findOrFail($productId);
 
             $productData = [
@@ -318,7 +318,7 @@ class AdminProductsController extends Controller
             $product->images()->delete();
             $product->variants()->delete();
             $product->reviews()->delete();
-            $product->stats()->delete();
+            $product->productStats()->delete();
             $product->boost()->delete();
             $product->delete();
 
