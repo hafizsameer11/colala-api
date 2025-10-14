@@ -108,28 +108,12 @@ class AdminPromotionsController extends Controller
                     'payment_status' => $promotion->payment_status,
                     'created_at' => $promotion->created_at,
                 ],
-                'product_info' => $promotion->product ? [
-                    'product_id' => $promotion->product->id,
-                    'name' => $promotion->product->name,
-                    'price' => $promotion->product->price,
-                    'discount_price' => $promotion->product->discount_price,
-                    'description' => $promotion->product->description,
-                    'images' => $promotion->product->images->map(function ($image) {
-                        return [
-                            'id' => $image->id,
-                            'url' => asset('storage/' . $image->path),
-                            'is_main' => $image->is_main,
-                        ];
-                    }),
-                    'variants' => $promotion->product->variants->map(function ($variant) {
-                        return [
-                            'id' => $variant->id,
-                            'color' => $variant->color,
-                            'size' => $variant->size,
-                            'price' => $variant->price,
-                        ];
-                    }),
-                ] : null,
+                'product_info' => [
+                    'product'=>$promotion->product,
+                    'product_images'=>$promotion->product->images,
+                    'product_variants'=>$promotion->product->variants,
+                    'product_reviews'=>$promotion->product->reviews,
+                ] ,
                 'store_info' => $promotion->store ? [
                     'store_id' => $promotion->store->id,
                     'store_name' => $promotion->store->store_name,
