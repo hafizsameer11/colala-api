@@ -408,7 +408,9 @@ class AdminUserController extends Controller
                 'store',
                 'order.deliveryAddress',
                 'items.product.images',
+                'items.product.variants',
                 'items.variant',
+                'items.product.reviews',
                 'orderTracking',
                 'chat'
             ])->findOrFail($orderId);
@@ -440,9 +442,16 @@ class AdminUserController extends Controller
                     'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
                     'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone,
                 ] : null,
-                'items' => $storeOrder->items->map(function ($item) {
+                'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
                         'id' => $item->id,
+                        'compelete'=>[
+                            'product'=>$item->product,
+                            'images'=>$item->product->images,
+                            'variant'=>$item->product->variants,
+                            'store'=>$storeOrder->store,
+                            'reviews'=>$item->product->reviews,
+                        ],
                         'product' => [
                             'id' => $item->product->id,
                             'name' => $item->product->name,
