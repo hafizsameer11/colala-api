@@ -36,7 +36,7 @@ class ProductService
         
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
 
-        return Product::with(['variants.images', 'images'])
+        return Product::with(['variants.images', 'images', 'category'])
             ->withCount([
                 'productStats as views' => fn($q) => $q->where('event_type', 'view'),
                 'productStats as impressions' => fn($q) => $q->where('event_type', 'impression'),

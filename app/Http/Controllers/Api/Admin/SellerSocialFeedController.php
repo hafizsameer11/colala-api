@@ -168,9 +168,9 @@ class SellerSocialFeedController extends Controller
                     'id' => $post->id,
                     'body' => $post->body,
                     'visibility' => $post->visibility,
-                    'likes_count' => $post->likes_count,
-                    'comments_count' => $post->comments_count,
-                    'shares_count' => $post->shares_count,
+                    'likes_count' => $post->likes->count(),
+                    'comments_count' => $post->comments->count(),
+                    'shares_count' => $post->shares->count(),
                     'media_urls' => $post->media_urls,
                     'created_at' => $post->created_at->format('d-m-Y H:i:s'),
                     'updated_at' => $post->updated_at->format('d-m-Y H:i:s')
