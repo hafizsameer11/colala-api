@@ -83,7 +83,7 @@ public function myservices(){
     public function relatedServices($categoryId)
     {
         try {
-            return ResponseHelper::success($this->serviceService->relatedServices($categoryId));
+            return ResponseHelper::success($this->serviceService->relatedServices($categoryId),"gettin service data");
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
