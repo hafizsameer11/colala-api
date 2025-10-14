@@ -18,21 +18,27 @@ use Illuminate\Support\Facades\Validator;
 class BuyerOrderController extends Controller
 {
     /**
-     * Get all buyer orders with summary stats
+     * Get all store orders with comprehensive details and summary stats
      */
     public function index(Request $request)
     {
         try {
-            $query = Order::with(['user', 'storeOrders.store', 'storeOrders.orderTracking'])
-                ->whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                });
+            // Get store orders directly (treating them as primary orders)
+            $query = StoreOrder::with([
+                'order.user',
+                'store.user',
+                'items.product.images',
+                'items.product.variants',
+                'items.variant',
+                'orderTracking',
+                'chat'
+            ])->whereHas('order.user', function ($q) {
+                $q->where('role', 'buyer');
+            });
 
             // Status filter
             if ($request->has('status') && $request->status !== 'all') {
-                $query->whereHas('storeOrders', function ($q) use ($request) {
-                    $q->where('status', $request->status);
-                });
+                $query->where('status', $request->status);
             }
 
             // Date filter
@@ -50,85 +56,152 @@ class BuyerOrderController extends Controller
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
-                    $q->where('order_no', 'like', "%{$search}%")
-                      ->orWhere('grand_total', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('full_name', 'like', "%{$search}%")
-                                   ->orWhere('email', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('storeOrders.store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('store_name', 'like', "%{$search}%");
-                      });
+                    $q->whereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('order.user', function ($userQuery) use ($search) {
+                        $userQuery->where('full_name', 'like', "%{$search}%")
+                                 ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('store', function ($storeQuery) use ($search) {
+                        $storeQuery->where('store_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
                 });
             }
 
-            $orders = $query->latest()->paginate(15);
+            $storeOrders = $query->latest()->paginate(15);
 
-            // Get summary stats (only for buyers)
-            $totalOrders = Order::whereHas('user', function ($q) {
+            // Get comprehensive summary stats
+            $totalStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
             })->count();
-            $pendingOrders = Order::whereHas('user', function ($q) {
+            
+            $pendingStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
-            })->whereHas('storeOrders', function ($q) {
-                $q->whereIn('status', ['pending', 'order_placed', 'processing']);
-            })->count();
-            $completedOrders = Order::whereHas('user', function ($q) {
+            })->whereIn('status', ['pending', 'order_placed', 'processing'])->count();
+            
+            $completedStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
-            })->whereHas('storeOrders', function ($q) {
-                $q->where('status', 'completed');
-            })->count();
+            })->where('status', 'completed')->count();
 
-            $orders->getCollection()->transform(function ($order) {
-                $storeOrder = $order->storeOrders->first();
+            $storeOrders->getCollection()->transform(function ($storeOrder) {
+                $firstItem = $storeOrder->items->first();
+                $product = $firstItem ? $firstItem->product : null;
+                
                 return [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
+                    'id' => $storeOrder->id,
+                    'order_no' => $storeOrder->order->order_no,
                     'buyer' => [
-                        'id' => $order->user->id,
-                        'name' => $order->user->full_name,
-                        'email' => $order->user->email,
-                        'phone' => $order->user->phone
+                        'id' => $storeOrder->order->user->id,
+                        'name' => $storeOrder->order->user->full_name,
+                        'email' => $storeOrder->order->user->email,
+                        'phone' => $storeOrder->order->user->phone,
+                        'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
                     ],
-                    'store' => $storeOrder ? [
+                    'store' => [
                         'id' => $storeOrder->store->id,
                         'name' => $storeOrder->store->store_name,
-                        'seller' => $storeOrder->store->user->full_name ?? 'Unknown'
+                        'email' => $storeOrder->store->store_email,
+                        'phone' => $storeOrder->store->store_phone,
+                        'location' => $storeOrder->store->store_location,
+                        'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
+                        'seller' => [
+                            'id' => $storeOrder->store->user->id,
+                            'name' => $storeOrder->store->user->full_name,
+                            'email' => $storeOrder->store->user->email,
+                            'phone' => $storeOrder->store->user->phone
+                        ]
+                    ],
+                    'product' => $product ? [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'price' => $product->price,
+                        'discount_price' => $product->discount_price,
+                        'main_image' => $product->images->where('is_main', true)->first() ? 
+                            asset('storage/' . $product->images->where('is_main', true)->first()->path) : null,
+                        'images' => $product->images->map(function ($image) {
+                            return [
+                                'id' => $image->id,
+                                'path' => asset('storage/' . $image->path),
+                                'is_main' => $image->is_main
+                            ];
+                        })
                     ] : null,
-                    'product' => $this->getOrderProductInfo($order),
-                    'price' => 'N' . number_format($order->grand_total, 0),
-                    'order_date' => $order->created_at->format('d-m-Y/h:iA'),
-                    'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
-                    'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'tracking' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? [
+                    'order_item' => $firstItem ? [
+                        'id' => $firstItem->id,
+                        'quantity' => $firstItem->qty,
+                        'unit_price' => $firstItem->price,
+                        'total_price' => $firstItem->price * $firstItem->qty,
+                        'variant' => $firstItem->variant ? [
+                            'id' => $firstItem->variant->id,
+                            'name' => $firstItem->variant->name,
+                            'value' => $firstItem->variant->value,
+                            'price' => $firstItem->variant->price
+                        ] : null
+                    ] : null,
+                    'pricing' => [
+                        'items_subtotal' => $storeOrder->items_subtotal,
+                        'shipping_fee' => $storeOrder->shipping_fee,
+                        'discount' => $storeOrder->discount,
+                        'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping
+                    ],
+                    'order_date' => $storeOrder->created_at->format('d-m-Y/h:iA'),
+                    'status' => $this->formatOrderStatus($storeOrder->status),
+                    'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                    'tracking' => $storeOrder->orderTracking->isNotEmpty() ? [
                         'current_status' => $storeOrder->orderTracking->first()->status,
-                        'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA')
+                        'tracking_number' => $storeOrder->orderTracking->first()->tracking_number,
+                        'carrier' => $storeOrder->orderTracking->first()->carrier,
+                        'estimated_delivery' => $storeOrder->orderTracking->first()->estimated_delivery,
+                        'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA'),
+                        'notes' => $storeOrder->orderTracking->first()->notes
+                    ] : null,
+                    'chat' => $storeOrder->chat ? [
+                        'id' => $storeOrder->chat->id,
+                        'is_dispute' => $storeOrder->chat->dispute ? true : false,
+                        'last_message' => $storeOrder->chat->messages()->latest()->first()?->message
                     ] : null
                 ];
             });
 
             $summaryStats = [
-                'total_orders' => [
-                    'count' => $totalOrders,
+                'total_store_orders' => [
+                    'count' => $totalStoreOrders,
                     'increase' => 5, // Mock data
-                    'color' => 'red'
+                    'color' => 'red',
+                    'icon' => 'shopping-cart',
+                    'label' => 'Total StoreOrders'
                 ],
-                'pending_orders' => [
-                    'count' => $pendingOrders,
+                'pending_store_orders' => [
+                    'count' => $pendingStoreOrders,
                     'increase' => 5, // Mock data
-                    'color' => 'red'
+                    'color' => 'yellow',
+                    'icon' => 'clock',
+                    'label' => 'Pending StoreOrders'
                 ],
-                'completed_orders' => [
-                    'count' => $completedOrders,
+                'completed_store_orders' => [
+                    'count' => $completedStoreOrders,
                     'increase' => 5, // Mock data
-                    'color' => 'red'
+                    'color' => 'green',
+                    'icon' => 'check-circle',
+                    'label' => 'Completed StoreOrders'
                 ]
             ];
 
             return ResponseHelper::success([
-                'orders' => $orders,
-                'summary_stats' => $summaryStats
-            ], 'Buyer orders retrieved successfully');
+                'store_orders' => $storeOrders,
+                'summary_stats' => $summaryStats,
+                'pagination' => [
+                    'current_page' => $storeOrders->currentPage(),
+                    'last_page' => $storeOrders->lastPage(),
+                    'per_page' => $storeOrders->perPage(),
+                    'total' => $storeOrders->total(),
+                ]
+            ], 'Store orders retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -254,91 +327,127 @@ class BuyerOrderController extends Controller
     }
 
     /**
-     * Get detailed order information
+     * Get detailed store order information
      */
-    public function orderDetails($orderId)
+    public function orderDetails($storeOrderId)
     {
         try {
-            $order = Order::with([
-                'user',
-                'storeOrders.store.user',
-                'storeOrders.items.product.images',
-                'storeOrders.items.product.variants',
-                'storeOrders.orderTracking',
-                'deliveryAddress'
-            ])->whereHas('user', function ($q) {
+            $storeOrder = StoreOrder::with([
+                'order.user',
+                'order.deliveryAddress',
+                'store.user',
+                'items.product.images',
+                'items.product.variants',
+                'items.product.reviews.user',
+                'items.variant',
+                'orderTracking',
+                'chat.messages'
+            ])->whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
-            })->findOrFail($orderId);
-
-            $storeOrder = $order->storeOrders->first();
+            })->findOrFail($storeOrderId);
             
             $orderDetails = [
-                'order_info' => [
-                    'id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'status' => $storeOrder ? $this->formatOrderStatus($storeOrder->status) : 'Unknown',
-                    'status_color' => $this->getOrderStatusColor($storeOrder ? $storeOrder->status : 'unknown'),
-                    'total_amount' => 'N' . number_format($order->grand_total, 2),
-                    'order_date' => $order->created_at->format('d-m-Y h:iA'),
-                    'updated_at' => $order->updated_at->format('d-m-Y h:iA')
+                'store_order_info' => [
+                    'id' => $storeOrder->id,
+                    'order_no' => $storeOrder->order->order_no,
+                    'status' => $this->formatOrderStatus($storeOrder->status),
+                    'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                    'total_amount' => 'N' . number_format($storeOrder->subtotal_with_shipping, 2),
+                    'order_date' => $storeOrder->created_at->format('d-m-Y h:iA'),
+                    'updated_at' => $storeOrder->updated_at->format('d-m-Y h:iA')
                 ],
                 'buyer_info' => [
-                    'id' => $order->user->id,
-                    'name' => $order->user->full_name,
-                    'email' => $order->user->email,
-                    'phone' => $order->user->phone,
-                    'profile_picture' => $order->user->profile_picture ? asset('storage/' . $order->user->profile_picture) : null
+                    'id' => $storeOrder->order->user->id,
+                    'name' => $storeOrder->order->user->full_name,
+                    'email' => $storeOrder->order->user->email,
+                    'phone' => $storeOrder->order->user->phone,
+                    'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
                 ],
-                'store_info' => $storeOrder ? [
+                'store_info' => [
                     'id' => $storeOrder->store->id,
                     'name' => $storeOrder->store->store_name,
+                    'email' => $storeOrder->store->store_email,
+                    'phone' => $storeOrder->store->store_phone,
+                    'location' => $storeOrder->store->store_location,
+                    'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
+                    'banner_image' => $storeOrder->store->banner_image ? asset('storage/' . $storeOrder->store->banner_image) : null,
+                    'theme_color' => $storeOrder->store->theme_color,
+                    'average_rating' => $storeOrder->store->average_rating,
+                    'total_sold' => $storeOrder->store->total_sold,
+                    'followers_count' => $storeOrder->store->followers_count,
                     'seller' => [
                         'id' => $storeOrder->store->user->id,
                         'name' => $storeOrder->store->user->full_name,
                         'email' => $storeOrder->store->user->email,
-                        'phone' => $storeOrder->store->user->phone
-                    ],
-                    'contact' => [
-                        'email' => $storeOrder->store->store_email,
-                        'phone' => $storeOrder->store->store_phone
+                        'phone' => $storeOrder->store->user->phone,
+                        'profile_picture' => $storeOrder->store->user->profile_picture ? asset('storage/' . $storeOrder->store->user->profile_picture) : null
                     ]
+                ],
+                'delivery_address' => $storeOrder->order->deliveryAddress ? [
+                    'id' => $storeOrder->order->deliveryAddress->id,
+                    'full_address' => $storeOrder->order->deliveryAddress->full_address,
+                    'state' => $storeOrder->order->deliveryAddress->state,
+                    'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                    'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
                 ] : null,
-                'delivery_address' => $order->deliveryAddress ? [
-                    'full_address' => $order->deliveryAddress->address,
-                    'city' => $order->deliveryAddress->city,
-                    'state' => $order->deliveryAddress->state,
-                    'country' => $order->deliveryAddress->country,
-                    'postal_code' => $order->deliveryAddress->postal_code
-                ] : null,
-                'order_items' => $storeOrder ? $storeOrder->items->map(function ($item) {
+                'order_items' => $storeOrder->items->map(function ($item) {
                     return [
                         'id' => $item->id,
                         'product' => [
                             'id' => $item->product->id,
                             'name' => $item->product->name,
                             'description' => $item->product->description,
+                            'price' => $item->product->price,
+                            'discount_price' => $item->product->discount_price,
+                            'quantity' => $item->product->quantity,
+                            'status' => $item->product->status,
+                            'is_featured' => $item->product->is_featured,
+                            'created_at' => $item->product->created_at->format('d-m-Y H:i:s'),
                             'images' => $item->product->images->map(function ($image) {
                                 return [
                                     'id' => $image->id,
                                     'path' => asset('storage/' . $image->path),
-                                    'is_main' => $image->is_main
+                                    'is_main' => $image->is_main,
+                                    'type' => $image->type
+                                ];
+                            }),
+                            'variants' => $item->product->variants->map(function ($variant) {
+                                return [
+                                    'id' => $variant->id,
+                                    'name' => $variant->name,
+                                    'value' => $variant->value,
+                                    'price' => $variant->price,
+                                    'stock' => $variant->stock,
+                                    'is_active' => $variant->is_active
+                                ];
+                            }),
+                            'reviews' => $item->product->reviews->map(function ($review) {
+                                return [
+                                    'id' => $review->id,
+                                    'user' => [
+                                        'id' => $review->user->id,
+                                        'name' => $review->user->full_name,
+                                        'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null
+                                    ],
+                                    'rating' => $review->rating,
+                                    'comment' => $review->comment,
+                                    'created_at' => $review->created_at->format('d-m-Y H:i:s')
                                 ];
                             })
                         ],
-                        'variants' => $item->product->variants->map(function ($variant) {
-                            return [
-                                'id' => $variant->id,
-                                'name' => $variant->name,
-                                'value' => $variant->value,
-                                'price' => $variant->price
-                            ];
-                        }),
+                        'variant' => $item->variant ? [
+                            'id' => $item->variant->id,
+                            'name' => $item->variant->name,
+                            'value' => $item->variant->value,
+                            'price' => $item->variant->price
+                        ] : null,
                         'quantity' => $item->qty,
-                        'unit_price' => 'N' . number_format($item->price, 2),
-                        'total_price' => 'N' . number_format($item->price * $item->qty, 2)
+                        'unit_price' => $item->price,
+                        'total_price' => $item->price * $item->qty
                     ];
-                }) : [],
-                'tracking_info' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? [
+                }),
+                'tracking_info' => $storeOrder->orderTracking->isNotEmpty() ? [
                     'current_status' => $storeOrder->orderTracking->first()->status,
                     'tracking_number' => $storeOrder->orderTracking->first()->tracking_number,
                     'carrier' => $storeOrder->orderTracking->first()->carrier,
@@ -346,14 +455,28 @@ class BuyerOrderController extends Controller
                     'last_updated' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA'),
                     'notes' => $storeOrder->orderTracking->first()->notes
                 ] : null,
+                'pricing' => [
+                    'items_subtotal' => $storeOrder->items_subtotal,
+                    'shipping_fee' => $storeOrder->shipping_fee,
+                    'discount' => $storeOrder->discount,
+                    'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping
+                ],
                 'payment_info' => [
-                    'payment_method' => $order->payment_method ?? 'Unknown',
-                    'payment_status' => $order->payment_status ?? 'Unknown',
-                    'transaction_id' => $order->transaction_id ?? null
-                ]
+                    'payment_method' => $storeOrder->order->payment_method ?? 'Unknown',
+                    'payment_status' => $storeOrder->order->payment_status ?? 'Unknown',
+                    'transaction_id' => $storeOrder->order->transaction_id ?? null
+                ],
+                'chat' => $storeOrder->chat ? [
+                    'id' => $storeOrder->chat->id,
+                    'is_dispute' => $storeOrder->chat->dispute ? true : false,
+                    'last_message' => $storeOrder->chat->messages->first()?->message,
+                    'unread_count' => $storeOrder->chat->messages()->where('is_read', false)->count()
+                ] : null,
+                'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                'updated_at' => $storeOrder->updated_at->format('d-m-Y H:i:s')
             ];
 
-            return ResponseHelper::success($orderDetails, 'Order details retrieved successfully');
+            return ResponseHelper::success($orderDetails, 'Store order details retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -363,7 +486,7 @@ class BuyerOrderController extends Controller
     /**
      * Update order status
      */
-    public function updateOrderStatus(Request $request, $orderId)
+    public function updateOrderStatus(Request $request, $storeOrderId)
     {
         try {
             $request->validate([
@@ -374,33 +497,33 @@ class BuyerOrderController extends Controller
                 'notes' => 'nullable|string'
             ]);
 
-            $order = Order::whereHas('user', function ($q) {
+            $storeOrder = StoreOrder::whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
-            })->findOrFail($orderId);
-            $storeOrder = $order->storeOrders->first();
+            })->findOrFail($storeOrderId);
 
-            if ($storeOrder) {
-                $storeOrder->update(['status' => $request->status]);
-            }
+            // Update store order status
+            $storeOrder->update(['status' => $request->status]);
 
             // Update or create tracking info
-            if ($storeOrder) {
-                $trackingData = [
-                    'store_order_id' => $storeOrder->id,
-                    'status' => $request->status,
-                    'tracking_number' => $request->tracking_number,
-                    'carrier' => $request->carrier,
-                    'estimated_delivery' => $request->estimated_delivery,
-                    'notes' => $request->notes
-                ];
+            $trackingData = [
+                'store_order_id' => $storeOrder->id,
+                'status' => $request->status,
+                'tracking_number' => $request->tracking_number,
+                'carrier' => $request->carrier,
+                'estimated_delivery' => $request->estimated_delivery,
+                'notes' => $request->notes
+            ];
 
-                OrderTracking::updateOrCreate(
-                    ['store_order_id' => $storeOrder->id],
-                    $trackingData
-                );
-            }
+            OrderTracking::updateOrCreate(
+                ['store_order_id' => $storeOrder->id],
+                $trackingData
+            );
 
-            return ResponseHelper::success(null, 'Order status updated successfully');
+            return ResponseHelper::success([
+                'store_order_id' => $storeOrder->id,
+                'new_status' => $request->status,
+                'status_color' => $this->getOrderStatusColor($request->status)
+            ], 'Store order status updated successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -408,30 +531,41 @@ class BuyerOrderController extends Controller
     }
 
     /**
-     * Get order tracking history
+     * Get store order tracking history
      */
-    public function orderTracking($orderId)
+    public function orderTracking($storeOrderId)
     {
         try {
-            $order = Order::with(['storeOrders.orderTracking', 'storeOrders'])
-                ->whereHas('user', function ($q) {
+            $storeOrder = StoreOrder::with(['order.user', 'orderTracking'])
+                ->whereHas('order.user', function ($q) {
                     $q->where('role', 'buyer');
-                })->findOrFail($orderId);
-            
-            $storeOrder = $order->storeOrders->first();
+                })->findOrFail($storeOrderId);
             
             $trackingInfo = [
-                'order_no' => $order->order_no,
-                'current_status' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->status : 'Unknown',
-                'tracking_number' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->tracking_number : null,
-                'carrier' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->carrier : null,
-                'estimated_delivery' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->estimated_delivery : null,
-                'last_updated' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA') : null,
-                'notes' => $storeOrder && $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->notes : null,
-                'status_history' => $this->getStatusHistory($order)
+                'store_order_id' => $storeOrder->id,
+                'order_no' => $storeOrder->order->order_no,
+                'current_status' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->status : 'Unknown',
+                'tracking_number' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->tracking_number : null,
+                'carrier' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->carrier : null,
+                'estimated_delivery' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->estimated_delivery : null,
+                'last_updated' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->updated_at->format('d-m-Y h:iA') : null,
+                'notes' => $storeOrder->orderTracking->isNotEmpty() ? $storeOrder->orderTracking->first()->notes : null,
+                'status_history' => $this->getStatusHistory($storeOrder),
+                'buyer_info' => [
+                    'id' => $storeOrder->order->user->id,
+                    'name' => $storeOrder->order->user->full_name,
+                    'email' => $storeOrder->order->user->email,
+                    'phone' => $storeOrder->order->user->phone
+                ],
+                'store_info' => [
+                    'id' => $storeOrder->store->id,
+                    'name' => $storeOrder->store->store_name,
+                    'email' => $storeOrder->store->store_email,
+                    'phone' => $storeOrder->store->store_phone
+                ]
             ];
 
-            return ResponseHelper::success($trackingInfo, 'Order tracking retrieved successfully');
+            return ResponseHelper::success($trackingInfo, 'Store order tracking retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -491,23 +625,38 @@ class BuyerOrderController extends Controller
     }
 
     /**
-     * Get status history for order
+     * Get status history for store order
      */
-    private function getStatusHistory($order)
+    private function getStatusHistory($storeOrder)
     {
-        // This would typically come from a status_history table
-        // For now, return basic history
-        return [
-            [
-                'status' => 'Order Placed',
-                'date' => $order->created_at->format('d-m-Y h:iA'),
-                'description' => 'Order was placed successfully'
-            ],
-            [
-                'status' => $this->formatOrderStatus($order->storeOrders->first()->status ?? 'pending'),
-                'date' => $order->updated_at->format('d-m-Y h:iA'),
-                'description' => 'Current status'
-            ]
+        $statusHistory = [];
+        
+        // Add order placed status
+        $statusHistory[] = [
+            'status' => 'Order Placed',
+            'date' => $storeOrder->created_at->format('d-m-Y h:iA'),
+            'description' => 'Store order was placed successfully'
         ];
+        
+        // Add current status
+        $statusHistory[] = [
+            'status' => $this->formatOrderStatus($storeOrder->status),
+            'date' => $storeOrder->updated_at->format('d-m-Y h:iA'),
+            'description' => 'Current status'
+        ];
+        
+        // Add tracking status if available
+        if ($storeOrder->orderTracking->isNotEmpty()) {
+            $tracking = $storeOrder->orderTracking->first();
+            $statusHistory[] = [
+                'status' => $this->formatOrderStatus($tracking->status),
+                'date' => $tracking->updated_at->format('d-m-Y h:iA'),
+                'description' => $tracking->notes ?? 'Tracking updated',
+                'tracking_number' => $tracking->tracking_number,
+                'carrier' => $tracking->carrier
+            ];
+        }
+        
+        return $statusHistory;
     }
 }
