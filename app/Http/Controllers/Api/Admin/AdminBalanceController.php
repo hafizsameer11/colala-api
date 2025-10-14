@@ -53,27 +53,34 @@ class AdminBalanceController extends Controller
 
             // Get summary statistics
             $stats = [
-                'total_shopping_balance' => Wallet::sum('balance'),
-                'total_escrow_balance' => Wallet::sum('escrow_balance'),
-                'total_points_balance' => Wallet::sum('points_balance'),
+                'total_shopping_balance' => Wallet::sum('shopping_balance'),
+                'total_reward_balance' => Wallet::sum('reward_balance'),
+                'total_referral_balance' => Wallet::sum('referral_balance'),
+                'total_loyalty_points' => Wallet::sum('loyality_points'),
                 'buyer_shopping_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
-                })->sum('balance'),
+                })->sum('shopping_balance'),
                 'seller_shopping_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'seller');
-                })->sum('balance'),
-                'buyer_escrow_balance' => Wallet::whereHas('user', function ($q) {
+                })->sum('shopping_balance'),
+                'buyer_reward_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
-                })->sum('escrow_balance'),
-                'seller_escrow_balance' => Wallet::whereHas('user', function ($q) {
+                })->sum('reward_balance'),
+                'seller_reward_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'seller');
-                })->sum('escrow_balance'),
-                'buyer_points_balance' => Wallet::whereHas('user', function ($q) {
+                })->sum('reward_balance'),
+                'buyer_referral_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
-                })->sum('points_balance'),
-                'seller_points_balance' => Wallet::whereHas('user', function ($q) {
+                })->sum('referral_balance'),
+                'seller_referral_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'seller');
-                })->sum('points_balance'),
+                })->sum('referral_balance'),
+                'buyer_loyalty_points' => Wallet::whereHas('user', function ($q) {
+                    $q->where('role', 'buyer');
+                })->sum('loyality_points'),
+                'seller_loyalty_points' => Wallet::whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                })->sum('loyality_points'),
             ];
 
             return ResponseHelper::success([
@@ -118,9 +125,10 @@ class AdminBalanceController extends Controller
                 ],
                 'wallet_info' => [
                     'id' => $user->wallet->id,
-                    'balance' => $user->wallet->balance,
-                    'escrow_balance' => $user->wallet->escrow_balance,
-                    'points_balance' => $user->wallet->points_balance,
+                    'shopping_balance' => $user->wallet->shopping_balance,
+                    'reward_balance' => $user->wallet->reward_balance,
+                    'referral_balance' => $user->wallet->referral_balance,
+                    'loyalty_points' => $user->wallet->loyality_points,
                     'created_at' => $user->wallet->created_at,
                     'updated_at' => $user->wallet->updated_at,
                 ],
@@ -157,9 +165,10 @@ class AdminBalanceController extends Controller
     {
         try {
             $request->validate([
-                'balance' => 'nullable|numeric|min:0',
-                'escrow_balance' => 'nullable|numeric|min:0',
-                'points_balance' => 'nullable|numeric|min:0',
+                'shopping_balance' => 'nullable|numeric|min:0',
+                'reward_balance' => 'nullable|numeric|min:0',
+                'referral_balance' => 'nullable|numeric|min:0',
+                'loyalty_points' => 'nullable|numeric|min:0',
                 'action' => 'required|in:add,subtract,set',
             ]);
 
@@ -170,70 +179,89 @@ class AdminBalanceController extends Controller
             }
 
             $wallet = $user->wallet;
-            $oldBalance = $wallet->balance;
-            $oldEscrowBalance = $wallet->escrow_balance;
-            $oldPointsBalance = $wallet->points_balance;
+            $oldShoppingBalance = $wallet->shopping_balance;
+            $oldRewardBalance = $wallet->reward_balance;
+            $oldReferralBalance = $wallet->referral_balance;
+            $oldLoyaltyPoints = $wallet->loyality_points;
 
-            $newBalance = $oldBalance;
-            $newEscrowBalance = $oldEscrowBalance;
-            $newPointsBalance = $oldPointsBalance;
+            $newShoppingBalance = $oldShoppingBalance;
+            $newRewardBalance = $oldRewardBalance;
+            $newReferralBalance = $oldReferralBalance;
+            $newLoyaltyPoints = $oldLoyaltyPoints;
 
-            if ($request->has('balance')) {
+            if ($request->has('shopping_balance')) {
                 switch ($request->action) {
                     case 'add':
-                        $newBalance = $oldBalance + $request->balance;
+                        $newShoppingBalance = $oldShoppingBalance + $request->shopping_balance;
                         break;
                     case 'subtract':
-                        $newBalance = max(0, $oldBalance - $request->balance);
+                        $newShoppingBalance = max(0, $oldShoppingBalance - $request->shopping_balance);
                         break;
                     case 'set':
-                        $newBalance = $request->balance;
+                        $newShoppingBalance = $request->shopping_balance;
                         break;
                 }
             }
 
-            if ($request->has('escrow_balance')) {
+            if ($request->has('reward_balance')) {
                 switch ($request->action) {
                     case 'add':
-                        $newEscrowBalance = $oldEscrowBalance + $request->escrow_balance;
+                        $newRewardBalance = $oldRewardBalance + $request->reward_balance;
                         break;
                     case 'subtract':
-                        $newEscrowBalance = max(0, $oldEscrowBalance - $request->escrow_balance);
+                        $newRewardBalance = max(0, $oldRewardBalance - $request->reward_balance);
                         break;
                     case 'set':
-                        $newEscrowBalance = $request->escrow_balance;
+                        $newRewardBalance = $request->reward_balance;
                         break;
                 }
             }
 
-            if ($request->has('points_balance')) {
+            if ($request->has('referral_balance')) {
                 switch ($request->action) {
                     case 'add':
-                        $newPointsBalance = $oldPointsBalance + $request->points_balance;
+                        $newReferralBalance = $oldReferralBalance + $request->referral_balance;
                         break;
                     case 'subtract':
-                        $newPointsBalance = max(0, $oldPointsBalance - $request->points_balance);
+                        $newReferralBalance = max(0, $oldReferralBalance - $request->referral_balance);
                         break;
                     case 'set':
-                        $newPointsBalance = $request->points_balance;
+                        $newReferralBalance = $request->referral_balance;
+                        break;
+                }
+            }
+
+            if ($request->has('loyalty_points')) {
+                switch ($request->action) {
+                    case 'add':
+                        $newLoyaltyPoints = $oldLoyaltyPoints + $request->loyalty_points;
+                        break;
+                    case 'subtract':
+                        $newLoyaltyPoints = max(0, $oldLoyaltyPoints - $request->loyalty_points);
+                        break;
+                    case 'set':
+                        $newLoyaltyPoints = $request->loyalty_points;
                         break;
                 }
             }
 
             $wallet->update([
-                'balance' => $newBalance,
-                'escrow_balance' => $newEscrowBalance,
-                'points_balance' => $newPointsBalance,
+                'shopping_balance' => $newShoppingBalance,
+                'reward_balance' => $newRewardBalance,
+                'referral_balance' => $newReferralBalance,
+                'loyality_points' => $newLoyaltyPoints,
             ]);
 
             return ResponseHelper::success([
                 'user_id' => $user->id,
-                'old_balance' => $oldBalance,
-                'new_balance' => $newBalance,
-                'old_escrow_balance' => $oldEscrowBalance,
-                'new_escrow_balance' => $newEscrowBalance,
-                'old_points_balance' => $oldPointsBalance,
-                'new_points_balance' => $newPointsBalance,
+                'old_shopping_balance' => $oldShoppingBalance,
+                'new_shopping_balance' => $newShoppingBalance,
+                'old_reward_balance' => $oldRewardBalance,
+                'new_reward_balance' => $newRewardBalance,
+                'old_referral_balance' => $oldReferralBalance,
+                'new_referral_balance' => $newReferralBalance,
+                'old_loyalty_points' => $oldLoyaltyPoints,
+                'new_loyalty_points' => $newLoyaltyPoints,
                 'action' => $request->action,
                 'updated_at' => $wallet->updated_at,
             ], 'User balance updated successfully');
@@ -254,9 +282,10 @@ class AdminBalanceController extends Controller
             // Balance trends
             $balanceTrends = Wallet::selectRaw('
                 DATE(created_at) as date,
-                SUM(balance) as total_balance,
-                SUM(escrow_balance) as total_escrow_balance,
-                SUM(points_balance) as total_points_balance
+                SUM(shopping_balance) as total_shopping_balance,
+                SUM(reward_balance) as total_reward_balance,
+                SUM(referral_balance) as total_referral_balance,
+                SUM(loyality_points) as total_loyalty_points
             ')
             ->whereBetween('created_at', [$dateFrom, $dateTo])
             ->groupBy('date')
@@ -267,8 +296,8 @@ class AdminBalanceController extends Controller
             $topUsersByBalance = User::with('wallet')
                 ->whereHas('wallet')
                 ->join('wallets', 'users.id', '=', 'wallets.user_id')
-                ->selectRaw('users.*, wallets.balance, wallets.escrow_balance, wallets.points_balance')
-                ->orderByDesc('wallets.balance')
+                ->selectRaw('users.*, wallets.shopping_balance, wallets.reward_balance, wallets.referral_balance, wallets.loyality_points')
+                ->orderByDesc('wallets.shopping_balance')
                 ->limit(10)
                 ->get();
 
@@ -280,9 +309,10 @@ class AdminBalanceController extends Controller
                         'full_name' => $user->full_name,
                         'email' => $user->email,
                         'role' => $user->role,
-                        'balance' => $user->balance,
-                        'escrow_balance' => $user->escrow_balance,
-                        'points_balance' => $user->points_balance,
+                        'shopping_balance' => $user->shopping_balance,
+                        'reward_balance' => $user->reward_balance,
+                        'referral_balance' => $user->referral_balance,
+                        'loyalty_points' => $user->loyality_points,
                     ];
                 }),
                 'date_range' => [
@@ -307,9 +337,10 @@ class AdminBalanceController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
-                'shopping_balance' => $user->wallet ? $user->wallet->balance : 0,
-                'escrow_balance' => $user->wallet ? $user->wallet->escrow_balance : 0,
-                'points_balance' => $user->wallet ? $user->wallet->points_balance : 0,
+                'shopping_balance' => $user->wallet ? $user->wallet->shopping_balance : 0,
+                'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,
+                'referral_balance' => $user->wallet ? $user->wallet->referral_balance : 0,
+                'loyalty_points' => $user->wallet ? $user->wallet->loyality_points : 0,
                 'created_at' => $user->created_at,
                 'formatted_date' => $user->created_at->format('d-m-Y H:i A'),
             ];
