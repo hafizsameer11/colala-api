@@ -123,7 +123,10 @@ class SellerChatController extends Controller
                 'user',
                 'service',
                 'dispute',
-                'messages.sender','storeOrder'
+                'store',
+                'messages.sender',
+                'storeOrder.items.product.images',
+                'storeOrder.items.variant'
             ])->where('id', $chatId)
               ->where('store_id', $store->id)
               ->firstOrFail();
@@ -139,7 +142,10 @@ class SellerChatController extends Controller
                     return [
                         'id' => $message->id,
                         'message' => $message->message,
-                        'image' => $message->image ? asset('storage/' . $message->image) : null,
+                        'image' => $message->image ? [
+                            'path' => $message->image,
+                            'url' => asset('storage/' . $message->image)
+                        ] : null,
                         'sender_type' => $message->sender_type,
                         'sender_name' => $message->sender?->full_name ?? ($message->sender_type === 'store' ? 'Store' : 'Customer'),
                         'sender_avatar' => $message->sender?->profile_picture ? asset('storage/' . $message->sender->profile_picture) : null,
@@ -174,9 +180,56 @@ class SellerChatController extends Controller
                 'dispute_info' => $chat->dispute ? [
                     'id' => $chat->dispute->id,
                     'status' => $chat->dispute->status,
-                    'reason' => $chat->dispute->reason,
-                    'description' => $chat->dispute->description,
+                    'category' => $chat->dispute->category,
+                    'details' => $chat->dispute->details,
+                    'images' => collect($chat->dispute->images ?? [])->map(function ($img) {
+                        return [
+                            'path' => $img,
+                            'url' => asset('storage/' . $img)
+                        ];
+                    }),
                     'created_at' => $chat->dispute->created_at->format('d-m-Y H:i:s')
+                ] : null,
+                'store_info' => $chat->store ? [
+                    'id' => $chat->store->id,
+                    'name' => $chat->store->store_name,
+                    'logo' => $chat->store->logo ? asset('storage/' . $chat->store->logo) : null
+                ] : null,
+                'order_info' => $chat->storeOrder ? [
+                    'id' => $chat->storeOrder->id,
+                    'order_no' => $chat->storeOrder->order?->order_no,
+                    'status' => $chat->storeOrder->status,
+                    'pricing' => [
+                        'items_subtotal' => $chat->storeOrder->items_subtotal,
+                        'shipping_fee' => $chat->storeOrder->shipping_fee,
+                        'discount' => $chat->storeOrder->discount,
+                        'subtotal_with_shipping' => $chat->storeOrder->subtotal_with_shipping
+                    ],
+                    'items' => $chat->storeOrder->items->map(function($item){
+                        return [
+                            'id' => $item->id,
+                            'quantity' => $item->qty ?? $item->quantity,
+                            'price' => $item->price,
+                            'total' => ($item->price * ($item->qty ?? $item->quantity)),
+                            'product' => [
+                                'id' => $item->product?->id,
+                                'name' => $item->product?->name,
+                                'images' => $item->product?->images?->map(function($img){
+                                    return [
+                                        'id' => $img->id,
+                                        'path' => $img->path ?? $img->image ?? null,
+                                        'url' => isset($img->path) ? asset('storage/' . $img->path) : (isset($img->image) ? asset('storage/' . $img->image) : null)
+                                    ];
+                                })
+                            ],
+                            'variant' => $item->variant ? [
+                                'id' => $item->variant->id,
+                                'name' => $item->variant->name ?? null,
+                                'sku' => $item->variant->sku ?? null,
+                                'attributes' => $item->variant->attributes ?? null
+                            ] : null
+                        ];
+                    })
                 ] : null,
                 'messages' => $messages,
                 'message_count' => $messages->count(),
