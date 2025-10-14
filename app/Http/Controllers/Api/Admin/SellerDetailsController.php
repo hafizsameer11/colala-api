@@ -190,7 +190,43 @@ class SellerDetailsController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($orders, 'Seller orders retrieved successfully');
+            // Build summary statistics for cards
+            $totalOrders = StoreOrder::where('store_id', $store->id)->count();
+            $pendingOrders = StoreOrder::where('store_id', $store->id)
+                ->whereIn('status', ['pending','processing','out_for_delivery'])
+                ->count();
+            $completedOrders = StoreOrder::where('store_id', $store->id)
+                ->where('status', 'delivered')
+                ->count();
+
+            $summaryStats = [
+                'total_orders' => [
+                    'value' => $totalOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Total Orders'
+                ],
+                'pending_orders' => [
+                    'value' => $pendingOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Pending Orders'
+                ],
+                'completed_orders' => [
+                    'value' => $completedOrders,
+                    'increase' => 5,
+                    'icon' => 'shopping-cart',
+                    'color' => 'red',
+                    'label' => 'Completed Orders'
+                ]
+            ];
+
+            return ResponseHelper::success([
+                'orders' => $orders,
+                'statistics' => $summaryStats
+            ], 'Seller orders retrieved successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());
