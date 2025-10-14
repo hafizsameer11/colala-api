@@ -106,7 +106,7 @@ class SellerDetailsController extends Controller
                 'recent_activities' => $recentActivities->map(function ($activity) {
                     return [
                         'id' => $activity->id,
-                        'activity' => $activity->activity,
+                        'activity' => $activity->message,
                         'created_at' => $activity->created_at->format('d/m/y - H:i A')
                     ];
                 })

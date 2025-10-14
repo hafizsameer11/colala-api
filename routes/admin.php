@@ -586,6 +586,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // Get all user balances with filtering and pagination
     Route::get('/balances', [AdminBalanceController::class, 'getAllBalances']);
+    // Debug: Get all users without pagination
+    Route::get('/balances/debug', [AdminBalanceController::class, 'getAllUsersDebug']);
     // Get detailed user balance information including transactions
     Route::get('/balances/{userId}/details', [AdminBalanceController::class, 'getUserBalanceDetails']);
     // Update user wallet balance (add, subtract, set)
