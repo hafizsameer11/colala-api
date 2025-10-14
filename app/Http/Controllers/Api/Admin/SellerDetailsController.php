@@ -411,7 +411,9 @@ class SellerDetailsController extends Controller
                         return [
                             'id' => $media->id,
                             'type' => $media->type,
-                            'url' => asset('storage/' . $media->url)
+                            'path' => $media->path,
+                            'url' => $media->path ? asset('storage/' . $media->path) : null,
+                            'position' => $media->position
                         ];
                     }),
                     'likes_count' => $post->likes->count(),
