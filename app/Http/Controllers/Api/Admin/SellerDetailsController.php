@@ -248,7 +248,7 @@ class SellerDetailsController extends Controller
             }
 
             $query = Chat::where('store_id', $store->id)
-                ->with(['user', 'messages' => function ($q) {
+                ->with(['user','store', 'messages' => function ($q) {
                     $q->latest()->limit(1);
                 }]);
 
@@ -268,6 +268,7 @@ class SellerDetailsController extends Controller
                     'id' => $chat->id,
                     'customer_name' => $chat->user->full_name,
                     'customer_email' => $chat->user->email,
+                    'store_name'=>$chat->store->store_name,
                     'last_message' => $lastMessage ? [
                         'message' => $lastMessage->message,
                         'sender_type' => $lastMessage->sender_type,
