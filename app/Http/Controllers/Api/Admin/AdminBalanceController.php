@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Transaction;
+use App\Models\Escrow;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,7 @@ class AdminBalanceController extends Controller
                 'total_reward_balance' => Wallet::sum('reward_balance'),
                 'total_referral_balance' => Wallet::sum('referral_balance'),
                 'total_loyalty_points' => Wallet::sum('loyality_points'),
+                'total_escrow_balance' => Escrow::where('status', 'active')->sum('amount'),
                 'buyer_shopping_balance' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'buyer');
                 })->sum('shopping_balance'),
@@ -81,6 +83,12 @@ class AdminBalanceController extends Controller
                 'seller_loyalty_points' => Wallet::whereHas('user', function ($q) {
                     $q->where('role', 'seller');
                 })->sum('loyality_points'),
+                'buyer_escrow_balance' => Escrow::whereHas('user', function ($q) {
+                    $q->where('role', 'buyer');
+                })->where('status', 'active')->sum('amount'),
+                'seller_escrow_balance' => Escrow::whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                })->where('status', 'active')->sum('amount'),
             ];
 
             return ResponseHelper::success([
@@ -111,6 +119,11 @@ class AdminBalanceController extends Controller
                 }
             ])->findOrFail($userId);
 
+            // Get user's escrow balance
+            $userEscrowBalance = Escrow::where('user_id', $userId)
+                ->where('status', 'active')
+                ->sum('amount');
+
             if (!$user->wallet) {
                 return ResponseHelper::error('User does not have a wallet', 404);
             }
@@ -129,6 +142,7 @@ class AdminBalanceController extends Controller
                     'reward_balance' => $user->wallet->reward_balance,
                     'referral_balance' => $user->wallet->referral_balance,
                     'loyalty_points' => $user->wallet->loyality_points,
+                    'escrow_balance' => $userEscrowBalance,
                     'created_at' => $user->wallet->created_at,
                     'updated_at' => $user->wallet->updated_at,
                 ],
@@ -292,6 +306,17 @@ class AdminBalanceController extends Controller
             ->orderBy('date')
             ->get();
 
+            // Escrow trends
+            $escrowTrends = Escrow::selectRaw('
+                DATE(created_at) as date,
+                SUM(amount) as total_escrow_balance
+            ')
+            ->where('status', 'active')
+            ->whereBetween('created_at', [$dateFrom, $dateTo])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
             // Top users by balance
             $topUsersByBalance = User::with('wallet')
                 ->whereHas('wallet')
@@ -303,7 +328,13 @@ class AdminBalanceController extends Controller
 
             return ResponseHelper::success([
                 'balance_trends' => $balanceTrends,
+                'escrow_trends' => $escrowTrends,
                 'top_users_by_balance' => $topUsersByBalance->map(function ($user) {
+                    // Get user's escrow balance
+                    $userEscrowBalance = Escrow::where('user_id', $user->id)
+                        ->where('status', 'active')
+                        ->sum('amount');
+
                     return [
                         'id' => $user->id,
                         'full_name' => $user->full_name,
@@ -313,6 +344,7 @@ class AdminBalanceController extends Controller
                         'reward_balance' => $user->reward_balance,
                         'referral_balance' => $user->referral_balance,
                         'loyalty_points' => $user->loyality_points,
+                        'escrow_balance' => $userEscrowBalance,
                     ];
                 }),
                 'date_range' => [
@@ -331,6 +363,11 @@ class AdminBalanceController extends Controller
     private function formatBalancesData($users)
     {
         return $users->map(function ($user) {
+            // Get user's escrow balance
+            $userEscrowBalance = Escrow::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->sum('amount');
+
             return [
                 'id' => $user->id,
                 'full_name' => $user->full_name,
@@ -341,6 +378,7 @@ class AdminBalanceController extends Controller
                 'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,
                 'referral_balance' => $user->wallet ? $user->wallet->referral_balance : 0,
                 'loyalty_points' => $user->wallet ? $user->wallet->loyality_points : 0,
+                'escrow_balance' => $userEscrowBalance,
                 'created_at' => $user->created_at,
                 'formatted_date' => $user->created_at->format('d-m-Y H:i A'),
             ];
