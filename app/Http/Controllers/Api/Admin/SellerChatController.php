@@ -123,7 +123,7 @@ class SellerChatController extends Controller
                 'user',
                 'service',
                 'dispute',
-                'messages.sender'
+                'messages.sender','storeOrder'
             ])->where('id', $chatId)
               ->where('store_id', $store->id)
               ->firstOrFail();
