@@ -86,6 +86,8 @@ class AdminStoreKYCController extends Controller
                     'last_page' => $stores->lastPage(),
                     'per_page' => $stores->perPage(),
                     'total' => $stores->total(),
+                    'next_page_url' => $stores->nextPageUrl(),
+                    'prev_page_url' => $stores->previousPageUrl(),
                 ]
             ]);
         } catch (Exception $e) {
