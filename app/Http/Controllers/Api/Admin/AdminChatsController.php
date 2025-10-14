@@ -28,10 +28,14 @@ class AdminChatsController extends Controller
             if ($request->has('status') && $request->status !== 'all') {
                 switch ($request->status) {
                     case 'unread':
-                        $query->where('is_read', false);
+                        $query->whereHas('messages', function ($q) {
+                            $q->where('is_read', false);
+                        });
                         break;
                     case 'read':
-                        $query->where('is_read', true);
+                        $query->whereDoesntHave('messages', function ($q) {
+                            $q->where('is_read', false);
+                        });
                         break;
                     case 'dispute':
                         $query->where('type', 'dispute');
@@ -75,8 +79,12 @@ class AdminChatsController extends Controller
             // Get summary statistics
             $stats = [
                 'total_chats' => Chat::count(),
-                'unread_chats' => Chat::where('is_read', false)->count(),
-                'read_chats' => Chat::where('is_read', true)->count(),
+                'unread_chats' => Chat::whereHas('messages', function ($q) {
+                    $q->where('is_read', false);
+                })->count(),
+                'read_chats' => Chat::whereDoesntHave('messages', function ($q) {
+                    $q->where('is_read', false);
+                })->count(),
                 'dispute_chats' => Chat::where('type', 'dispute')->count(),
                 'support_chats' => Chat::where('type', 'support')->count(),
                 'general_chats' => Chat::where('type', 'general')->count(),
