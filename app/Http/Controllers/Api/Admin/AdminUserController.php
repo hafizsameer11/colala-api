@@ -669,7 +669,7 @@ class AdminUserController extends Controller
         $unreadChats = $user->chats()->whereHas('messages', function ($q) {
             $q->where('is_read', false);
         })->count();
-        $disputeChats = $user->chats()->where('is_dispute', true)->count();
+        $disputeChats = $user->chats()->whereHas('dispute')->count();
 
         // Calculate percentage increase from last month
         $lastMonth = now()->subMonth();
@@ -735,7 +735,7 @@ class AdminUserController extends Controller
                         $q->where('is_read', false);
                     });
                 } elseif ($request->status === 'dispute') {
-                    $query->where('is_dispute', true);
+                    $query->whereHas('dispute');
                 }
             }
 
@@ -759,7 +759,7 @@ class AdminUserController extends Controller
                     'last_message' => $lastMessage ? $lastMessage->message : 'No messages',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at->format('d-m-Y/h:iA') : null,
                     'is_read' => $lastMessage ? $lastMessage->is_read : true,
-                    'is_dispute' => $chat->is_dispute ?? false,
+                    'is_dispute' => $chat->dispute ? true : false,
                     'chat_date' => $chat->created_at->format('d-m-Y/h:iA'),
                     'unread_count' => $chat->messages()->where('is_read', false)->count()
                 ];
@@ -805,7 +805,7 @@ class AdminUserController extends Controller
                         $q->where('is_read', false);
                     });
                 } elseif ($status === 'dispute') {
-                    $query->where('is_dispute', true);
+                    $query->whereHas('dispute');
                 }
             }
 
@@ -825,7 +825,7 @@ class AdminUserController extends Controller
                     'last_message' => $lastMessage ? $lastMessage->message : 'No messages',
                     'last_message_time' => $lastMessage ? $lastMessage->created_at->format('d-m-Y/h:iA') : null,
                     'is_read' => $lastMessage ? $lastMessage->is_read : true,
-                    'is_dispute' => $chat->is_dispute ?? false,
+                    'is_dispute' => $chat->dispute ? true : false,
                     'chat_date' => $chat->created_at->format('d-m-Y/h:iA'),
                     'unread_count' => $chat->messages()->where('is_read', false)->count()
                 ];
@@ -869,7 +869,16 @@ class AdminUserController extends Controller
                 \App\Models\ChatMessage::whereIn('chat_id', $chatIds)->update(['is_read' => false]);
                 $message = "Chats marked as unread";
             } elseif ($action === 'mark_dispute') {
-                \App\Models\Chat::whereIn('id', $chatIds)->update(['is_dispute' => true]);
+                // Create dispute records for the chats
+                foreach ($chatIds as $chatId) {
+                    \App\Models\Dispute::create([
+                        'chat_id' => $chatId,
+                        'user_id' => $id,
+                        'category' => 'admin_marked',
+                        'details' => 'Marked as dispute by admin',
+                        'status' => 'open'
+                    ]);
+                }
                 $message = "Chats marked as disputes";
             } else {
                 \App\Models\Chat::whereIn('id', $chatIds)->delete();
@@ -941,7 +950,7 @@ class AdminUserController extends Controller
                         'date' => $message->created_at->format('d-m-Y')
                     ];
                 }),
-                'is_dispute' => $chat->is_dispute ?? false,
+                'is_dispute' => $chat->dispute ? true : false,
                 'created_at' => $chat->created_at->format('d-m-Y h:iA'),
                 'updated_at' => $chat->updated_at->format('d-m-Y h:iA')
             ];
