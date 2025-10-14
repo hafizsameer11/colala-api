@@ -26,7 +26,9 @@ class StoreManagementController extends Controller
         $store = Store::with([
             'addresses' => fn($q) => $q->orderByDesc('is_main'),
             'banners',
-            'categories:id,title' // adapt "title" to your Category column
+            'categories:id,title',
+            'socialLinks',
+            'deliveryPricing'
         ])->where('user_id', $userId)->first();
 
 
@@ -49,6 +51,23 @@ class StoreManagementController extends Controller
                 'total_sold'      => $store->total_sold,
                 'average_rating'  => $store->average_rating,
                 'banners'=>$store->banners,
+                'social_links' => $store->socialLinks->map(function ($link) {
+                    return [
+                        'id' => $link->id,
+                        'type' => $link->type,
+                        'url' => $link->url,
+                    ];
+                }),
+                'delivery_pricing' => $store->deliveryPricing->map(function ($pricing) {
+                    return [
+                        'id' => $pricing->id,
+                        'state' => $pricing->state,
+                        'local_government' => $pricing->local_government,
+                        'variant' => $pricing->variant,
+                        'price' => $pricing->price,
+                        'is_free' => $pricing->is_free,
+                    ];
+                }),
                 'address'        => optional($store->addresses->first(), function ($addr) {
                     return [
                         'state'            => $addr->state,
@@ -94,6 +113,19 @@ class StoreManagementController extends Controller
             // categories: array of IDs
             'category_ids'   => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
+
+            // social links
+            'social_links' => ['nullable', 'array'],
+            'social_links.*.type' => ['required_with:social_links', 'string', 'in:facebook,twitter,instagram,linkedin,youtube,tiktok,website,whatsapp'],
+            'social_links.*.url' => ['required_with:social_links', 'url', 'max:500'],
+
+            // delivery pricing
+            'delivery_pricing' => ['nullable', 'array'],
+            'delivery_pricing.*.state' => ['required_with:delivery_pricing', 'string', 'max:100'],
+            'delivery_pricing.*.local_government' => ['nullable', 'string', 'max:100'],
+            'delivery_pricing.*.variant' => ['nullable', 'string', 'max:50'],
+            'delivery_pricing.*.price' => ['required_with:delivery_pricing', 'numeric', 'min:0'],
+            'delivery_pricing.*.is_free' => ['nullable', 'boolean'],
 
             // optional address block
             'address.state'             => ['nullable', 'string', 'max:190'],
@@ -153,6 +185,37 @@ class StoreManagementController extends Controller
                 $store->categories()->sync($validated['category_ids']);
             }
 
+            // Handle social links
+            if (isset($validated['social_links'])) {
+                // Delete existing social links
+                $store->socialLinks()->delete();
+                
+                // Create new social links
+                foreach ($validated['social_links'] as $link) {
+                    $store->socialLinks()->create([
+                        'type' => $link['type'],
+                        'url' => $link['url'],
+                    ]);
+                }
+            }
+
+            // Handle delivery pricing
+            if (isset($validated['delivery_pricing'])) {
+                // Delete existing delivery pricing
+                $store->deliveryPricing()->delete();
+                
+                // Create new delivery pricing
+                foreach ($validated['delivery_pricing'] as $pricing) {
+                    $store->deliveryPricing()->create([
+                        'state' => $pricing['state'],
+                        'local_government' => $pricing['local_government'] ?? null,
+                        'variant' => $pricing['variant'] ?? null,
+                        'price' => $pricing['price'],
+                        'is_free' => $pricing['is_free'] ?? false,
+                    ]);
+                }
+            }
+
             // Upsert MAIN address (if provided)
             if (isset($validated['address'])) {
                 $addr = $validated['address'];
@@ -180,7 +243,12 @@ class StoreManagementController extends Controller
                 }
             }
 
-            return $store->fresh(['addresses' => fn($q) => $q->orderByDesc('is_main'), 'categories:id,title']);
+            return $store->fresh([
+                'addresses' => fn($q) => $q->orderByDesc('is_main'), 
+                'categories:id,title',
+                'socialLinks',
+                'deliveryPricing'
+            ]);
         });
 
         return response()->json([
@@ -195,6 +263,23 @@ class StoreManagementController extends Controller
                 'profile_image'  => $store->profile_image ? asset('storage/' . $store->profile_image) : null,
                 'banner_image'   => $store->banner_image ?  asset('storage/' . $store->banner_image) : null,
                 'categories'     => $store->categories->map(fn($c) => ['id' => $c->id, 'title' => $c->title]),
+                'social_links' => $store->socialLinks->map(function ($link) {
+                    return [
+                        'id' => $link->id,
+                        'type' => $link->type,
+                        'url' => $link->url,
+                    ];
+                }),
+                'delivery_pricing' => $store->deliveryPricing->map(function ($pricing) {
+                    return [
+                        'id' => $pricing->id,
+                        'state' => $pricing->state,
+                        'local_government' => $pricing->local_government,
+                        'variant' => $pricing->variant,
+                        'price' => $pricing->price,
+                        'is_free' => $pricing->is_free,
+                    ];
+                }),
                 'address'        => optional($store->addresses->first(), function ($addr) {
                     return [
                         'state'            => $addr->state,
