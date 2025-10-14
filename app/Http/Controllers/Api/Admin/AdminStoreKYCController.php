@@ -106,7 +106,6 @@ class AdminStoreKYCController extends Controller
                 'deliveryPricing',
                 'categories',
                 'socialLinks',
-                'onboardingSteps'
             ])->findOrFail($storeId);
 
             $storeData = [
@@ -181,12 +180,10 @@ class AdminStoreKYCController extends Controller
                     }),
                     'theme_color' => $store->theme_color,
                 ],
-                'onboarding_progress' => $store->onboardingSteps ? [
-                    'level_1_completed' => $store->onboardingSteps->level_1_completed ?? false,
-                    'level_2_completed' => $store->onboardingSteps->level_2_completed ?? false,
-                    'level_3_completed' => $store->onboardingSteps->level_3_completed ?? false,
-                    'submitted_for_review' => $store->onboardingSteps->submitted_for_review ?? false,
-                ] : null,
+                'onboarding_progress' => [
+                    'onboarding_level' => $store->onboarding_level ?? 0,
+                    'status' => $store->status,
+                ],
             ];
 
             return ResponseHelper::success($storeData);
