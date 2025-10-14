@@ -21,7 +21,7 @@ class SellerUserController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::with(['stores', 'wallet'])
+            $query = User::with(['store', 'wallet'])
                 ->where('role', 'seller'); // Only sellers
 
             // Search functionality
@@ -31,7 +31,7 @@ class SellerUserController extends Controller
                     $q->where('full_name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhereHas('stores', function ($storeQuery) use ($search) {
+                      ->orWhereHas('store', function ($storeQuery) use ($search) {
                           $storeQuery->where('store_name', 'like', "%{$search}%");
                       });
                 });
@@ -55,7 +55,7 @@ class SellerUserController extends Controller
             $newStores = User::where('role', 'seller')->where('created_at', '>=', now()->subMonth())->count();
 
             $users->getCollection()->transform(function ($user) {
-                $primaryStore = $user->stores->first();
+                $primaryStore = $user->store;
                 return [
                     'id' => $user->id,
                     'store_name' => $primaryStore ? $primaryStore->store_name : 'No Store',
@@ -65,7 +65,7 @@ class SellerUserController extends Controller
                     'level' => $user->level ?? 1,
                     'is_active' => $user->is_active,
                     'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
-                    'store_count' => $user->stores->count(),
+                    'store_count' => $user->store ? 1 : 0,
                     'total_orders' => $this->getUserOrderCount($user->id),
                     'total_revenue' => $this->getUserRevenue($user->id),
                     'created_at' => $user->created_at->format('d-m-Y H:i:s'),
@@ -150,19 +150,19 @@ class SellerUserController extends Controller
             ]);
 
             $search = $request->search;
-            $users = User::where('role', 'seller')->with(['stores', 'wallet'])
+            $users = User::where('role', 'seller')->with(['store', 'wallet'])
                 ->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhereHas('stores', function ($storeQuery) use ($search) {
+                      ->orWhereHas('store', function ($storeQuery) use ($search) {
                           $storeQuery->where('store_name', 'like', "%{$search}%");
                       });
                 })
                 ->limit(10)
                 ->get()
                 ->map(function ($user) {
-                    $primaryStore = $user->stores->first();
+                    $primaryStore = $user->store;
                     return [
                         'id' => $user->id,
                         'store_name' => $primaryStore ? $primaryStore->store_name : 'No Store',
@@ -231,13 +231,13 @@ class SellerUserController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->with([
-                'stores',
+                'store',
                 'wallet',
-                'stores.products',
-                'stores.orders'
+                'store.products',
+                'store.orders'
             ])->findOrFail($id);
 
-            $primaryStore = $user->stores->first();
+            $primaryStore = $user->store;
             
             $sellerDetails = [
                 'user_info' => [
@@ -267,10 +267,8 @@ class SellerUserController extends Controller
                     'country' => $primaryStore->country
                 ] : null,
                 'business_metrics' => [
-                    'total_stores' => $user->stores->count(),
-                    'total_products' => $user->stores->sum(function ($store) {
-                        return $store->products->count();
-                    }),
+                    'total_stores' => $user->store ? 1 : 0,
+                    'total_products' => $user->store ? $user->store->products->count() : 0,
                     'total_orders' => $this->getUserOrderCount($user->id),
                     'total_revenue' => $this->getUserRevenue($user->id),
                     'wallet_balance' => $user->wallet ? [
@@ -280,16 +278,14 @@ class SellerUserController extends Controller
                         'loyalty_points' => $user->wallet->loyality_points
                     ] : null
                 ],
-                'stores' => $user->stores->map(function ($store) {
-                    return [
-                        'id' => $store->id,
-                        'store_name' => $store->store_name,
-                        'status' => $store->status,
-                        'products_count' => $store->products->count(),
-                        'orders_count' => $store->orders->count(),
-                        'created_at' => $store->created_at->format('d-m-Y H:i:s')
-                    ];
-                })
+                'store' => $user->store ? [
+                    'id' => $user->store->id,
+                    'store_name' => $user->store->store_name,
+                    'status' => $user->store->status,
+                    'products_count' => $user->store->products->count(),
+                    'orders_count' => $user->store->orders->count(),
+                    'created_at' => $user->store->created_at->format('d-m-Y H:i:s')
+                ] : null
             ];
 
             return ResponseHelper::success($sellerDetails, 'Seller details retrieved successfully');

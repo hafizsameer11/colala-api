@@ -38,7 +38,7 @@ class SellerDetailsController extends Controller
                 'stores.categories'
             ])->findOrFail($id);
 
-            $primaryStore = $user->stores->first();
+            $primaryStore = $user->store;
             
             // Get wallet balances
             $wallet = $user->wallet;
@@ -128,7 +128,7 @@ class SellerDetailsController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            $store = $user->stores->first();
+            $store = $user->store;
 
             if (!$store) {
                 return ResponseHelper::error('No store found for this seller', 404);
@@ -205,7 +205,7 @@ class SellerDetailsController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            $store = $user->stores->first();
+            $store = $user->store;
 
             if (!$store) {
                 return ResponseHelper::error('No store found for this seller', 404);
@@ -367,7 +367,7 @@ class SellerDetailsController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            $store = $user->stores->first();
+            $store = $user->store;
 
             if (!$store) {
                 return ResponseHelper::error('No store found for this seller', 404);
@@ -429,7 +429,7 @@ class SellerDetailsController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            $store = $user->stores->first();
+            $store = $user->store;
 
             if (!$store) {
                 return ResponseHelper::error('No store found for this seller', 404);
