@@ -137,4 +137,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Post::class);
     }
+    public function loyaltyPoints()
+    {
+        return $this->hasMany(LoyaltyPoint::class);
+    }
 }
