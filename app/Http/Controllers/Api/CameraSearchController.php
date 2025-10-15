@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -143,7 +144,7 @@ class CameraSearchController extends Controller
                 ]
             ]
         ]);
-
+        Log::info("google vision response: " . $response->body());
         if ($response->successful()) {
             $data = $response->json();
             $texts = [];
