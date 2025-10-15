@@ -157,7 +157,7 @@ class CameraSearchController extends Controller
             return implode(' ', $texts);
         }
 
-        throw new \Exception('Google Vision API request failed');
+        throw new \Exception('Google Vision API request failed' . $response->body());
     }
 
     private function extractTextUsingTesseract($imagePath)
