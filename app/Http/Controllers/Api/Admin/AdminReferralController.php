@@ -122,7 +122,7 @@ class AdminReferralController extends Controller
     public function getReferralDetails($userId)
     {
         try {
-            $user = User::with(['referralEarning', 'referrals.referredUser'])
+            $user = User::with(['referralEarning', 'referrals'])
                 ->findOrFail($userId);
 
             $referralDetails = [
@@ -142,18 +142,16 @@ class AdminReferralController extends Controller
                 ] : null,
                 'referral_stats' => [
                     'total_referred' => $user->referrals->count(),
-                    'completed_referrals' => $user->referrals->where('status', 'completed')->count(),
-                    'pending_referrals' => $user->referrals->where('status', 'pending')->count(),
-                    'total_commission' => $user->referrals->sum('commission'),
+                    'buyer_referrals' => $user->referrals->where('role', 'buyer')->count(),
+                    'seller_referrals' => $user->referrals->where('role', 'seller')->count(),
                 ],
-                'recent_referrals' => $user->referrals->take(10)->map(function ($referral) {
+                'recent_referrals' => $user->referrals->take(10)->map(function ($referredUser) {
                     return [
-                        'id' => $referral->id,
-                        'referred_user_name' => $referral->referredUser ? $referral->referredUser->full_name : 'N/A',
-                        'referred_user_email' => $referral->referredUser ? $referral->referredUser->email : 'N/A',
-                        'status' => $referral->status,
-                        'commission' => $referral->commission,
-                        'created_at' => $referral->created_at,
+                        'id' => $referredUser->id,
+                        'referred_user_name' => $referredUser->full_name,
+                        'referred_user_email' => $referredUser->email,
+                        'role' => $referredUser->role,
+                        'created_at' => $referredUser->created_at,
                     ];
                 }),
             ];
@@ -264,7 +262,7 @@ class AdminReferralController extends Controller
                 'total_commission_paid' => ReferralEarning::sum('total_earned'),
                 'total_commission_withdrawn' => ReferralEarning::sum('total_withdrawn'),
                 'pending_commission' => ReferralEarning::sum('current_balance'),
-                'average_commission_per_referral' => Referral::avg('commission'),
+                'average_commission_per_referral' => ReferralEarning::avg('total_earned'),
             ];
 
             return ResponseHelper::success([
@@ -283,74 +281,21 @@ class AdminReferralController extends Controller
     }
 
     /**
-     * Update referral status
+     * Update referral status - Not applicable in this referral system
+     * This method is disabled as the referral system doesn't use status tracking
      */
     public function updateReferralStatus(Request $request, $referralId)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,completed',
-                'commission' => 'nullable|numeric|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                return ResponseHelper::error('Validation failed: ' . $validator->errors()->first(), 422);
-            }
-
-            $referral = Referral::findOrFail($referralId);
-            $referral->update([
-                'status' => $request->status,
-                'commission' => $request->commission ?? $referral->commission,
-            ]);
-
-            // If status is completed, update referral earnings
-            if ($request->status === 'completed' && $request->commission > 0) {
-                $this->updateReferralEarnings($referral->user_id, $request->commission);
-            }
-
-            return ResponseHelper::success($referral, 'Referral status updated successfully');
-
-        } catch (Exception $e) {
-            return ResponseHelper::error($e->getMessage(), 500);
-        }
+        return ResponseHelper::error('Referral status updates are not supported in this referral system', 400);
     }
 
     /**
-     * Bulk update referral status
+     * Bulk update referral status - Not applicable in this referral system
+     * This method is disabled as the referral system doesn't use status tracking
      */
     public function bulkUpdateReferralStatus(Request $request)
     {
-        try {
-            $validator = Validator::make($request->all(), [
-                'referral_ids' => 'required|array',
-                'referral_ids.*' => 'integer|exists:referrals,id',
-                'status' => 'required|in:pending,completed',
-                'commission' => 'nullable|numeric|min:0',
-            ]);
-
-            if ($validator->fails()) {
-                return ResponseHelper::error('Validation failed: ' . $validator->errors()->first(), 422);
-            }
-
-            $referrals = Referral::whereIn('id', $request->referral_ids);
-            $referrals->update([
-                'status' => $request->status,
-                'commission' => $request->commission ?? DB::raw('commission'),
-            ]);
-
-            // Update referral earnings for completed referrals
-            if ($request->status === 'completed' && $request->commission > 0) {
-                $completedReferrals = $referrals->get();
-                foreach ($completedReferrals as $referral) {
-                    $this->updateReferralEarnings($referral->user_id, $request->commission);
-                }
-            }
-
-            return ResponseHelper::success(null, 'Bulk referral status updated successfully');
-
-        } catch (Exception $e) {
-            return ResponseHelper::error($e->getMessage(), 500);
-        }
+        return ResponseHelper::error('Bulk referral status updates are not supported in this referral system', 400);
     }
 
     /**
@@ -454,19 +399,19 @@ class AdminReferralController extends Controller
             $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
             $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
-            $referrals = Referral::with(['user', 'referredUser'])
+            $referrals = User::with(['referrer'])
+                ->whereNotNull('referral_code')
                 ->whereBetween('created_at', [$dateFrom, $dateTo])
                 ->get()
-                ->map(function ($referral) {
+                ->map(function ($referredUser) {
                     return [
-                        'referrer_name' => $referral->user->full_name,
-                        'referrer_email' => $referral->user->email,
-                        'referrer_code' => $referral->user->user_code,
-                        'referred_user_name' => $referral->referredUser ? $referral->referredUser->full_name : 'N/A',
-                        'referred_user_email' => $referral->referredUser ? $referral->referredUser->email : 'N/A',
-                        'status' => $referral->status,
-                        'commission' => $referral->commission,
-                        'created_at' => $referral->created_at->format('Y-m-d H:i:s'),
+                        'referrer_name' => $referredUser->referrer ? $referredUser->referrer->full_name : 'N/A',
+                        'referrer_email' => $referredUser->referrer ? $referredUser->referrer->email : 'N/A',
+                        'referrer_code' => $referredUser->referrer ? $referredUser->referrer->user_code : 'N/A',
+                        'referred_user_name' => $referredUser->full_name,
+                        'referred_user_email' => $referredUser->email,
+                        'referred_user_role' => $referredUser->role,
+                        'created_at' => $referredUser->created_at->format('Y-m-d H:i:s'),
                     ];
                 });
 
