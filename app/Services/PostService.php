@@ -39,8 +39,8 @@ class PostService
 
     $posts = Post::with([
             'user:id,full_name,profile_picture',
-            'user.store:id,user_id,store_name',
-            'media'
+            'user.store:id,user_id,store_name,store_logo',
+            'media',
         ])
         ->withCount(['likes as is_liked' => function ($q) use ($userId) {
             $q->where('user_id', $userId);
