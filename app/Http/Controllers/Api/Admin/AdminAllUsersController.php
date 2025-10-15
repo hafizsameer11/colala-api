@@ -12,6 +12,7 @@ use App\Models\Store;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AdminAllUsersController extends Controller
 {
@@ -259,5 +260,148 @@ class AdminAllUsersController extends Controller
                 'formatted_date' => $user->created_at->format('d-m-Y H:i A'),
             ];
         });
+    }
+
+    /**
+     * Create new user (admin can add users)
+     */
+    public function createUser(Request $request)
+    {
+        try {
+            $request->validate([
+                'full_name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email',
+                'phone' => 'required|string|max:20|unique:users,phone',
+                'password' => 'required|string|min:8',
+                'role' => 'required|in:buyer,seller,admin',
+                'status' => 'nullable|in:active,inactive',
+                'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            ]);
+
+            $userData = [
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => bcrypt($request->password),
+                'role' => $request->role,
+                'status' => $request->status ?? 'active',
+            ];
+
+            // Handle profile picture upload
+            if ($request->hasFile('profile_picture')) {
+                $profilePath = $request->file('profile_picture')->store('profiles', 'public');
+                $userData['profile_picture'] = $profilePath;
+            }
+
+            $user = User::create($userData);
+
+            // Create wallet for the user
+            $user->wallet()->create([
+                'shopping_balance' => 0,
+                'reward_balance' => 0,
+                'referral_balance' => 0,
+                'loyality_points' => 0,
+            ]);
+
+            return ResponseHelper::success([
+                'user' => [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+                    'created_at' => $user->created_at,
+                ]
+            ], 'User created successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Update user details (admin can edit user information)
+     */
+    public function updateUser(Request $request, $userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+
+            $request->validate([
+                'full_name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|unique:users,email,' . $userId,
+                'phone' => 'sometimes|string|max:20|unique:users,phone,' . $userId,
+                'password' => 'sometimes|string|min:8',
+                'role' => 'sometimes|in:buyer,seller,admin',
+                'status' => 'sometimes|in:active,inactive',
+                'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            ]);
+
+            $updateData = $request->only(['full_name', 'email', 'phone', 'role', 'status']);
+
+            // Handle password update
+            if ($request->has('password')) {
+                $updateData['password'] = bcrypt($request->password);
+            }
+
+            // Handle profile picture upload
+            if ($request->hasFile('profile_picture')) {
+                // Delete old profile picture if exists
+                if ($user->profile_picture) {
+                    Storage::disk('public')->delete($user->profile_picture);
+                }
+                
+                $profilePath = $request->file('profile_picture')->store('profiles', 'public');
+                $updateData['profile_picture'] = $profilePath;
+            }
+
+            $user->update($updateData);
+
+            return ResponseHelper::success([
+                'user' => [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'status' => $user->status,
+                    'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+                    'updated_at' => $user->updated_at,
+                ]
+            ], 'User updated successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Delete user (admin can remove users)
+     */
+    public function deleteUser($userId)
+    {
+        try {
+            $user = User::findOrFail($userId);
+
+            // Check if user has any orders or transactions
+            $hasOrders = $user->orders()->exists() || $user->storeOrders()->exists();
+            $hasTransactions = $user->transactions()->exists();
+
+            if ($hasOrders || $hasTransactions) {
+                return ResponseHelper::error('Cannot delete user with existing orders or transactions. Please deactivate instead.', 400);
+            }
+
+            // Delete profile picture if exists
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+
+            // Delete user (this will cascade delete related records)
+            $user->delete();
+
+            return ResponseHelper::success(null, 'User deleted successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
     }
 }

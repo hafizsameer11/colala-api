@@ -580,6 +580,13 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/all-users/{userId}/status', [AdminAllUsersController::class, 'updateUserStatus']);
     // Get user analytics and trends
     Route::get('/all-users/analytics', [AdminAllUsersController::class, 'getUserAnalytics']);
+    
+    // Create new user (admin can add users)
+    Route::post('/all-users', [AdminAllUsersController::class, 'createUser']);
+    // Update user details (admin can edit user information)
+    Route::put('/all-users/{userId}', [AdminAllUsersController::class, 'updateUser']);
+    // Delete user (admin can remove users)
+    Route::delete('/all-users/{userId}', [AdminAllUsersController::class, 'deleteUser']);
 
     // ========================================
     // BALANCE MANAGEMENT MODULE
