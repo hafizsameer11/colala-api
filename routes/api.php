@@ -242,4 +242,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
     Route::post('/search/camera', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByImage']);
     Route::post('/search/barcode', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByBarcode']);
+    Route::post('/search/image-exact', [App\Http\Controllers\Api\ProductImageSearchController::class, 'search']);
 });

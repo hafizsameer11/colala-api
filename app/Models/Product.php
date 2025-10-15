@@ -25,7 +25,12 @@ class Product extends Model
         'loyality_points_applicable',
         'is_sold',
         'is_unavailable',
-        'quantity'
+        'quantity',
+        'vision_product_name',
+        'vision_product_set',
+        'vision_index_status',
+        'vision_indexed_at',
+        'vision_last_error'
     ];
     protected $appends = [
         'average_rating',

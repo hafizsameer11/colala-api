@@ -64,4 +64,86 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# colala-api
+
+# Colala API
+
+## Google Cloud Vision Product Search Setup
+
+This project includes Google Cloud Vision Product Search integration for visual product search capabilities.
+
+### Dependencies
+
+Install the following packages:
+
+```bash
+composer require google/cloud-vision:^2.1 google/cloud-storage:^1.12
+```
+
+### Environment Configuration
+
+Add the following environment variables to your `.env` file:
+
+```env
+GOOGLE_APPLICATION_CREDENTIALS=storage/app/google/service-account.json
+GOOGLE_CLOUD_PROJECT_ID=your_project_id
+GOOGLE_CLOUD_LOCATION=us-west1
+GOOGLE_CLOUD_STORAGE_BUCKET=your_bucket_name
+QUEUE_CONNECTION=database
+```
+
+### Google Cloud Setup
+
+1. **Create a Google Cloud Project** and enable the Vision API
+2. **Create a Service Account** with the following IAM roles:
+   - `roles/vision.productSearchEditor`
+   - `roles/storage.objectAdmin`
+   - `roles/serviceusage.serviceUsageConsumer`
+3. **Download the service account JSON** and save it to `storage/app/google/service-account.json`
+4. **Create a Google Cloud Storage bucket** in the same region as your Vision API location
+5. **Set up budget alerts** in Google Cloud Console to monitor costs
+
+### Database Setup
+
+Run the migration to add Vision columns:
+
+```bash
+php artisan migrate
+```
+
+### Queue Setup
+
+Create the jobs table for queue processing:
+
+```bash
+php artisan queue:table
+php artisan migrate
+```
+
+### Backfill Existing Data
+
+To index all existing products and images:
+
+```bash
+php artisan vision:backfill
+```
+
+### Start Queue Worker
+
+Run the queue worker to process Vision indexing jobs:
+
+```bash
+php artisan queue:work --queue=vision,default
+```
+
+### API Endpoints
+
+- `POST /api/search/image-exact` - Search for visually similar products by uploading an image
+
+### Features
+
+- **Automatic Indexing**: Products and images are automatically indexed when created/updated
+- **Background Processing**: All Vision operations run in background jobs with retry logic
+- **Error Handling**: Failed operations are tracked with error messages in the database
+- **Backfill Support**: Command to index all existing data in chunks
+- **Visual Search**: API endpoint for image-based product search with score thresholds
+- **Regional API**: Uses regional endpoints for better performance and compliance

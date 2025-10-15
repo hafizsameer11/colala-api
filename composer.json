@@ -8,6 +8,8 @@
     "require": {
         "php": "^8.2",
         "darkaonline/l5-swagger": "^9.0",
+        "google/cloud-storage": "^1.48",
+        "google/cloud-vision": "^2.1",
         "knuckleswtf/scribe": "^5.3",
         "laravel/framework": "^11.31",
         "laravel/octane": "^2.12",
