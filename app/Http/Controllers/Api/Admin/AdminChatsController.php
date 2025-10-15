@@ -114,7 +114,7 @@ class AdminChatsController extends Controller
             $chat = Chat::with([
                 'store.user',
                 'user',
-                'messages.user',
+                'messages.sender',
                 'storeOrder.order'
             ])->findOrFail($chatId);
 
@@ -159,8 +159,8 @@ class AdminChatsController extends Controller
                         'id' => $message->id,
                         'message' => $message->message,
                         'sender_type' => $message->sender_type,
-                        'user_name' => $message->user ? $message->user->full_name : 'System',
-                        'user_profile_image' => $message->user ? ($message->user->profile_picture ? asset('storage/' . $message->user->profile_picture) : null) : null,
+                        'user_name' => $message->sender ? $message->sender->full_name : 'System',
+                        'user_profile_image' => $message->sender ? ($message->sender->profile_picture ? asset('storage/' . $message->sender->profile_picture) : null) : null,
                         'is_read' => $message->is_read,
                         'created_at' => $message->created_at,
                         'formatted_date' => $message->created_at->format('d-m-Y H:i A'),
