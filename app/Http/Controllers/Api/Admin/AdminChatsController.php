@@ -113,6 +113,7 @@ class AdminChatsController extends Controller
         try {
             $chat = Chat::with([
                 'store.user',
+                'user',
                 'messages.user',
                 'storeOrder.order'
             ])->findOrFail($chatId);
@@ -129,9 +130,22 @@ class AdminChatsController extends Controller
                 'store_info' => [
                     'store_id' => $chat->store->id,
                     'store_name' => $chat->store->store_name,
+                    'store_email' => $chat->store->store_email,
+                    'store_phone' => $chat->store->store_phone,
+                    'store_location' => $chat->store->store_location,
+                    'store_profile_image' => $chat->store->profile_image ? asset('storage/' . $chat->store->profile_image) : null,
+                    'store_banner_image' => $chat->store->banner_image ? asset('storage/' . $chat->store->banner_image) : null,
                     'seller_name' => $chat->store->user->full_name,
                     'seller_email' => $chat->store->user->email,
-                    'store_location' => $chat->store->store_location,
+                    'seller_phone' => $chat->store->user->phone,
+                    'seller_profile_image' => $chat->store->user->profile_picture ? asset('storage/' . $chat->store->user->profile_picture) : null,
+                ],
+                'customer_info' => [
+                    'customer_id' => $chat->user->id,
+                    'customer_name' => $chat->user->full_name,
+                    'customer_email' => $chat->user->email,
+                    'customer_phone' => $chat->user->phone,
+                    'customer_profile_image' => $chat->user->profile_picture ? asset('storage/' . $chat->user->profile_picture) : null,
                 ],
                 'order_info' => $chat->storeOrder ? [
                     'store_order_id' => $chat->storeOrder->id,
@@ -146,6 +160,7 @@ class AdminChatsController extends Controller
                         'message' => $message->message,
                         'sender_type' => $message->sender_type,
                         'user_name' => $message->user ? $message->user->full_name : 'System',
+                        'user_profile_image' => $message->user ? ($message->user->profile_picture ? asset('storage/' . $message->user->profile_picture) : null) : null,
                         'is_read' => $message->is_read,
                         'created_at' => $message->created_at,
                         'formatted_date' => $message->created_at->format('d-m-Y H:i A'),
