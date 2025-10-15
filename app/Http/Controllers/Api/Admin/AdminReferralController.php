@@ -6,7 +6,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Referral;
-use App\Models\ReferralEarning;
 use App\Models\ReferralFaq;
 use App\Models\Wallet;
 use App\Models\LoyaltySetting;
@@ -37,31 +36,33 @@ class AdminReferralController extends Controller
                 ->where('role', 'seller')
                 ->count();
 
-            // Get referrers with their referral counts and earnings
+            // Get referrers with their referral counts and wallet information
             $referrers = User::whereHas('referrals')
                 ->withCount('referrals')
-                ->with(['referralEarning'])
+                ->with(['wallet'])
                 ->select('id', 'full_name', 'email', 'user_code', 'referral_code', 'role', 'created_at')
                 ->paginate($request->get('per_page', 20));
 
-            // Calculate amount earned for each referrer
+            // Calculate amount earned for each referrer from wallet
             $referrers->getCollection()->transform(function ($referrer) {
-                $referralEarning = $referrer->referralEarning;
-                $referrer->amount_earned = $referralEarning ? $referralEarning->total_earned : 0;
-                $referrer->current_balance = $referralEarning ? $referralEarning->current_balance : 0;
-                $referrer->total_withdrawn = $referralEarning ? $referralEarning->total_withdrawn : 0;
+                $wallet = $referrer->wallet;
+                $referrer->referral_balance = $wallet ? $wallet->referral_balance : 0;
+                $referrer->shopping_balance = $wallet ? $wallet->shopping_balance : 0;
+                $referrer->reward_balance = $wallet ? $wallet->reward_balance : 0;
+                $referrer->loyalty_points = $wallet ? $wallet->loyality_points : 0;
                 return $referrer;
             });
 
-            // Get referral statistics
+            // Get referral statistics from wallet
             $stats = [
                 'total_referred' => $totalReferred,
                 'today_referred' => $todayReferred,
                 'sellers_referred' => $sellersReferred,
                 'total_referrers' => User::whereHas('referrals')->count(),
-                'total_commission_paid' => ReferralEarning::sum('total_earned'),
-                'total_commission_withdrawn' => ReferralEarning::sum('total_withdrawn'),
-                'pending_commission' => ReferralEarning::sum('current_balance'),
+                'total_referral_balance' => Wallet::sum('referral_balance'),
+                'total_shopping_balance' => Wallet::sum('shopping_balance'),
+                'total_reward_balance' => Wallet::sum('reward_balance'),
+                'total_loyalty_points' => Wallet::sum('loyality_points'),
             ];
 
             return ResponseHelper::success([
@@ -242,7 +243,7 @@ class AdminReferralController extends Controller
             // Top referrers
             $topReferrers = User::whereHas('referrals')
                 ->withCount('referrals')
-                ->with(['referralEarning'])
+                ->with(['wallet'])
                 ->select('id', 'full_name', 'user_code')
                 ->orderBy('referrals_count', 'desc')
                 ->limit(10)
@@ -253,16 +254,16 @@ class AdminReferralController extends Controller
                         'name' => $referrer->full_name,
                         'user_code' => $referrer->user_code,
                         'total_referrals' => $referrer->referrals_count,
-                        'total_earned' => $referrer->referralEarning ? $referrer->referralEarning->total_earned : 0,
+                        'referral_balance' => $referrer->wallet ? $referrer->wallet->referral_balance : 0,
                     ];
                 });
 
-            // Commission analytics
+            // Commission analytics from wallet
             $commissionStats = [
-                'total_commission_paid' => ReferralEarning::sum('total_earned'),
-                'total_commission_withdrawn' => ReferralEarning::sum('total_withdrawn'),
-                'pending_commission' => ReferralEarning::sum('current_balance'),
-                'average_commission_per_referral' => ReferralEarning::avg('total_earned'),
+                'total_referral_balance' => Wallet::sum('referral_balance'),
+                'total_shopping_balance' => Wallet::sum('shopping_balance'),
+                'total_reward_balance' => Wallet::sum('reward_balance'),
+                'total_loyalty_points' => Wallet::sum('loyality_points'),
             ];
 
             return ResponseHelper::success([
@@ -437,15 +438,19 @@ class AdminReferralController extends Controller
      */
     private function updateReferralEarnings($userId, $amount)
     {
-        $referralEarning = ReferralEarning::firstOrCreate(['user_id' => $userId]);
-        
-        $referralEarning->increment('total_earned', $amount);
-        $referralEarning->increment('current_balance', $amount);
-        
         // Update user's wallet referral balance
         $wallet = Wallet::where('user_id', $userId)->first();
         if ($wallet) {
             $wallet->increment('referral_balance', $amount);
+        } else {
+            // Create wallet if it doesn't exist
+            Wallet::create([
+                'user_id' => $userId,
+                'shopping_balance' => 0,
+                'reward_balance' => 0,
+                'referral_balance' => $amount,
+                'loyality_points' => 0,
+            ]);
         }
     }
 }
