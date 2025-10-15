@@ -78,10 +78,10 @@ class AdminSupportController extends Controller
             // Get summary statistics
             $stats = [
                 'total_tickets' => SupportTicket::count(),
+                'open_tickets' => SupportTicket::where('status', 'open')->count(),
                 'pending_tickets' => SupportTicket::where('status', 'pending')->count(),
                 'resolved_tickets' => SupportTicket::where('status', 'resolved')->count(),
                 'closed_tickets' => SupportTicket::where('status', 'closed')->count(),
-                'in_progress_tickets' => SupportTicket::where('status', 'in_progress')->count(),
             ];
 
             return ResponseHelper::success([
@@ -169,8 +169,8 @@ class AdminSupportController extends Controller
                 'is_read' => false,
             ]);
 
-            // Update ticket status to in_progress when admin replies
-            $ticket->update(['status' => 'in_progress']);
+            // Update ticket status to pending when admin replies
+            $ticket->update(['status' => 'pending']);
 
             return ResponseHelper::success([
                 'message_id' => $message->id,
@@ -191,7 +191,7 @@ class AdminSupportController extends Controller
     {
         try {
             $request->validate([
-                'status' => 'required|in:pending,in_progress,resolved,closed',
+                'status' => 'required|in:open,pending,resolved,closed',
             ]);
 
             $ticket = SupportTicket::findOrFail($ticketId);
