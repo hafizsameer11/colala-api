@@ -69,8 +69,7 @@ class IndexProductImageToVision implements ShouldQueue
 
             // Create reference image
             $client = new ProductSearchClient([
-                'credentials' => $credentialsPath,
-                'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
+                'credentials' => $credentialsPath
             ]);
 
             $refId = 'ref-' . $image->id . '-' . Str::random(6);

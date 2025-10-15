@@ -47,8 +47,7 @@ class IndexProductToVision implements ShouldQueue
             }
             
             $client = new ProductSearchClient([
-                'credentials' => $credentialsPath,
-                'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
+                'credentials' => $credentialsPath
             ]);
 
             $parent = sprintf('projects/%s/locations/%s', $projectId, $location);

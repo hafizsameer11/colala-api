@@ -32,8 +32,7 @@ class ProductImageSearchController extends Controller
             }
             
             $client = new ProductSearchClient([
-                'credentials' => $credentialsPath,
-                'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
+                'credentials' => $credentialsPath
             ]);
 
             $productSetId = 'fashion-set';
