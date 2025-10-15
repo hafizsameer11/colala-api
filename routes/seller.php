@@ -50,8 +50,10 @@ Route::middleware('auth:sanctum')->prefix('seller/onboarding')->group(function (
     Route::post('level3/physical-store',    [SellerOnboardingController::class, 'level3Physical']);       // 3.1
     Route::post('level3/utility-bill',      [SellerOnboardingController::class, 'level3Utility']);        // 3.2
     Route::post('level3/address',          [SellerOnboardingController::class, 'addAddress']);           // 3.3 create
+    Route::put('level3/address/{id}',      [SellerOnboardingController::class, 'updateAddress']);        // 3.3 update
     Route::delete('level3/address/{id}',   [SellerOnboardingController::class, 'deleteAddress']);        // 3.3 delete
     Route::post('level3/delivery',         [SellerOnboardingController::class, 'addDelivery']);          // 3.4 create
+    Route::put('level3/delivery/{id}',     [SellerOnboardingController::class, 'updateDelivery']);       // 3.4 update
     Route::delete('level3/delivery/{id}',  [SellerOnboardingController::class, 'deleteDelivery']);       // 3.4 delete
     Route::post('level3/theme',             [SellerOnboardingController::class, 'level3Theme']);          // 3.5
     Route::get('progress',                 [SellerOnboardingController::class, 'progress']);

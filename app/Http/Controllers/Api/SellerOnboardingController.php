@@ -223,25 +223,94 @@ class SellerOnboardingController extends Controller
     /* ---------------- Level 3.3 (CRUD) ---------------- */
    public function addAddress(Level3AddAddressRequest $request)
 {
-    // Get the authenticated user's store
-    $store = $request->user()->store;
+    try {
+        // Get the authenticated user's store
+        $store = $request->user()->store;
 
-    // Create a new store address with the validated data
-    StoreAddress::create([
-        'store_id'         => $store->id,
-        'state'            => $request->input('state'),
-        'local_government' => $request->input('local_government'),
-        'full_address'     => $request->input('full_address'),
-        'is_main'          => $request->boolean('is_main'),
-        'opening_hours'    => $request->input('opening_hours', []),
-    ]);
+        // If this is set as main address, unset other main addresses
+        if ($request->boolean('is_main')) {
+            StoreAddress::where('store_id', $store->id)
+                       ->where('is_main', true)
+                       ->update(['is_main' => false]);
+        }
 
-    // Mark onboarding step as done 
-    $this->markDone($store, 3, 'level3.addresses');
+        // Create a new store address with the validated data
+        $address = StoreAddress::create([
+            'store_id'         => $store->id,
+            'state'            => $request->input('state'),
+            'local_government' => $request->input('local_government'),
+            'full_address'     => $request->input('full_address'),
+            'is_main'          => $request->boolean('is_main'),
+            'opening_hours'    => $request->input('opening_hours', []),
+        ]);
 
-    return $this->ok($store, 'Address added successfully.');
+        // Mark onboarding step as done 
+        $this->markDone($store, 3, 'level3.addresses');
+
+        return $this->ok($store, 'Address added successfully.', [
+            'address' => [
+                'id' => $address->id,
+                'state' => $address->state,
+                'local_government' => $address->local_government,
+                'full_address' => $address->full_address,
+                'is_main' => $address->is_main,
+                'opening_hours' => $address->opening_hours,
+                'created_at' => $address->created_at,
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Failed to add address: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
+
+    public function updateAddress(Level3AddAddressRequest $request, $id)
+    {
+        try {
+            $store = $request->user()->store;
+            
+            $address = StoreAddress::where('store_id', $store->id)
+                                 ->where('id', $id)
+                                 ->firstOrFail();
+
+            // If this is set as main address, unset other main addresses
+            if ($request->boolean('is_main')) {
+                StoreAddress::where('store_id', $store->id)
+                           ->where('id', '!=', $id)
+                           ->where('is_main', true)
+                           ->update(['is_main' => false]);
+            }
+
+            // Update the address
+            $address->update([
+                'state'            => $request->input('state'),
+                'local_government' => $request->input('local_government'),
+                'full_address'     => $request->input('full_address'),
+                'is_main'          => $request->boolean('is_main'),
+                'opening_hours'    => $request->input('opening_hours', []),
+            ]);
+
+            return $this->ok($store, 'Address updated successfully.', [
+                'address' => [
+                    'id' => $address->id,
+                    'state' => $address->state,
+                    'local_government' => $address->local_government,
+                    'full_address' => $address->full_address,
+                    'is_main' => $address->is_main,
+                    'opening_hours' => $address->opening_hours,
+                    'updated_at' => $address->updated_at,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update address: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function deleteAddress($id, Request $request)
     {
@@ -253,19 +322,119 @@ class SellerOnboardingController extends Controller
     /* ---------------- Level 3.4 (CRUD) ---------------- */
     public function addDelivery(Level3AddDeliveryRequest $request)
     {
-        $store = $request->user()->store;
+        try {
+            $store = $request->user()->store;
 
-        StoreDeliveryPricing::create([
-            'store_id'         => $store->id,
-            'state'            => $request->state,
-            'local_government' => $request->local_government,
-            'variant'          => $request->variant,
-            'price'            => $request->price,
-            'is_free'          => (bool)$request->is_free,
-        ]);
+            // Check if delivery pricing already exists for this combination
+            $existingPricing = StoreDeliveryPricing::where('store_id', $store->id)
+                ->where('state', $request->state)
+                ->where('local_government', $request->local_government)
+                ->where('variant', $request->variant)
+                ->first();
 
-        $this->markDone($store, 3, 'level3.delivery_pricing');
-        return $this->ok($store, 'Delivery price added');
+            if ($existingPricing) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Delivery pricing already exists for this state, LGA, and variant combination.'
+                ], 422);
+            }
+
+            // Validate price when not free
+            if (!$request->boolean('is_free') && (!$request->price || $request->price <= 0)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Price is required when delivery is not free.'
+                ], 422);
+            }
+
+            $deliveryPricing = StoreDeliveryPricing::create([
+                'store_id'         => $store->id,
+                'state'            => $request->state,
+                'local_government' => $request->local_government,
+                'variant'          => $request->variant,
+                'price'            => $request->boolean('is_free') ? 0 : $request->price,
+                'is_free'          => (bool)$request->is_free,
+            ]);
+
+            $this->markDone($store, 3, 'level3.delivery_pricing');
+            
+            return $this->ok($store, 'Delivery pricing added successfully.', [
+                'delivery_pricing' => [
+                    'id' => $deliveryPricing->id,
+                    'state' => $deliveryPricing->state,
+                    'local_government' => $deliveryPricing->local_government,
+                    'variant' => $deliveryPricing->variant,
+                    'price' => $deliveryPricing->price,
+                    'is_free' => $deliveryPricing->is_free,
+                    'created_at' => $deliveryPricing->created_at,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to add delivery pricing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateDelivery(Level3AddDeliveryRequest $request, $id)
+    {
+        try {
+            $store = $request->user()->store;
+            
+            $deliveryPricing = StoreDeliveryPricing::where('store_id', $store->id)
+                                                 ->where('id', $id)
+                                                 ->firstOrFail();
+
+            // Check if delivery pricing already exists for this combination (excluding current record)
+            $existingPricing = StoreDeliveryPricing::where('store_id', $store->id)
+                ->where('id', '!=', $id)
+                ->where('state', $request->state)
+                ->where('local_government', $request->local_government)
+                ->where('variant', $request->variant)
+                ->first();
+
+            if ($existingPricing) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Delivery pricing already exists for this state, LGA, and variant combination.'
+                ], 422);
+            }
+
+            // Validate price when not free
+            if (!$request->boolean('is_free') && (!$request->price || $request->price <= 0)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Price is required when delivery is not free.'
+                ], 422);
+            }
+
+            // Update the delivery pricing
+            $deliveryPricing->update([
+                'state'            => $request->state,
+                'local_government' => $request->local_government,
+                'variant'          => $request->variant,
+                'price'            => $request->boolean('is_free') ? 0 : $request->price,
+                'is_free'          => (bool)$request->is_free,
+            ]);
+
+            return $this->ok($store, 'Delivery pricing updated successfully.', [
+                'delivery_pricing' => [
+                    'id' => $deliveryPricing->id,
+                    'state' => $deliveryPricing->state,
+                    'local_government' => $deliveryPricing->local_government,
+                    'variant' => $deliveryPricing->variant,
+                    'price' => $deliveryPricing->price,
+                    'is_free' => $deliveryPricing->is_free,
+                    'updated_at' => $deliveryPricing->updated_at,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update delivery pricing: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function deleteDelivery($id, Request $request)
