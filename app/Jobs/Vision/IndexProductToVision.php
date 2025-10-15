@@ -39,7 +39,7 @@ class IndexProductToVision implements ShouldQueue
         $client = null;
 
         try {
-            $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS','');
+            $credentialsPath = storage_path('app/google/service-account.json');
             if (!file_exists($credentialsPath)) {
                 throw new \Exception("Google credentials file not found at: {$credentialsPath}");
 

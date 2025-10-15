@@ -51,7 +51,7 @@ class IndexProductImageToVision implements ShouldQueue
 
         try {
             // Upload to GCS
-            $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS','');
+            $credentialsPath = storage_path('app/google/service-account.json');
             if (!file_exists($credentialsPath)) {
                 $credentialsPath = base_path($credentialsPath);
             }
