@@ -333,8 +333,8 @@ class AdminChatsController extends Controller
             return [
                 'id' => $chat->id,
                 'type' => $chat->type,
-                'status' => $chat->status,
-                'is_read' => $chat->is_read,
+                'status' => $chat->status ?? 'active',
+                'is_read' => $chat->is_read ?? false,
                 'last_message' => $lastMessage ? $lastMessage->message : null,
                 'last_message_sender' => $lastMessage ? $lastMessage->sender_type : null,
                 'last_message_time' => $lastMessage ? $lastMessage->created_at : null,
