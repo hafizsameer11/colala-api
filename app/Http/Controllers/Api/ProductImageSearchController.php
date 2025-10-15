@@ -26,8 +26,13 @@ class ProductImageSearchController extends Controller
             $projectId = config('services.google.project_id');
             $location = config('services.google.location', 'us-west1');
 
+            $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS');
+            if (!file_exists($credentialsPath)) {
+                $credentialsPath = base_path($credentialsPath);
+            }
+            
             $client = new ProductSearchClient([
-                'credentials' => base_path(env('GOOGLE_APPLICATION_CREDENTIALS')),
+                'credentials' => $credentialsPath,
                 'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
             ]);
 

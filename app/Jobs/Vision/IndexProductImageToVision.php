@@ -51,8 +51,13 @@ class IndexProductImageToVision implements ShouldQueue
 
         try {
             // Upload to GCS
+            $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS','');
+            if (!file_exists($credentialsPath)) {
+                $credentialsPath = base_path($credentialsPath);
+            }
+            
             $storage = new StorageClient([
-                'keyFilePath' => base_path(env('GOOGLE_APPLICATION_CREDENTIALS')),
+                'keyFilePath' => $credentialsPath,
             ]);
             $gcsBucket = $storage->bucket($bucket);
 
@@ -64,7 +69,7 @@ class IndexProductImageToVision implements ShouldQueue
 
             // Create reference image
             $client = new ProductSearchClient([
-                'credentials' => base_path(env('GOOGLE_APPLICATION_CREDENTIALS')),
+                'credentials' => $credentialsPath,
                 'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
             ]);
 

@@ -39,8 +39,13 @@ class IndexProductToVision implements ShouldQueue
         $client = null;
 
         try {
+            $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS','');
+            if (!file_exists($credentialsPath)) {
+                $credentialsPath = base_path($credentialsPath);
+            }
+            
             $client = new ProductSearchClient([
-                'credentials' => base_path(env('GOOGLE_APPLICATION_CREDENTIALS')),
+                'credentials' => $credentialsPath,
                 'apiEndpoint' => sprintf('%s-vision.googleapis.com', $location)
             ]);
 
