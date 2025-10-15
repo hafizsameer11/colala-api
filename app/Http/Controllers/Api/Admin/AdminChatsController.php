@@ -20,7 +20,7 @@ class AdminChatsController extends Controller
     public function getAllChats(Request $request)
     {
         try {
-            $query = Chat::with(['store.user', 'messages' => function ($q) {
+            $query = Chat::with(['store.user', 'user', 'messages' => function ($q) {
                 $q->latest()->limit(1);
             }]);
 
@@ -332,8 +332,6 @@ class AdminChatsController extends Controller
             
             return [
                 'id' => $chat->id,
-                'store_name' => $chat->store->store_name,
-                'seller_name' => $chat->store->user->full_name,
                 'type' => $chat->type,
                 'status' => $chat->status,
                 'is_read' => $chat->is_read,
@@ -342,6 +340,27 @@ class AdminChatsController extends Controller
                 'last_message_time' => $lastMessage ? $lastMessage->created_at : null,
                 'formatted_date' => $chat->created_at->format('d-m-Y H:i A'),
                 'created_at' => $chat->created_at,
+                
+                // Store/Seller information
+                'store_info' => [
+                    'store_id' => $chat->store->id,
+                    'store_name' => $chat->store->store_name,
+                    'store_email' => $chat->store->store_email,
+                    'store_phone' => $chat->store->store_phone,
+                    'store_location' => $chat->store->store_location,
+                    'seller_name' => $chat->store->user->full_name,
+                    'seller_email' => $chat->store->user->email,
+                    'seller_phone' => $chat->store->user->phone,
+                ],
+                
+                // Customer information
+                'customer_info' => [
+                    'customer_id' => $chat->user->id,
+                    'customer_name' => $chat->user->full_name,
+                    'customer_email' => $chat->user->email,
+                    'customer_phone' => $chat->user->phone,
+                    'customer_profile' => $chat->user->profile_picture ? asset('storage/' . $chat->user->profile_picture) : null,
+                ],
             ];
         });
     }
