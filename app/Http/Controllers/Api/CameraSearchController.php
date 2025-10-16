@@ -22,7 +22,7 @@ class CameraSearchController extends Controller
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240', // 10MB max
                 'type' => 'required|in:product,store,service',
             ]);
-
+            Log::info('Camera search started. with request data: ' . json_encode($request->all()));
             $image = $request->file('image');
             $type = $request->input('type');
             
