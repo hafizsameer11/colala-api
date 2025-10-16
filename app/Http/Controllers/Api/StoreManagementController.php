@@ -142,6 +142,11 @@ class StoreManagementController extends Controller
         if ($request->hasFile('profile_image')) {
             $profilePath = $request->file('profile_image')
                 ->store('stores/profile_images', 'public');
+
+                //also update that users profile image
+                $user = $request->user();
+                $user->profile_image = $profilePath;
+                $user->save();
         }
         if ($request->hasFile('banner_image')) {
             $bannerPath = $request->file('banner_image')
