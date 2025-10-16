@@ -10,7 +10,7 @@ class SellerChatService
     {
         $store = Store::where('user_id', $sellerId)->firstOrFail();
 
-        return Chat::with(['user','lastMessage','service'])
+        return Chat::with(['user','lastMessage','service','store'])
             ->where('store_id', $store->id)
             ->get()
             ->map(function ($chat) {
