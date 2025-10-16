@@ -23,6 +23,7 @@ class SellerChatService
                     'last_message'    => $chat->lastMessage?->message,
                     'last_message_at' => $chat->lastMessage?->created_at,
                     'unread_count'    => $unread,
+                    'profile_picture'   => $chat->user?->profile_picture ,
                     'avatar'          => $chat->user?->profile_picture 
                                           ? asset('storage/'.$chat->user->profile_picture) 
                                           : null,

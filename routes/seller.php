@@ -113,7 +113,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('/banners', [BannerController::class, 'store']);
     Route::delete('/banners/{banner}', [BannerController::class, 'destroy']);
     Route::get('chat/', [SellerChatController::class, 'list']);
-    Route::get('chat/{chatId}/messages', [SellerChatController::class, 'messages']);
+    Route::get('chat/{chatId}/messages', action: [SellerChatController::class, 'messages']);
     Route::post('chat/{chatId}/send', [SellerChatController::class, 'send']);
     Route::get('/products/{id}/stats', [ProductStatController::class, 'getStats']);  // chart data (daily)
     Route::get('/products/{id}/stats/totals', [ProductStatController::class, 'totals']); // overall totals
