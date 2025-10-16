@@ -17,8 +17,9 @@ class WalletService{
         if(!$wallet){
             $wallet=$this->create(['user_id'=>$user_id,'shopping_balance'=>0,'reward_balance'=>0,'loyality_points'=>0]);
         }
-        $escrowBalance=Escrow::where('user_id',$user_id)->sum('amount');
-        // $wallet->escrow_balance=$escrowBalance;
+        $escrowBalance=Escrow::where('user_id',$user_id)->where('status','locked')->sum('amount');
+        $wallet->escrow_balance=$escrowBalance;
+        // $wallet->available_balance=$wallet->shopping_balance-$escrowBalance;
         return $wallet;
     }
     public function topUp($user_id,$amount){
