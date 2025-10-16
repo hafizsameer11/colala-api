@@ -23,7 +23,7 @@ class SearchController extends Controller
 
         switch ($type) {
             case 'product':
-                $query = Product::with(['store', 'category:id,title'])
+                $query = Product::with(['store', 'category:id,title','images'])
                     ->when($q, fn($qBuilder) =>
                         $qBuilder->where('name', 'LIKE', "%$q%")
                                  ->orWhere('description', 'LIKE', "%$q%")
