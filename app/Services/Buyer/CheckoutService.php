@@ -85,17 +85,7 @@ class CheckoutService
                 'meta' => [],
             ]);
 
-            if ($preview['payment_method'] === 'wallet') {
-                $this->paymentConfirmationWIthShoppingWallet([
-                    'order_id' => $order->id,
-                    'amount'   => $preview['grand_total'],
-                    'tx_id'    => null,
-                ]);
-            }
-
             // Create order tracking and chat
-
-
             foreach ($preview['stores'] as $S) {
                 $so = StoreOrder::create([
                     'order_id' => $order->id,
@@ -140,6 +130,15 @@ class CheckoutService
                     'user_id'        => $cart->user_id,
                     'store_id'       => $S['store_id'],
                     'type'=>'order'
+                ]);
+            }
+
+            // Handle wallet payment and create escrow records
+            if ($preview['payment_method'] === 'wallet') {
+                $this->paymentConfirmationWIthShoppingWallet([
+                    'order_id' => $order->id,
+                    'amount'   => $preview['grand_total'],
+                    'tx_id'    => null,
                 ]);
             }
 
