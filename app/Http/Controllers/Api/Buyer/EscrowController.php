@@ -57,7 +57,8 @@ class EscrowController extends Controller
             $history = Escrow::with([
                     'order:id,order_no,payment_status',
                     'orderItem:id,product_id,store_order_id,name,line_total',
-                    'orderItem.product:id,name,price'
+                    'orderItem.product.images',
+                    'orderItem.storeOrder.store'
                 ])
                 ->where('user_id', $user->id)
                 ->latest()
