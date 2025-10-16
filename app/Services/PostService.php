@@ -174,7 +174,7 @@ class PostService
 
     public function getComments($postId)
     {
-        return PostComment::with(['user:id,full_name,profile_picture','replies.user:id,full_name,profile_picture'])
+        return PostComment::with(['user:id,full_name,profile_picture','replies.user:id,full_name,profile_picture','user.store:id,user_id,store_name,profile_image'])
             ->where('post_id', $postId)
             ->whereNull('parent_id')
             ->latest()
