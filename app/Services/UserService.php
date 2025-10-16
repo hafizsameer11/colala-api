@@ -18,14 +18,21 @@ class UserService
         }
         return User::create($data);
     }
-    public function createUserCode($name){
-        $name = explode(" ", $name);
-        $code = "";
-        foreach($name as $n){
-            $code .= substr($n, 0, 1);
-        }
-        return strtoupper($code);
-    }
+public function createUserCode()
+{
+    // Prefix for brand or project
+    $prefix = 'COL';
+
+    // Generate random 2-digit number
+    $number = str_pad(rand(10, 99), 2, '0', STR_PAD_LEFT);
+
+    // Generate 4–5 random uppercase letters/numbers (excluding confusing ones)
+    $suffix = strtoupper(substr(str_shuffle('ABCDEFGHJKLMNPQRSTUVWXYZ23456789'), 0, 5));
+
+    // Final format: COL-82K4TZ
+    return sprintf('%s-%s%s', $prefix, $number, $suffix);
+}
+
     public function login($data){
         $user=User::where('email', $data['email'])->first();
         if(!$user){
