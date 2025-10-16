@@ -134,7 +134,7 @@ class CameraSearchController extends Controller
     {
         switch ($type) {
             case 'product':
-                return Product::with(['store', 'category:id,title'])
+                return Product::with(['store', 'category:id,title','images'])
                     ->where(function($query) use ($searchTerms) {
                         foreach ($searchTerms as $term) {
                             $query->orWhere('name', 'LIKE', "%$term%")
