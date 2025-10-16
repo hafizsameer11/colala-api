@@ -35,6 +35,7 @@ return [
         'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
         'location'   => env('GOOGLE_CLOUD_LOCATION', 'us-west1'),
         'bucket'     => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+        'vision_api_key' => env('GOOGLE_VISION_API_KEY'),
     ],
 
 ];
