@@ -43,7 +43,7 @@ public function getById(Request $req, $storeId)
             'products.orderItems',
             'products.images',
             'products.variations',
-            'services',
+            'services.media',
             'productReviews.user',
             'productReviews.orderItem',
             'storeReveiews.user',
