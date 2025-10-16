@@ -71,7 +71,7 @@ class ServiceService
 
     public function getAll()
 {
-    return Service::with(['media','subServices'])
+    return Service::with(['media','subServices','store'])
         ->withCount([
             'stats as views'       => fn($q) => $q->where('event_type', 'view'),
             'stats as impressions' => fn($q) => $q->where('event_type', 'impression'),
