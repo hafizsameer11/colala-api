@@ -91,7 +91,7 @@ class CheckoutService
                     'order_id' => $order->id,
                     'store_id' => $S['store_id'],
                     'status'   => 'placed',
-                    'shipping_fee' => 0,
+                    'shipping_fee' => 10000,
                     'items_subtotal' => $S['items_subtotal'],
                     'discount' => 0,
                     'subtotal_with_shipping' => $S['items_subtotal'],
