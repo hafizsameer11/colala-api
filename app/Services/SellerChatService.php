@@ -27,6 +27,8 @@ class SellerChatService
                     'avatar'          => $chat->user?->profile_picture 
                                           ? asset('storage/'.$chat->user->profile_picture) 
                                           : null,
+                                          'user_id'         => $chat->user?->id ,
+                                          'store_id'        => $chat->store?->id ,
                 ];
             });
     }
