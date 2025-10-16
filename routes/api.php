@@ -255,3 +255,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // Track banner click
     Route::post('/banners/{id}/click', [App\Http\Controllers\Api\Admin\AdminBannerController::class, 'trackBannerClick']);
 });
+
+// ==================== User Notifications ====================
+Route::middleware('auth:sanctum')->group(function () {
+    // Get user notifications
+    Route::get('/notifications', [App\Http\Controllers\Api\UserNotificationController::class, 'index']);
+    
+    // Mark notification as read
+    Route::put('/notifications/{id}/read', [App\Http\Controllers\Api\UserNotificationController::class, 'markAsRead']);
+    
+    // Mark all notifications as read
+    Route::put('/notifications/mark-all-read', [App\Http\Controllers\Api\UserNotificationController::class, 'markAllAsRead']);
+    
+    // Delete notification
+    Route::delete('/notifications/{id}', [App\Http\Controllers\Api\UserNotificationController::class, 'delete']);
+    
+    // Get notification statistics
+    Route::get('/notifications/stats', [App\Http\Controllers\Api\UserNotificationController::class, 'stats']);
+});

@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\{Chat, ChatMessage, Store};
+use App\Models\{Chat, ChatMessage, Store, User};
+use App\Helpers\UserNotificationHelper;
 
 class SellerChatService
 {
@@ -66,7 +67,7 @@ class SellerChatService
             $path = $imageFile->store('chat_images','public');
         }
 
-        return ChatMessage::create([
+        $message = ChatMessage::create([
             'chat_id'     => $chat->id,
             'sender_id'   => $sellerId,
             'sender_type' => 'store',
@@ -74,5 +75,26 @@ class SellerChatService
             'image'       => $path,
             'is_read'     => false,
         ]);
+
+        // Send notification to the buyer
+        $this->sendChatNotification($chat, $text);
+
+        return $message;
+    }
+
+    /**
+     * Send chat notification to the buyer
+     */
+    private function sendChatNotification(Chat $chat, string $text)
+    {
+        $user = User::find($chat->user_id);
+        if ($user) {
+            $messagePreview = strlen($text) > 50 ? substr($text, 0, 50) . '...' : $text;
+            UserNotificationHelper::notify(
+                $user->id,
+                'New Message from Store',
+                "You have a new message: {$messagePreview}"
+            );
+        }
     }
 }

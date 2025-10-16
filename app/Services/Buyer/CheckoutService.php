@@ -3,7 +3,8 @@
 namespace App\Services\Buyer;
 
 use App\Helpers\ProductStatHelper;
-use App\Models\{Cart, Chat, Escrow, Order, StoreOrder, OrderItem, Wallet};
+use App\Helpers\UserNotificationHelper;
+use App\Models\{Cart, Chat, Escrow, Order, StoreOrder, OrderItem, Wallet, User, Store};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -146,6 +147,9 @@ class CheckoutService
             $cart->update(['checked_out' => true]);
             $cart->items()->delete();
 
+            // Send notifications for order placement
+            $this->sendOrderNotifications($order);
+
             return $order->load('storeOrders.items');
         });
     }
@@ -205,5 +209,30 @@ class CheckoutService
 
             return $order->fresh('storeOrders.items');
         });
+    }
+
+    /**
+     * Send notifications for order placement
+     */
+    private function sendOrderNotifications(Order $order)
+    {
+        // Notify the buyer
+        UserNotificationHelper::notify(
+            $order->user_id,
+            'Order Placed Successfully',
+            "Your order #{$order->order_no} has been placed successfully. Total amount: ₦" . number_format($order->grand_total, 2)
+        );
+
+        // Notify each store owner
+        foreach ($order->storeOrders as $storeOrder) {
+            $store = Store::with('user')->find($storeOrder->store_id);
+            if ($store && $store->user) {
+                UserNotificationHelper::notify(
+                    $store->user->id,
+                    'New Order Received',
+                    "You have received a new order #{$order->order_no} for ₦" . number_format($storeOrder->subtotal_with_shipping, 2)
+                );
+            }
+        }
     }
 }

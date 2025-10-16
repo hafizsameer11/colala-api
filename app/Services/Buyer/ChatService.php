@@ -3,7 +3,8 @@
 namespace App\Services\Buyer;
 
 use App\Helpers\ProductStatHelper;
-use App\Models\{Chat, ChatMessage, Store, StoreOrder};
+use App\Helpers\UserNotificationHelper;
+use App\Models\{Chat, ChatMessage, Store, StoreOrder, User};
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -50,7 +51,7 @@ class ChatService {
             $path = $imageFile->store('chat_images','public');
         }
 
-        return ChatMessage::create([
+        $message = ChatMessage::create([
             'chat_id'=>$chat->id,
             'sender_id'=>$senderId,
             'sender_type'=>$senderType,
@@ -58,6 +59,11 @@ class ChatService {
             'image'=>$path,
             'is_read'=>false
         ]);
+
+        // Send notification to the recipient
+        $this->sendChatNotification($chat, $senderType, $text);
+
+        return $message;
     }
     public function startChatWithStore(int $userId, int $storeId): Chat {
         // Check if a general chat already exists between the user and store
@@ -126,5 +132,35 @@ class ChatService {
             'store_order_id' => null,
             'service_id' => null,
         ]);
+    }
+
+    /**
+     * Send chat notification to the recipient
+     */
+    private function sendChatNotification(Chat $chat, string $senderType, ?string $text)
+    {
+        if ($senderType === 'buyer') {
+            // Notify store owner
+            $store = Store::with('user')->find($chat->store_id);
+            if ($store && $store->user) {
+                $messagePreview = $text ? (strlen($text) > 50 ? substr($text, 0, 50) . '...' : $text) : 'Sent an image';
+                UserNotificationHelper::notify(
+                    $store->user->id,
+                    'New Message from Customer',
+                    "You have a new message: {$messagePreview}"
+                );
+            }
+        } elseif ($senderType === 'store') {
+            // Notify buyer
+            $user = User::find($chat->user_id);
+            if ($user) {
+                $messagePreview = $text ? (strlen($text) > 50 ? substr($text, 0, 50) . '...' : $text) : 'Sent an image';
+                UserNotificationHelper::notify(
+                    $user->id,
+                    'New Message from Store',
+                    "You have a new message: {$messagePreview}"
+                );
+            }
+        }
     }
 }

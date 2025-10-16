@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\StoreOrder;
@@ -269,6 +270,9 @@ class AdminOrderManagementController extends Controller
             // Update order status
             $storeOrder->update(['status' => $request->status]);
 
+            // Send notifications for order status update
+            $this->sendOrderStatusNotification($storeOrder, $request->status, $request->notes);
+
             return ResponseHelper::success([
                 'order_id' => $storeOrder->id,
                 'new_status' => $request->status,
@@ -426,5 +430,44 @@ class AdminOrderManagementController extends Controller
                 'formatted_date' => $order->created_at->format('d-m-Y H:i A'),
             ];
         });
+    }
+
+    /**
+     * Send order status update notifications
+     */
+    private function sendOrderStatusNotification(StoreOrder $storeOrder, string $status, ?string $notes = null)
+    {
+        $order = $storeOrder->order;
+        $store = $storeOrder->store;
+        
+        $statusMessages = [
+            'pending' => 'Your order is pending',
+            'processing' => 'Your order is being processed',
+            'shipped' => 'Your order has been shipped',
+            'out_for_delivery' => 'Your order is out for delivery',
+            'delivered' => 'Your order has been delivered',
+            'completed' => 'Your order has been completed',
+            'disputed' => 'Your order is under dispute',
+            'cancelled' => 'Your order has been cancelled'
+        ];
+
+        $statusMessage = $statusMessages[$status] ?? 'Your order status has been updated';
+        $notesText = $notes ? " Note: {$notes}" : '';
+
+        // Notify the buyer
+        UserNotificationHelper::notify(
+            $order->user_id,
+            'Order Status Update',
+            "Order #{$order->order_no} - {$statusMessage}.{$notesText}"
+        );
+
+        // Notify the store owner
+        if ($store && $store->user) {
+            UserNotificationHelper::notify(
+                $store->user->id,
+                'Order Status Updated',
+                "Order #{$order->order_no} status updated to: " . ucfirst(str_replace('_', ' ', $status)) . ".{$notesText}"
+            );
+        }
     }
 }
