@@ -243,4 +243,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/search/camera', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByImage']);
     Route::post('/search/barcode', [App\Http\Controllers\Api\CameraSearchController::class, 'searchByBarcode']);
     Route::post('/search/image-exact', [App\Http\Controllers\Api\ProductImageSearchController::class, 'search']);
+    
+    // ==================== System Banners (Public) ====================
+    
+    // Get active banners for user
+    Route::get('/banners/active', [App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getActiveBanners']);
+    
+    // Track banner view
+    Route::post('/banners/{id}/view', [App\Http\Controllers\Api\Admin\AdminBannerController::class, 'trackBannerView']);
+    
+    // Track banner click
+    Route::post('/banners/{id}/click', [App\Http\Controllers\Api\Admin\AdminBannerController::class, 'trackBannerClick']);
 });

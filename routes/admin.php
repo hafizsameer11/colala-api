@@ -726,4 +726,50 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     
     // Export referral data
     Route::get('/referrals/export', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'exportReferralData']);
+
+    // ==================== System Push Notifications ====================
+    
+    // Get all notifications
+    Route::get('/notifications', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getAllNotifications']);
+    
+    // Create notification
+    Route::post('/notifications', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'createNotification']);
+    
+    // Get notification details
+    Route::get('/notifications/{id}', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getNotificationDetails']);
+    
+    // Update notification status
+    Route::put('/notifications/{id}/status', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'updateNotificationStatus']);
+    
+    // Delete notification
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'deleteNotification']);
+    
+    // Get users for audience selection
+    Route::get('/notifications/audience/users', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getUsersForAudience']);
+    
+    // Get audience data with buyers and sellers arrays
+    Route::get('/notifications/audience/data', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getAudienceData']);
+
+    // ==================== System Banners ====================
+    
+    // Get all banners
+    Route::get('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getAllBanners']);
+    
+    // Create banner
+    Route::post('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'createBanner']);
+    
+    // Get banner details
+    Route::get('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerDetails']);
+    
+    // Update banner
+    Route::put('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'updateBanner']);
+    
+    // Delete banner
+    Route::delete('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'deleteBanner']);
+    
+    // Toggle banner status
+    Route::put('/banners/{id}/toggle-status', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'toggleBannerStatus']);
+    
+    // Get banner analytics
+    Route::get('/banners/analytics', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerAnalytics']);
 });
