@@ -772,4 +772,15 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     
     // Get banner analytics
     Route::get('/banners/analytics', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerAnalytics']);
+
+    // ==================== Admin Product & Service Management ====================
+    
+    // Get all stores (name, picture, id only)
+    Route::get('/stores', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'getStores']);
+    
+    // Create product for any store (admin)
+    Route::post('/products', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createProduct']);
+    
+    // Create service for any store (admin)
+    Route::post('/services', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createService']);
 });
