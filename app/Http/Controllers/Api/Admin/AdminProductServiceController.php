@@ -235,7 +235,7 @@ class AdminProductServiceController extends Controller
                     }
                 }
 
-                return $service->load(['media', 'subServices', 'store', 'category', 'serviceCategory']);
+                return $service->load(['media', 'subServices', 'store','serviceCategory']);
             });
 
             return ResponseHelper::success($service, 'Service created successfully');
