@@ -31,7 +31,7 @@ class ImageSearchController extends Controller
             $queryEmbedding = $embedService->embeddingFromUrl($publicUrl);
 
             if (!$queryEmbedding || !is_array($queryEmbedding) || count($queryEmbedding) < 32) {
-                Log::channel('replicate')->error("[ImageSearch] Invalid embedding for query image: {$publicUrl}");
+                // Log::channel('replicate')->error("[ImageSearch] Invalid embedding for query image: {$publicUrl}");
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Failed to generate a valid embedding for the image.',
@@ -100,7 +100,7 @@ class ImageSearchController extends Controller
             ]);
 
         } catch (\Throwable $e) {
-            Log::channel('replicate')->error("[ImageSearch] Failure: {$e->getMessage()}");
+            // Log::channel('replicate')->error("[ImageSearch] Failure: {$e->getMessage()}");
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),
