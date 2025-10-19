@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductEmbedding;
 use App\Services\ReplicateEmbeddingService;
 use App\Helpers\Vector;
+use App\Helpers\ProductStatHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -87,11 +88,10 @@ class ImageSearchController extends Controller
             usort($scores, fn($a, $b) => $b['score'] <=> $a['score']);
             $topScores = array_slice($scores, 0, $top);
 
-            // Load products with additional filtering
+            // Load products with the same relationships as CameraSearchController
             $ids = array_unique(array_column($topScores, 'product_id'));
-            $productQuery = Product::with(['images' => function ($q) {
-                $q->orderByDesc('is_main')->orderBy('id');
-            }])->whereIn('id', $ids);
+            $productQuery = Product::with(['store', 'category:id,title', 'images'])
+                ->whereIn('id', $ids);
             
             // Apply additional filters to the product query
             if ($categoryId) {
@@ -107,41 +107,43 @@ class ImageSearchController extends Controller
             $results = [];
             foreach ($topScores as $row) {
                 if (isset($products[$row['product_id']])) {
-                    $p = $products[$row['product_id']];
-                    $mainImage = optional($p->images->first())->path;
-                    $mainImageUrl = $mainImage ? (rtrim(config('app.url'), '/') . '/storage/' . ltrim($mainImage, '/')) : null;
-
                     $results[] = [
                         'score' => round($row['score'], 4), // Round to 4 decimals
-                        'product' => [
-                            'id' => $p->id,
-                            'name' => $p->name,
-                            'price' => $p->price,
-                            'discount_price' => $p->discount_price,
-                            'store_id' => $p->store_id,
-                            'category_id' => $p->category_id,
-                            'brand' => $p->brand ?? null,
-                            'average_rating' => $p->average_rating,
-                            'image_url' => $mainImageUrl,
-                        ],
+                        'product' => $products[$row['product_id']],
                     ];
                 }
             }
 
             Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results) . " threshold={$threshold}");
 
-            // Format results to match CameraSearchController format
+            // Record impressions for products (same as CameraSearchController)
+            if (count($results) > 0) {
+                foreach ($results as $result) {
+                    ProductStatHelper::record($result['product']->id, 'impression');
+                }
+            }
+
+            // Format results to match CameraSearchController format exactly
             $formattedResults = collect($results)->map(function ($item) {
+                $product = $item['product'];
                 return [
-                    'id' => $item['product']['id'],
-                    'name' => $item['product']['name'],
-                    'price' => $item['product']['price'],
-                    'discount_price' => $item['product']['discount_price'],
-                    'store_id' => $item['product']['store_id'],
-                    'category_id' => $item['product']['category_id'],
-                    'brand' => $item['product']['brand'],
-                    'average_rating' => $item['product']['average_rating'],
-                    'image_url' => $item['product']['image_url'],
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'price' => $product->price,
+                    'discount_price' => $product->discount_price,
+                    'brand' => $product->brand,
+                    'sku' => $product->sku,
+                    'stock_quantity' => $product->stock_quantity,
+                    'average_rating' => $product->average_rating,
+                    'store_id' => $product->store_id,
+                    'category_id' => $product->category_id,
+                    'status' => $product->status,
+                    'created_at' => $product->created_at,
+                    'updated_at' => $product->updated_at,
+                    'store' => $product->store,
+                    'category' => $product->category,
+                    'images' => $product->images,
                     'similarity_score' => $item['score'],
                 ];
             });
