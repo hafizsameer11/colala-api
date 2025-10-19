@@ -130,16 +130,37 @@ class ImageSearchController extends Controller
 
             Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results) . " threshold={$threshold}");
 
+            // Format results to match CameraSearchController format
+            $formattedResults = collect($results)->map(function ($item) {
+                return [
+                    'id' => $item['product']['id'],
+                    'name' => $item['product']['name'],
+                    'price' => $item['product']['price'],
+                    'discount_price' => $item['product']['discount_price'],
+                    'store_id' => $item['product']['store_id'],
+                    'category_id' => $item['product']['category_id'],
+                    'brand' => $item['product']['brand'],
+                    'average_rating' => $item['product']['average_rating'],
+                    'image_url' => $item['product']['image_url'],
+                    'similarity_score' => $item['score'],
+                ];
+            });
+
             return response()->json([
                 'status' => 'success',
-                'query_image_url' => $publicUrl,
-                'count' => count($results),
-                'threshold' => $threshold,
-                'filters' => [
-                    'category_id' => $categoryId,
-                    'brand' => $brand,
+                'message' => 'Image search completed successfully.',
+                'detected_terms' => ['visual_similarity'], // Since we're doing visual similarity search
+                'search_results' => $formattedResults,
+                'search_query' => 'Visual similarity search',
+                'metadata' => [
+                    'query_image_url' => $publicUrl,
+                    'count' => count($results),
+                    'threshold' => $threshold,
+                    'filters' => [
+                        'category_id' => $categoryId,
+                        'brand' => $brand,
+                    ],
                 ],
-                'results' => $results,
             ]);
 
         } catch (\Throwable $e) {
