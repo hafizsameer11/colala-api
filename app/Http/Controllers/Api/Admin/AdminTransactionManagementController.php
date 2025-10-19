@@ -87,7 +87,7 @@ class AdminTransactionManagementController extends Controller
     public function getTransactionDetails($transactionId)
     {
         try {
-            $transaction = Transaction::with(['user', 'order.storeOrder.store.user'])->findOrFail($transactionId);
+            $transaction = Transaction::with(['user', 'order.storeOrders.store.user'])->findOrFail($transactionId);
 
             $transactionData = [
                 'transaction_info' => [
@@ -109,8 +109,15 @@ class AdminTransactionManagementController extends Controller
                 'order_info' => $transaction->order ? [
                     'order_id' => $transaction->order->id,
                     'order_number' => $transaction->order->order_no,
-                    'store_name' => $transaction->order->storeOrder->store->store_name ?? null,
-                    'seller_name' => $transaction->order->storeOrder->store->user->full_name ?? null,
+                    'store_orders' => $transaction->order->storeOrders->map(function($storeOrder) {
+                        return [
+                            'store_order_id' => $storeOrder->id,
+                            'store_name' => $storeOrder->store->store_name ?? null,
+                            'seller_name' => $storeOrder->store->user->full_name ?? null,
+                            'status' => $storeOrder->status,
+                            'subtotal' => $storeOrder->subtotal_with_shipping,
+                        ];
+                    }),
                 ] : null,
                 'payment_details' => [
                     'amount_formatted' => 'N' . number_format($transaction->amount, 2),
