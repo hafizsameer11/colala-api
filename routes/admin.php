@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\Admin\AdminChatsController;
 use App\Http\Controllers\Api\Admin\AdminAnalyticsController;
 use App\Http\Controllers\Api\Admin\AdminLeaderboardController;
 use App\Http\Controllers\Api\Admin\AdminSupportController;
+use App\Http\Controllers\Api\Admin\AdminDisputeController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -783,4 +784,24 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     
     // Create service for any store (admin)
     Route::post('/services', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createService']);
+
+    // ========================================
+    // DISPUTE MANAGEMENT MODULE
+    // ========================================
+    // Get all disputes with filtering and pagination
+    Route::get('/disputes', [AdminDisputeController::class, 'getAllDisputes']);
+    // Get dispute statistics and metrics
+    Route::get('/disputes/statistics', [AdminDisputeController::class, 'getDisputeStatistics']);
+    // Get detailed dispute information including chat and order details
+    Route::get('/disputes/{disputeId}/details', [AdminDisputeController::class, 'getDisputeDetails']);
+    // Update dispute status (pending, on_hold, resolved, closed)
+    Route::put('/disputes/{disputeId}/status', [AdminDisputeController::class, 'updateDisputeStatus']);
+    // Resolve dispute with resolution notes and winner
+    Route::post('/disputes/{disputeId}/resolve', [AdminDisputeController::class, 'resolveDispute']);
+    // Close dispute
+    Route::post('/disputes/{disputeId}/close', [AdminDisputeController::class, 'closeDispute']);
+    // Bulk actions on disputes (update_status, resolve, close)
+    Route::post('/disputes/bulk-action', [AdminDisputeController::class, 'bulkAction']);
+    // Get dispute analytics and trends
+    Route::get('/disputes/analytics', [AdminDisputeController::class, 'getDisputeAnalytics']);
 });
