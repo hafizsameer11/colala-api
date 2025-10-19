@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\Admin\AdminAnalyticsController;
 use App\Http\Controllers\Api\Admin\AdminLeaderboardController;
 use App\Http\Controllers\Api\Admin\AdminSupportController;
 use App\Http\Controllers\Api\Admin\AdminDisputeController;
+use App\Http\Controllers\Api\Admin\AdminUserManagementController;
+use App\Http\Controllers\Api\Admin\AdminFaqController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -804,4 +806,50 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/disputes/bulk-action', [AdminDisputeController::class, 'bulkAction']);
     // Get dispute analytics and trends
     Route::get('/disputes/analytics', [AdminDisputeController::class, 'getDisputeAnalytics']);
+
+    // ========================================
+    // ADMIN USER MANAGEMENT MODULE
+    // ========================================
+    // Get all admin users with filtering and pagination
+    Route::get('/admin-users', [AdminUserManagementController::class, 'index']);
+    // Get admin user statistics and metrics
+    Route::get('/admin-users/stats', [AdminUserManagementController::class, 'stats']);
+    // Search admin users by name, email, or phone
+    Route::get('/admin-users/search', [AdminUserManagementController::class, 'search']);
+    // Bulk actions on admin users (activate, deactivate, delete)
+    Route::post('/admin-users/bulk-action', [AdminUserManagementController::class, 'bulkAction']);
+    // Get admin user profile details
+    Route::get('/admin-users/{id}/profile', [AdminUserManagementController::class, 'showProfile']);
+    // Get comprehensive admin user details
+    Route::get('/admin-users/{id}/details', [AdminUserManagementController::class, 'userDetails']);
+    // Create new admin user
+    Route::post('/admin-users', [AdminUserManagementController::class, 'create']);
+    // Update admin user information
+    Route::put('/admin-users/{id}', [AdminUserManagementController::class, 'update']);
+    // Delete admin user account
+    Route::delete('/admin-users/{id}', [AdminUserManagementController::class, 'delete']);
+
+    // ========================================
+    // FAQ MANAGEMENT MODULE
+    // ========================================
+    // Get all FAQ categories
+    Route::get('/faq/categories', [AdminFaqController::class, 'getCategories']);
+    // Get FAQ statistics
+    Route::get('/faq/statistics', [AdminFaqController::class, 'getFaqStatistics']);
+    // Get FAQs by category (general, buyer, seller)
+    Route::get('/faq/general', [AdminFaqController::class, 'getFaqsByCategory']);
+    Route::get('/faq/buyer', [AdminFaqController::class, 'getFaqsByCategory']);
+    Route::get('/faq/seller', [AdminFaqController::class, 'getFaqsByCategory']);
+    // Get FAQ details
+    Route::get('/faq/{id}/details', [AdminFaqController::class, 'getFaqDetails']);
+    // Create new FAQ
+    Route::post('/faq', [AdminFaqController::class, 'createFaq']);
+    // Update FAQ
+    Route::put('/faq/{id}', [AdminFaqController::class, 'updateFaq']);
+    // Delete FAQ
+    Route::delete('/faq/{id}', [AdminFaqController::class, 'deleteFaq']);
+    // Bulk actions on FAQs (activate, deactivate, delete)
+    Route::post('/faq/bulk-action', [AdminFaqController::class, 'bulkAction']);
+    // Update FAQ category
+    Route::put('/faq/categories/{id}', [AdminFaqController::class, 'updateCategory']);
 });
