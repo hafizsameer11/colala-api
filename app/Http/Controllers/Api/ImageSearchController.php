@@ -150,7 +150,8 @@ class ImageSearchController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Image search completed successfully.',
+                'data'=>[
+                    'message' => 'Image search completed successfully.',
                 'detected_terms' => ['visual_similarity'],
                 'search_results' => [
                     'current_page' => 1,
@@ -192,7 +193,8 @@ class ImageSearchController extends Controller
                         'category_id' => $categoryId,
                         'brand' => $brand,
                     ],
-                ],
+                ]
+                ]
             ]);
 
         } catch (\Throwable $e) {
