@@ -151,8 +151,38 @@ class ImageSearchController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Image search completed successfully.',
-                'detected_terms' => ['visual_similarity'], // Since we're doing visual similarity search
-                'search_results' => $formattedResults,
+                'detected_terms' => ['visual_similarity'],
+                'search_results' => [
+                    'current_page' => 1,
+                    'data' => $formattedResults,
+                    'first_page_url' => url('/api/image-search?page=1'),
+                    'from' => 1,
+                    'last_page' => 1,
+                    'last_page_url' => url('/api/image-search?page=1'),
+                    'links' => [
+                        [
+                            'url' => null,
+                            'label' => '&laquo; Previous',
+                            'active' => false,
+                        ],
+                        [
+                            'url' => url('/api/image-search?page=1'),
+                            'label' => '1',
+                            'active' => true,
+                        ],
+                        [
+                            'url' => null,
+                            'label' => 'Next &raquo;',
+                            'active' => false,
+                        ],
+                    ],
+                    'next_page_url' => null,
+                    'path' => url('/api/image-search'),
+                    'per_page' => count($formattedResults),
+                    'prev_page_url' => null,
+                    'to' => count($formattedResults),
+                    'total' => count($formattedResults),
+                ],
                 'search_query' => 'Visual similarity search',
                 'metadata' => [
                     'query_image_url' => $publicUrl,
