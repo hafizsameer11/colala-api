@@ -50,6 +50,7 @@ class ProductService
     }
 
     public function getAllforBuyer()
+    
     {
         $products = Product::with(['variants.images', 'images', 'store'])
             ->get();
