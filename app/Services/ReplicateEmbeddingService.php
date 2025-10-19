@@ -49,6 +49,7 @@ class ReplicateEmbeddingService
             $responseData = $response->json();
             
             if (!isset($responseData['output']) || !is_array($responseData['output'])) {
+                $this->logError('Invalid response format from Replicate API', $responseData);
                 throw new Exception('Invalid response format from Replicate API');
             }
 
