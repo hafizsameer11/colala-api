@@ -18,7 +18,7 @@ class IndexOldProductImagesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 3;
+    public int $tries = 2;
     public int $backoff = 60; // 1 minute base backoff
 
     private int $productImageId;
