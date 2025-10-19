@@ -37,6 +37,10 @@ class SellerChatController extends Controller
     public function send(SendMessageRequest $req, $chatId)
     {
         try {
+            //check atelast message or image must be present
+            if(!$req->has('message') && !$req->hasFile('image')) {
+                return ResponseHelper::error('At least one message or image must be present', 400);
+            }
             $msg = $this->svc->sendMessage(
                 (int)$chatId,
                 $req->user()->id,
