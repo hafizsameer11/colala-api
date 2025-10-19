@@ -130,6 +130,7 @@ class AdminSocialFeedController extends Controller
                         'user_name' => $comment->user->full_name,
                         'created_at' => $comment->created_at,
                         'formatted_date' => $comment->created_at->diffForHumans(),
+                        'profile_picture'=>$comment->user->profile_picture
                     ];
                 }),
                 'recent_likes' => $post->likes()->with('user')->latest()->limit(10)->get()->map(function ($like) {
@@ -395,6 +396,7 @@ class AdminSocialFeedController extends Controller
                         'comment' => $comment->comment,
                         'user_name' => $comment->user->full_name,
                         'created_at' => $comment->created_at,
+                        'profile_picture'=>$comment->user->profile_picture,
                         'formatted_date' => $comment->created_at->diffForHumans(),
                     ];
                 }),
