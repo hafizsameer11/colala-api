@@ -66,7 +66,7 @@ class AdminUserManagementController extends Controller
                     'role' => $user->role,
                     'is_active' => $user->is_active,
                     'wallet_balance' => $user->wallet ? number_format($user->wallet->shopping_balance + $user->wallet->reward_balance, 2) : '0.00',
-                    'created_at' => $user->created_at->format('d-m-Y H:i:s')
+                    'created_at' => $user->created_at ? $user->created_at->format('d-m-Y H:i:s') : null
                 ];
             });
 

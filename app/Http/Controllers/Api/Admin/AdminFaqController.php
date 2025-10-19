@@ -27,8 +27,8 @@ class AdminFaqController extends Controller
                     'video' => $category->video,
                     'is_active' => $category->is_active,
                     'faqs_count' => $category->faqs_count,
-                    'created_at' => $category->created_at->format('d-m-Y H:i:s'),
-                    'updated_at' => $category->updated_at->format('d-m-Y H:i:s')
+                    'created_at' => $category->created_at ? $category->created_at->format('d-m-Y H:i:s') : null,
+                    'updated_at' => $category->updated_at ? $category->updated_at->format('d-m-Y H:i:s') : null
                 ];
             });
 
@@ -83,8 +83,8 @@ class AdminFaqController extends Controller
                         'title' => $faq->category->title,
                         'video' => $faq->category->video
                     ],
-                    'created_at' => $faq->created_at->format('d-m-Y H:i:s'),
-                    'updated_at' => $faq->updated_at->format('d-m-Y H:i:s')
+                    'created_at' => $faq->created_at ? $faq->created_at->format('d-m-Y H:i:s') : null,
+                    'updated_at' => $faq->updated_at ? $faq->updated_at->format('d-m-Y H:i:s') : null
                 ];
             });
 
@@ -156,8 +156,8 @@ class AdminFaqController extends Controller
                     'video' => $faq->category->video,
                     'is_active' => $faq->category->is_active
                 ],
-                'created_at' => $faq->created_at->format('d-m-Y H:i:s'),
-                'updated_at' => $faq->updated_at->format('d-m-Y H:i:s')
+                'created_at' => $faq->created_at ? $faq->created_at->format('d-m-Y H:i:s') : null,
+                'updated_at' => $faq->updated_at ? $faq->updated_at->format('d-m-Y H:i:s') : null
             ];
 
             return ResponseHelper::success($faqData, 'FAQ details retrieved successfully');
@@ -330,5 +330,29 @@ class AdminFaqController extends Controller
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Get general FAQs
+     */
+    public function getGeneralFaqs(Request $request)
+    {
+        return $this->getFaqsByCategory($request, 'general');
+    }
+
+    /**
+     * Get buyer FAQs
+     */
+    public function getBuyerFaqs(Request $request)
+    {
+        return $this->getFaqsByCategory($request, 'buyer');
+    }
+
+    /**
+     * Get seller FAQs
+     */
+    public function getSellerFaqs(Request $request)
+    {
+        return $this->getFaqsByCategory($request, 'seller');
     }
 }

@@ -837,9 +837,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Get FAQ statistics
     Route::get('/faq/statistics', [AdminFaqController::class, 'getFaqStatistics']);
     // Get FAQs by category (general, buyer, seller)
-    Route::get('/faq/general', [AdminFaqController::class, 'getFaqsByCategory']);
-    Route::get('/faq/buyer', [AdminFaqController::class, 'getFaqsByCategory']);
-    Route::get('/faq/seller', [AdminFaqController::class, 'getFaqsByCategory']);
+    Route::get('/faq/general', [AdminFaqController::class, 'getGeneralFaqs']);
+    Route::get('/faq/buyer', [AdminFaqController::class, 'getBuyerFaqs']);
+    Route::get('/faq/seller', [AdminFaqController::class, 'getSellerFaqs']);
     // Get FAQ details
     Route::get('/faq/{id}/details', [AdminFaqController::class, 'getFaqDetails']);
     // Create new FAQ
