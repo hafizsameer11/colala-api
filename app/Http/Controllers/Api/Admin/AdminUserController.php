@@ -1655,7 +1655,7 @@ class AdminUserController extends Controller
                 'password' => 'required|string|min:6',
                 'country' => 'required|string',
                 'state' => 'required|string',
-                'role' => 'nullable|in:buyer,seller',
+                'role' => 'nullable|in:buyer,seller,admin',
                 'referral_code' => 'nullable|string',
                 'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
