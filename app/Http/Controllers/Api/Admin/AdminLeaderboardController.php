@@ -50,14 +50,14 @@ class AdminLeaderboardController extends Controller
             $storeIds = $allStoreIds->unique()->values();
             $stores = Store::whereIn('id', $storeIds)
                 ->withCount(['followers', 'orders', 'products'])
-                ->withSum('orders', 'grand_total')
+                ->withSum('orders', 'subtotal_with_shipping')
                 ->get()
                 ->keyBy('id');
 
             // If no stores have points, include all stores with 0 points
             if ($storeIds->isEmpty()) {
                 $allStores = Store::withCount(['followers', 'orders', 'products'])
-                    ->withSum('orders', 'grand_total')
+                    ->withSum('orders', 'subtotal_with_shipping')
                     ->get();
                 $stores = $allStores->keyBy('id');
                 // Create empty results for all periods
@@ -77,7 +77,7 @@ class AdminLeaderboardController extends Controller
                         'followers_count' => (int) ($store?->followers_count ?? 0),
                         'orders_count' => (int) ($store?->orders_count ?? 0),
                         'products_count' => (int) ($store?->products_count ?? 0),
-                        'total_revenue' => (float) ($store?->orders_sum_grand_total ?? 0),
+                        'total_revenue' => (float) ($store?->orders_sum_subtotal_with_shipping ?? 0),
                         'average_rating' => $store?->average_rating,
                         'profile_image' => $store?->profile_image,
                         'store_location' => $store?->store_location,
@@ -89,7 +89,7 @@ class AdminLeaderboardController extends Controller
             // If no stores have points, show all stores with 0 points
             if ($storeIds->isEmpty()) {
                 $allStores = Store::withCount(['followers', 'orders', 'products'])
-                    ->withSum('orders', 'grand_total')
+                    ->withSum('orders', 'subtotal_with_shipping')
                     ->get();
                 $build = function ($_) use ($allStores) {
                     return $allStores->map(function ($store) {
@@ -101,7 +101,7 @@ class AdminLeaderboardController extends Controller
                             'followers_count' => (int) ($store->followers_count ?? 0),
                             'orders_count' => (int) ($store->orders_count ?? 0),
                             'products_count' => (int) ($store->products_count ?? 0),
-                            'total_revenue' => (float) ($store->orders_sum_grand_total ?? 0),
+                            'total_revenue' => (float) ($store->orders_sum_subtotal_with_shipping ?? 0),
                             'average_rating' => $store->average_rating,
                             'profile_image' => $store->profile_image,
                             'store_location' => $store->store_location,
@@ -132,11 +132,11 @@ class AdminLeaderboardController extends Controller
             $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
             $topStores = Store::withCount(['orders', 'products'])
-                ->withSum('orders', 'grand_total')
+                ->withSum('orders', 'subtotal_with_shipping')
                 ->whereHas('orders', function ($query) use ($dateFrom, $dateTo) {
                     $query->whereBetween('created_at', [$dateFrom, $dateTo]);
                 })
-                ->orderByDesc('orders_sum_grand_total')
+                ->orderByDesc('orders_sum_subtotal_with_shipping')
                 ->limit(20)
                 ->get();
 
@@ -146,7 +146,7 @@ class AdminLeaderboardController extends Controller
                         'store_id' => $store->id,
                         'store_name' => $store->store_name,
                         'seller_name' => $store->user?->full_name,
-                        'total_revenue' => (float) ($store->orders_sum_grand_total ?? 0),
+                        'total_revenue' => (float) ($store->orders_sum_subtotal_with_shipping ?? 0),
                         'orders_count' => $store->orders_count,
                         'products_count' => $store->products_count,
                         'average_rating' => $store->average_rating,
@@ -174,7 +174,7 @@ class AdminLeaderboardController extends Controller
             $dateTo = $request->get('date_to', now()->format('Y-m-d'));
 
             $topStores = Store::withCount(['orders'])
-                ->withSum('orders', 'grand_total')
+                ->withSum('orders', 'subtotal_with_shipping')
                 ->whereHas('orders', function ($query) use ($dateFrom, $dateTo) {
                     $query->whereBetween('created_at', [$dateFrom, $dateTo]);
                 })
@@ -189,7 +189,7 @@ class AdminLeaderboardController extends Controller
                         'store_name' => $store->store_name,
                         'seller_name' => $store->user?->full_name,
                         'orders_count' => $store->orders_count,
-                        'total_revenue' => (float) ($store->orders_sum_grand_total ?? 0),
+                        'total_revenue' => (float) ($store->orders_sum_subtotal_with_shipping ?? 0),
                         'average_rating' => $store->average_rating,
                         'profile_image' => $store->profile_image,
                         'store_location' => $store->store_location,
@@ -212,7 +212,7 @@ class AdminLeaderboardController extends Controller
     {
         try {
             $topStores = Store::withCount(['followers', 'orders', 'products'])
-                ->withSum('orders', 'grand_total')
+                ->withSum('orders', 'subtotal_with_shipping')
                 ->orderByDesc('followers_count')
                 ->limit(20)
                 ->get();
@@ -226,7 +226,7 @@ class AdminLeaderboardController extends Controller
                         'followers_count' => $store->followers_count,
                         'orders_count' => $store->orders_count,
                         'products_count' => $store->products_count,
-                        'total_revenue' => (float) ($store->orders_sum_grand_total ?? 0),
+                        'total_revenue' => (float) ($store->orders_sum_subtotal_with_shipping ?? 0),
                         'average_rating' => $store->average_rating,
                         'profile_image' => $store->profile_image,
                         'store_location' => $store->store_location,
