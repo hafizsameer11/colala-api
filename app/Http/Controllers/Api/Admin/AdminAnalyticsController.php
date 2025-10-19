@@ -32,8 +32,8 @@ class AdminAnalyticsController extends Controller
                 'total_sellers' => User::where('role', 'seller')->count(),
                 'total_buyers' => User::where('role', 'buyer')->count(),
                 'total_orders' => Order::count(),
-                'active_orders' => Order::where('status', 'active')->count(),
-                'completed_orders' => Order::where('status', 'completed')->count(),
+                'active_orders' => \App\Models\StoreOrder::where('status', 'active')->count(),
+                'completed_orders' => \App\Models\StoreOrder::where('status', 'completed')->count(),
                 'total_products' => Product::count(),
                 'total_chats' => Chat::count(),
                 'total_posts' => Post::count(),
@@ -53,10 +53,10 @@ class AdminAnalyticsController extends Controller
             ->get();
 
             // Order trends
-            $orderTrends = Order::selectRaw('
+            $orderTrends = \App\Models\StoreOrder::selectRaw('
                 DATE(created_at) as date,
                 COUNT(*) as total_orders,
-                SUM(grand_total) as total_revenue,
+                SUM(subtotal_with_shipping) as total_revenue,
                 SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_orders,
                 SUM(CASE WHEN status = "active" THEN 1 ELSE 0 END) as active_orders
             ')
@@ -79,25 +79,27 @@ class AdminAnalyticsController extends Controller
 
             // Top performing stores
             $topStores = Store::withCount(['orders', 'products'])
-                ->withSum('orders', 'grand_total')
-                ->orderByDesc('orders_sum_grand_total')
+                ->withSum('orders', 'subtotal_with_shipping')
+                ->orderByDesc('orders_sum_subtotal_with_shipping')
                 ->limit(10)
                 ->get();
 
             // Category breakdown
             $categoryStats = Product::selectRaw('
-                categories.name as category_name,
+                categories.title as category_name,
                 COUNT(*) as product_count,
                 AVG(products.price) as avg_price
             ')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->groupBy('categories.id', 'categories.name')
+            ->groupBy('categories.id', 'categories.title')
             ->get();
 
             // Chat analytics
             $chatAnalytics = [
                 'total_chats' => Chat::count(),
-                'unread_chats' => Chat::where('is_read', false)->count(),
+                'unread_chats' => Chat::whereHas('messages', function($q) {
+                    $q->where('is_read', false);
+                })->count(),
                 'dispute_chats' => Chat::where('type', 'dispute')->count(),
                 'support_chats' => Chat::where('type', 'support')->count(),
                 'general_chats' => Chat::where('type', 'general')->count(),
@@ -122,7 +124,7 @@ class AdminAnalyticsController extends Controller
                         'store_name' => $store->store_name,
                         'total_orders' => $store->orders_count,
                         'total_products' => $store->products_count,
-                        'total_revenue' => $store->orders_sum_grand_total ?? 0,
+                        'total_revenue' => $store->orders_sum_subtotal_with_shipping ?? 0,
                     ];
                 }),
                 'category_breakdown' => $categoryStats,
@@ -285,13 +287,13 @@ class AdminAnalyticsController extends Controller
 
             // Category breakdown
             $categoryStats = Product::selectRaw('
-                categories.name as category_name,
+                categories.title as category_name,
                 COUNT(*) as product_count,
                 AVG(products.price) as avg_price,
                 SUM(CASE WHEN products.status = "active" THEN 1 ELSE 0 END) as active_products
             ')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->groupBy('categories.id', 'categories.name')
+            ->groupBy('categories.id', 'categories.title')
             ->get();
 
             return ResponseHelper::success([
