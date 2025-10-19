@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductEmbedding;
 use App\Services\ReplicateEmbeddingService;
+use App\Helpers\Vector;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -77,10 +78,13 @@ class IndexOldProductImagesJob implements ShouldQueue
             $this->logInfo("Received embedding with " . count($embedding) . " dimensions for ProductImage #{$productImage->id}");
 
             // Store embedding
+            // Normalize the embedding before storing
+            $normalizedEmbedding = Vector::normalize($embedding);
+            
             $embeddingRecord = ProductEmbedding::create([
                 'product_id' => $productImage->product_id,
                 'image_id' => $productImage->id,
-                'embedding' => $embedding,
+                'embedding' => $normalizedEmbedding,
             ]);
 
             $this->logInfo("Successfully stored embedding record #{$embeddingRecord->id} for ProductImage #{$productImage->id} for Product #{$productImage->product_id}");

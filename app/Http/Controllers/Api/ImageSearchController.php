@@ -18,9 +18,15 @@ class ImageSearchController extends Controller
         $request->validate([
             'image' => 'required|image|max:10240', // 10MB
             'top'   => 'sometimes|integer|min:1|max:50',
+            'category_id' => 'sometimes|integer|exists:categories,id',
+            'brand' => 'sometimes|string|max:255',
+            'threshold' => 'sometimes|numeric|min:0|max:1',
         ]);
 
         $top = (int)($request->input('top', 10));
+        $categoryId = $request->input('category_id');
+        $brand = $request->input('brand');
+        $threshold = (float)($request->input('threshold', 0.8));
 
         // Save uploaded file to public disk
         $path = $request->file('image')->store('temp/search', 'public');
@@ -31,40 +37,71 @@ class ImageSearchController extends Controller
             $queryEmbedding = $embedService->embeddingFromUrl($publicUrl);
 
             if (!$queryEmbedding || !is_array($queryEmbedding) || count($queryEmbedding) < 32) {
-                // Log::channel('replicate')->error("[ImageSearch] Invalid embedding for query image: {$publicUrl}");
+                Log::channel('replicate')->error("[ImageSearch] Invalid embedding for query image: {$publicUrl}");
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Failed to generate a valid embedding for the image.',
                 ], 500);
             }
 
+            // Normalize the query embedding
+            $queryEmbedding = Vector::normalize($queryEmbedding);
+
             // Compare with DB embeddings (chunked)
             $scores = [];
-            ProductEmbedding::query()
+            $query = ProductEmbedding::query()
                 ->select(['product_id', 'image_id', 'embedding'])
-                ->chunk(2000, function ($rows) use (&$scores, $queryEmbedding) {
-                    foreach ($rows as $row) {
-                        // Get embedding array (already cast by Eloquent)
-                        $emb = $row->embedding;
-                        if (!is_array($emb) || empty($emb)) continue;
-                        $score = Vector::cosineSimilarity($queryEmbedding, $emb);
+                ->with(['product' => function ($q) use ($categoryId, $brand) {
+                    if ($categoryId) {
+                        $q->where('category_id', $categoryId);
+                    }
+                    if ($brand) {
+                        $q->where('brand', 'like', '%' . $brand . '%');
+                    }
+                }]);
+
+            $query->chunk(2000, function ($rows) use (&$scores, $queryEmbedding, $threshold) {
+                foreach ($rows as $row) {
+                    // Get embedding array (already cast by Eloquent)
+                    $emb = $row->embedding;
+                    if (!is_array($emb) || empty($emb)) continue;
+                    
+                    // Normalize the stored embedding
+                    $normalizedEmb = Vector::normalize($emb);
+                    
+                    // Calculate similarity using normalized vectors
+                    $score = Vector::cosineSimilarity($queryEmbedding, $normalizedEmb);
+                    
+                    // Apply similarity threshold
+                    if ($score >= $threshold) {
                         $scores[] = [
                             'product_id' => $row->product_id,
                             'image_id'   => $row->image_id,
                             'score'      => $score,
                         ];
                     }
-                });
+                }
+            });
 
             // Sort by score desc and take top N
             usort($scores, fn($a, $b) => $b['score'] <=> $a['score']);
             $topScores = array_slice($scores, 0, $top);
 
-            // Load products
+            // Load products with additional filtering
             $ids = array_unique(array_column($topScores, 'product_id'));
-            $products = Product::with(['images' => function ($q) {
+            $productQuery = Product::with(['images' => function ($q) {
                 $q->orderByDesc('is_main')->orderBy('id');
-            }])->whereIn('id', $ids)->get()->keyBy('id');
+            }])->whereIn('id', $ids);
+            
+            // Apply additional filters to the product query
+            if ($categoryId) {
+                $productQuery->where('category_id', $categoryId);
+            }
+            if ($brand) {
+                $productQuery->where('brand', 'like', '%' . $brand . '%');
+            }
+            
+            $products = $productQuery->get()->keyBy('id');
 
             // Merge results
             $results = [];
@@ -75,7 +112,7 @@ class ImageSearchController extends Controller
                     $mainImageUrl = $mainImage ? (rtrim(config('app.url'), '/') . '/storage/' . ltrim($mainImage, '/')) : null;
 
                     $results[] = [
-                        'score' => round($row['score'], 6),
+                        'score' => round($row['score'], 4), // Round to 4 decimals
                         'product' => [
                             'id' => $p->id,
                             'name' => $p->name,
@@ -83,6 +120,7 @@ class ImageSearchController extends Controller
                             'discount_price' => $p->discount_price,
                             'store_id' => $p->store_id,
                             'category_id' => $p->category_id,
+                            'brand' => $p->brand ?? null,
                             'average_rating' => $p->average_rating,
                             'image_url' => $mainImageUrl,
                         ],
@@ -90,17 +128,22 @@ class ImageSearchController extends Controller
                 }
             }
 
-            // Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results));
+            Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results) . " threshold={$threshold}");
 
             return response()->json([
                 'status' => 'success',
                 'query_image_url' => $publicUrl,
                 'count' => count($results),
+                'threshold' => $threshold,
+                'filters' => [
+                    'category_id' => $categoryId,
+                    'brand' => $brand,
+                ],
                 'results' => $results,
             ]);
 
         } catch (\Throwable $e) {
-            // Log::channel('replicate')->error("[ImageSearch] Failure: {$e->getMessage()}");
+            Log::channel('replicate')->error("[ImageSearch] Failure: {$e->getMessage()}");
             return response()->json([
                 'status' => 'error',
                 'message' => $e->getMessage(),

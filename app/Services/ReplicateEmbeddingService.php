@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Helpers\Vector;
 use Exception;
 
 class ReplicateEmbeddingService
@@ -230,6 +231,7 @@ class ReplicateEmbeddingService
 
         $this->logInfo("Successfully generated embedding with " . count($embedding) . " dimensions for image search: {$imageUrl}");
 
-        return $embedding;
+        // Normalize the embedding before returning
+        return Vector::normalize($embedding);
     }
 }
