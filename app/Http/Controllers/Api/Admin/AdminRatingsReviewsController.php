@@ -99,6 +99,12 @@ class AdminRatingsReviewsController extends Controller
                         'store' => $store ? [
                             'id' => $store->id,
                             'store_name' => $store->store_name,
+                            'store_email' => $store->store_email,
+                            'store_phone' => $store->store_phone,
+                            'store_location' => $store->store_location,
+                            'profile_image' => $store->profile_image,
+                            'banner_image' => $store->banner_image,
+                            'status' => $store->status,
                         ] : null,
                         'created_at' => $review->created_at,
                         'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
@@ -143,6 +149,12 @@ class AdminRatingsReviewsController extends Controller
                 'store' => $store ? [
                     'id' => $store->id,
                     'store_name' => $store->store_name,
+                    'store_email' => $store->store_email,
+                    'store_phone' => $store->store_phone,
+                    'store_location' => $store->store_location,
+                    'profile_image' => $store->profile_image,
+                    'banner_image' => $store->banner_image,
+                    'status' => $store->status,
                 ] : null,
                 'created_at' => $review->created_at,
                 'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
@@ -195,10 +207,18 @@ class AdminRatingsReviewsController extends Controller
                             'id' => $review->user->id,
                             'full_name' => $review->user->full_name,
                             'email' => $review->user->email,
+                            'phone' => $review->user->phone,
+                            'profile_picture' => $review->user->profile_picture,
                         ] : null,
                         'store' => $review->store ? [
                             'id' => $review->store->id,
                             'store_name' => $review->store->store_name,
+                            'store_email' => $review->store->store_email,
+                            'store_phone' => $review->store->store_phone,
+                            'store_location' => $review->store->store_location,
+                            'profile_image' => $review->store->profile_image,
+                            'banner_image' => $review->store->banner_image,
+                            'status' => $review->store->status,
                         ] : null,
                         'created_at' => $review->created_at,
                         'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
@@ -222,7 +242,7 @@ class AdminRatingsReviewsController extends Controller
     public function storeReviewDetails($reviewId)
     {
         try {
-            $review = StoreReview::with(['user', 'store'])->findOrFail($reviewId);
+            $review = StoreReview::with(['user', 'store.user'])->findOrFail($reviewId);
 
             return ResponseHelper::success([
                 'id' => $review->id,
@@ -233,10 +253,24 @@ class AdminRatingsReviewsController extends Controller
                     'id' => $review->user->id,
                     'full_name' => $review->user->full_name,
                     'email' => $review->user->email,
+                    'phone' => $review->user->phone,
+                    'profile_picture' => $review->user->profile_picture,
                 ] : null,
                 'store' => $review->store ? [
                     'id' => $review->store->id,
                     'store_name' => $review->store->store_name,
+                    'store_email' => $review->store->store_email,
+                    'store_phone' => $review->store->store_phone,
+                    'store_location' => $review->store->store_location,
+                    'profile_image' => $review->store->profile_image,
+                    'banner_image' => $review->store->banner_image,
+                    'status' => $review->store->status,
+                    'owner' => $review->store->user ? [
+                        'id' => $review->store->user->id,
+                        'full_name' => $review->store->user->full_name,
+                        'email' => $review->store->user->email,
+                    ] : null,
+                    'created_at' => $review->store->created_at,
                 ] : null,
                 'created_at' => $review->created_at,
                 'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
