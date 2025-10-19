@@ -90,7 +90,7 @@ class ImageSearchController extends Controller
                 }
             }
 
-            Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results));
+            // Log::channel('replicate')->info("[ImageSearch] Query ok; url={$publicUrl} results=" . count($results));
 
             return response()->json([
                 'status' => 'success',
