@@ -127,6 +127,13 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'replicate' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/replicate_embeddings.log'),
+            'level' => 'debug',
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

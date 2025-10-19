@@ -273,3 +273,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Get notification statistics
     Route::get('/notifications/stats', [App\Http\Controllers\Api\UserNotificationController::class, 'stats']);
 });
+
+// ==================== Image Search ====================
+Route::prefix('search')->group(function () {
+    Route::post('by-image', [\App\Http\Controllers\Api\ImageSearchController::class, 'search']);
+});

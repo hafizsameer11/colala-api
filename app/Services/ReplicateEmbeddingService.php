@@ -162,4 +162,74 @@ class ReplicateEmbeddingService
         $logFile = storage_path('logs/replicate_embeddings.log');
         file_put_contents($logFile, $message . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
+
+    /**
+     * Generate embedding from URL for image search
+     *
+     * @param string $imageUrl
+     * @return array|null
+     * @throws \RuntimeException
+     */
+    public function embeddingFromUrl(string $imageUrl): ?array
+    {
+        $token = env('REPLICATE_API_TOKEN');
+        if (!$token) {
+            Log::channel('replicate')->error("[Replicate] Missing REPLICATE_API_TOKEN");
+            throw new \RuntimeException('Replicate token missing');
+        }
+
+        $this->logInfo("Starting embedding generation for image search: {$imageUrl}");
+
+        $resp = Http::withToken($token)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+                'Prefer'       => 'wait',
+            ])
+            ->timeout(120)
+            ->post($this->baseUrl . '/models/openai/clip/predictions', [
+                'input' => [
+                    'image' => $imageUrl,
+                ],
+            ]);
+
+        $this->logInfo("API Response Status: {$resp->status()}");
+        $this->logInfo("API Response Headers: " . json_encode($resp->headers()));
+
+        if ($resp->status() === 402) {
+            Log::channel('replicate')->error("[Replicate] 402 Insufficient credit");
+            throw new \RuntimeException('Replicate: insufficient credit (402)');
+        }
+
+        if (!$resp->successful()) {
+            $this->logError("API request failed with status {$resp->status()}", null, [
+                'response_body' => $resp->body(),
+                'response_headers' => $resp->headers(),
+                'image_url' => $imageUrl
+            ]);
+            throw new \RuntimeException("Replicate error {$resp->status()}");
+        }
+
+        $json = $resp->json();
+        $this->logInfo("API Response Data: " . json_encode($json));
+
+        // Expected: output[0].embedding or output.embedding depending on model shape
+        $output = $json['output'] ?? null;
+
+        // Handle common shapes:
+        if (is_array($output) && isset($output[0]['embedding']) && is_array($output[0]['embedding'])) {
+            $embedding = $output[0]['embedding'];
+        } elseif (is_array($output) && isset($output['embedding']) && is_array($output['embedding'])) {
+            $embedding = $output['embedding'];
+        } else {
+            $this->logError('Invalid response format from Replicate API', null, [
+                'response_data' => $json,
+                'image_url' => $imageUrl
+            ]);
+            throw new \RuntimeException('Invalid response format from Replicate API');
+        }
+
+        $this->logInfo("Successfully generated embedding with " . count($embedding) . " dimensions for image search: {$imageUrl}");
+
+        return $embedding;
+    }
 }
