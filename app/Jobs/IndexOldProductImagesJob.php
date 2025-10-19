@@ -39,12 +39,16 @@ class IndexOldProductImagesJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            $this->logInfo("Starting job for ProductImage #{$this->productImageId}");
+            
             $productImage = ProductImage::with('product')->find($this->productImageId);
             
             if (!$productImage) {
                 $this->logError("ProductImage #{$this->productImageId} not found");
                 return;
             }
+
+            $this->logInfo("Found ProductImage #{$productImage->id} for Product #{$productImage->product_id}");
 
             // Check if embedding already exists
             $existingEmbedding = ProductEmbedding::where('product_id', $productImage->product_id)
@@ -64,20 +68,30 @@ class IndexOldProductImagesJob implements ShouldQueue
                 return;
             }
 
+            $this->logInfo("Generated image URL: {$imageUrl}");
+
             // Generate embedding
+            $this->logInfo("Calling Replicate API for ProductImage #{$productImage->id}");
             $embedding = $this->embeddingService->generateEmbedding($imageUrl);
 
+            $this->logInfo("Received embedding with " . count($embedding) . " dimensions for ProductImage #{$productImage->id}");
+
             // Store embedding
-            ProductEmbedding::create([
+            $embeddingRecord = ProductEmbedding::create([
                 'product_id' => $productImage->product_id,
                 'image_id' => $productImage->id,
                 'embedding' => $embedding,
             ]);
 
-            $this->logInfo("Indexed ProductImage #{$productImage->id} for Product #{$productImage->product_id}");
+            $this->logInfo("Successfully stored embedding record #{$embeddingRecord->id} for ProductImage #{$productImage->id} for Product #{$productImage->product_id}");
 
         } catch (Exception $e) {
-            $this->logError("Failed ProductImage #{$this->productImageId} - error: {$e->getMessage()}");
+            $this->logError("Failed ProductImage #{$this->productImageId} - error: {$e->getMessage()}", [
+                'exception_class' => get_class($e),
+                'exception_file' => $e->getFile(),
+                'exception_line' => $e->getLine(),
+                'exception_trace' => $e->getTraceAsString()
+            ]);
             throw $e; // Re-throw to trigger retry mechanism
         }
     }
@@ -124,7 +138,7 @@ class IndexOldProductImagesJob implements ShouldQueue
      */
     private function logInfo(string $message): void
     {
-        $logMessage = '[' . now()->format('Y-m-d H:i:s') . '] ' . $message;
+        $logMessage = '[' . now()->format('Y-m-d H:i:s') . '] [INFO] ' . $message;
         $logFile = storage_path('logs/replicate_embeddings.log');
         file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
@@ -132,9 +146,14 @@ class IndexOldProductImagesJob implements ShouldQueue
     /**
      * Log error message to replicate_embeddings.log
      */
-    private function logError(string $message): void
+    private function logError(string $message, ?array $context = null): void
     {
-        $logMessage = '[' . now()->format('Y-m-d H:i:s') . '] ' . $message;
+        $logMessage = '[' . now()->format('Y-m-d H:i:s') . '] [ERROR] ' . $message;
+        
+        if ($context) {
+            $logMessage .= ' - context: ' . json_encode($context);
+        }
+        
         $logFile = storage_path('logs/replicate_embeddings.log');
         file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND | LOCK_EX);
     }
