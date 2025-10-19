@@ -70,15 +70,21 @@ class ReplicateEmbeddingService
             $output = $responseData['output'];
             $this->logInfo("Output data: " . json_encode($output));
             
-            if (!isset($output[0]['embedding']) || !is_array($output[0]['embedding'])) {
+            // Check if embedding is directly in output
+            if (isset($output['embedding']) && is_array($output['embedding'])) {
+                $embedding = $output['embedding'];
+            }
+            // Check if embedding is in output[0] (array format)
+            elseif (isset($output[0]['embedding']) && is_array($output[0]['embedding'])) {
+                $embedding = $output[0]['embedding'];
+            }
+            else {
                 $this->logError('Embedding not found in API response', null, [
                     'output_data' => $output,
                     'image_url' => $imageUrl
                 ]);
                 throw new Exception('Embedding not found in API response');
             }
-
-            $embedding = $output[0]['embedding'];
             $this->logInfo("Successfully generated embedding with " . count($embedding) . " dimensions for image: {$imageUrl}");
 
             return $embedding;
