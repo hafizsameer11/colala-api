@@ -300,7 +300,7 @@ class AdminTransactionManagementController extends Controller
                 'user_name' => $transaction->user->full_name,
                 'user_email' => $transaction->user->email,
                 'created_at' => $transaction->created_at,
-                'formatted_date' => $transaction->created_at->format('d-m-Y H:i A'),
+                'formatted_date' => $transaction->created_at ? $transaction->created_at->format('d-m-Y H:i A') : null,
                 'status_color' => $this->getStatusColor($transaction->status),
             ];
         });

@@ -42,9 +42,11 @@ class SellerUserController extends Controller
                 $query->where('is_active', $request->status === 'active');
             }
 
-            // Level filter
+            // Level filter (store onboarding level)
             if ($request->has('level') && $request->level !== 'all') {
-                $query->where('level', $request->level);
+                $query->whereHas('store', function ($storeQuery) use ($request) {
+                    $storeQuery->where('onboarding_level', $request->level);
+                });
             }
 
             $users = $query->latest()->paginate(15);
@@ -62,14 +64,14 @@ class SellerUserController extends Controller
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'full_name' => $user->full_name,
-                    'level' => $user->level ?? 1,
+                    'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
                     'is_active' => $user->is_active,
-                    'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+                    'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null,
                     'store_count' => $user->store ? 1 : 0,
                     'total_orders' => $this->getUserOrderCount($user->id),
                     'total_revenue' => $this->getUserRevenue($user->id),
-                    'created_at' => $user->created_at->format('d-m-Y H:i:s'),
-                    'last_login' => $user->updated_at->format('d-m-Y H:i:s')
+                    'created_at' => $user->created_at ? $user->created_at->format('d-m-Y H:i:s') : null,
+                    'last_login' => $user->updated_at ? $user->updated_at->format('d-m-Y H:i:s') : null
                 ];
             });
 
@@ -169,9 +171,9 @@ class SellerUserController extends Controller
                         'full_name' => $user->full_name,
                         'email' => $user->email,
                         'phone' => $user->phone,
-                        'level' => $user->level ?? 1,
+                        'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
                         'is_active' => $user->is_active,
-                        'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null
+                        'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null
                     ];
                 });
 

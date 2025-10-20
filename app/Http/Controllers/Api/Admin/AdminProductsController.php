@@ -253,7 +253,7 @@ class AdminProductsController extends Controller
                 'impressions' => 0,
                 'clicks' => 0,
                 'cpc' => 0,
-                'payment_method' => 'admin',
+                'payment_method' => 'wallet',
                 'payment_status' => 'pending',
             ]);
 

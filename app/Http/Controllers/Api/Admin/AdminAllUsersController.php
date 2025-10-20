@@ -89,7 +89,9 @@ class AdminAllUsersController extends Controller
                 'store',
                 'orders',
                 'transactions',
-                'loyaltyPoints','userActivities'
+                'loyaltyPoints',
+                'userActivities',
+                'addresses'
             ])->findOrFail($userId);
 
             $userData = [
@@ -138,7 +140,7 @@ class AdminAllUsersController extends Controller
                         'grand_total' => $order->grand_total,
                         'payment_status' => $order->payment_status,
                         'created_at' => $order->created_at,
-                        'formatted_date' => $order->created_at->format('d-m-Y H:i A'),
+                        'formatted_date' => $order->created_at ? $order->created_at->format('d-m-Y H:i A') : null,
                     ];
                 }),
                 'activities' => $user->userActivities->map(function ($activity) {
@@ -156,12 +158,64 @@ class AdminAllUsersController extends Controller
                         'status' => $transaction->status,
                         'type' => $transaction->type,
                         'created_at' => $transaction->created_at,
-                        'formatted_date' => $transaction->created_at->format('d-m-Y H:i A'),
+                        'formatted_date' => $transaction->created_at ? $transaction->created_at->format('d-m-Y H:i A') : null,
+                    ];
+                }),
+                'saved_addresses' => $user->addresses->map(function ($address) {
+                    return [
+                        'id' => $address->id,
+                        'label' => $address->label,
+                        'phone' => $address->phone,
+                        'line1' => $address->line1,
+                        'line2' => $address->line2,
+                        'city' => $address->city,
+                        'state' => $address->state,
+                        'country' => $address->country,
+                        'zipcode' => $address->zipcode,
+                        'is_default' => $address->is_default,
+                        'created_at' => $address->created_at,
+                        'formatted_date' => $address->created_at ? $address->created_at->format('d-m-Y H:i A') : null,
                     ];
                 }),
             ];
 
             return ResponseHelper::success($userData);
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get user saved addresses
+     */
+    public function getUserAddresses($userId)
+    {
+        try {
+            $user = User::with('addresses')->findOrFail($userId);
+            
+            $addresses = $user->addresses->map(function ($address) {
+                return [
+                    'id' => $address->id,
+                    'label' => $address->label,
+                    'phone' => $address->phone,
+                    'line1' => $address->line1,
+                    'line2' => $address->line2,
+                    'city' => $address->city,
+                    'state' => $address->state,
+                    'country' => $address->country,
+                    'zipcode' => $address->zipcode,
+                    'is_default' => $address->is_default,
+                    'created_at' => $address->created_at,
+                    'formatted_date' => $address->created_at ? $address->created_at->format('d-m-Y H:i A') : null,
+                ];
+            });
+
+            return ResponseHelper::success([
+                'user_id' => $user->id,
+                'user_name' => $user->full_name,
+                'total_addresses' => $addresses->count(),
+                'addresses' => $addresses,
+            ]);
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
@@ -257,7 +311,7 @@ class AdminAllUsersController extends Controller
                 'points_balance' => $user->wallet ? $user->wallet->points_balance : 0,
                 'store_name' => $user->store ? $user->store->store_name : null,
                 'created_at' => $user->created_at,
-                'formatted_date' => $user->created_at->format('d-m-Y H:i A'),
+                'formatted_date' => $user->created_at ? $user->created_at->format('d-m-Y H:i A') : null,
             ];
         });
     }
