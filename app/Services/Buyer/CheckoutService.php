@@ -161,7 +161,7 @@ class CheckoutService
     public function paymentConfirmationWIthShoppingWallet($data)
     {
         return DB::transaction(function () use ($data) {
-            $order = Order::with('storeOrders.items')->find($data['order_id']);
+            $order = Order::with('storeOrders.items.product')->find($data['order_id']);
             if (!$order) {
                 throw ValidationException::withMessages(['order' => 'Order not found.']);
             }
@@ -201,12 +201,14 @@ class CheckoutService
             // ✅ Lock escrow funds for each order item
             foreach ($order->storeOrders as $storeOrder) {
                 foreach ($storeOrder->items as $item) {
+                    $perItemShipping = (float) ($item->product?->getDeliveryFee($order->delivery_address_id) ?? 0);
                     Escrow::create([
                         'user_id'       => $user->id,
                         'order_id'      => $order->id,
                         'order_item_id' => $item->id,
-                        'amount'        => $item->line_total,
+                        'amount'        => $item->line_total + $perItemShipping,
                         'status'        => 'locked',
+                        'shipping_fee'  => $perItemShipping > 0 ? $perItemShipping : null,
                     ]);
                 }
             }

@@ -56,7 +56,7 @@ class CheckoutController extends Controller
             $orderId = $data['order_id'];
             $txId    = $data['tx_id'];
 
-            $order = Order::with('storeOrders.items')->find($orderId);
+            $order = Order::with('storeOrders.items.product')->find($orderId);
             if (!$order) {
                 return ResponseHelper::error('Order not found', 404);
             }
@@ -80,11 +80,15 @@ class CheckoutController extends Controller
             // ✅ Lock escrow funds for each order item
             foreach ($order->storeOrders as $storeOrder) {
                 foreach ($storeOrder->items as $item) {
+                    //shipping fee
+                    $perItemShipping = (float) ($item->product?->getDeliveryFee($order->delivery_address_id) ?? 0);
+
                     \App\Models\Escrow::create([
                         'user_id'       => $req->user()->id,
                         'order_id'      => $order->id,
                         'order_item_id' => $item->id,
-                        'amount'        => $item->line_total,
+                        'amount'        => $item->line_total+$perItemShipping,
+                        'shipping_fee'  => $perItemShipping > 0 ? $perItemShipping : null,
                         'status'        => 'locked',
                     ]);
                 }
