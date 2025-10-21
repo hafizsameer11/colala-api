@@ -35,12 +35,12 @@ class ChatService {
     }
 
     public function fetchMessages(int $chatId, int $userId) {
-        $chat = Chat::with('store','dispute')->where('id',$chatId)->where('user_id',$userId)->firstOrFail();
+        $chat = Chat::with('store','dispute','storeOrder')->where('id',$chatId)->where('user_id',$userId)->firstOrFail();
         // mark messages as read
         $chat->messages()->where('sender_type','store')->update(['is_read'=>true]);
         $messages= $chat->messages()->with('sender')->orderBy('created_at','asc')->get();
         $store=$chat->store;
-        return ['messages'=>$messages,'store'=>$store,'dispute'=>$chat->dispute];
+        return ['messages'=>$messages,'store'=>$store,'dispute'=>$chat->dispute,'storeOrder'=>$chat->storeOrder];
     }
 
     public function sendMessage(int $chatId, int $senderId, string $senderType, ?string $text, $imageFile = null) {
