@@ -58,7 +58,12 @@ class ServiceService
     }
     public function getById($id)
     {
-        return Service::with('media','subServices','store')->findOrFail((int)$id);
+        return Service::with(['media','subServices','store' => function ($q) {
+                $q->withCount('followers')
+                  ->withSum('soldItems', 'qty');
+            },
+            'store.soldItems',
+            'store.socialLinks',])->findOrFail((int)$id);
     }
 
     public function update(int $id, array $data)
