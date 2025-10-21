@@ -21,26 +21,84 @@ class AdminProductServiceController extends Controller
     /**
      * Get all stores (name, picture, id only)
      */
-    public function getStores()
+    public function getStores(Request $request)
     {
         try {
-            $stores = Store::select('id', 'store_name', 'profile_image', 'banner_image')
-                ->with('user:id,full_name,email')
-                ->get()
-                ->map(function ($store) {
+            $query = Store::select('id', 'store_name', 'store_email', 'store_phone', 'profile_image', 'banner_image', 'status', 'onboarding_level', 'created_at')
+                ->with('user:id,full_name,email,phone');
+
+            // Apply filters
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('level') && $request->level !== 'all') {
+                $query->where('onboarding_level', $request->level);
+            }
+
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('store_name', 'like', "%{$search}%")
+                      ->orWhere('store_email', 'like', "%{$search}%")
+                      ->orWhere('store_phone', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($userQuery) use ($search) {
+                          $userQuery->where('full_name', 'like', "%{$search}%")
+                                   ->orWhere('email', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            $stores = $query->latest()->paginate($request->get('per_page', 20));
+
+            $stores->getCollection()->transform(function ($store) {
                     return [
                         'id' => $store->id,
                         'store_name' => $store->store_name,
+                        'store_email' => $store->store_email,
+                        'store_phone' => $store->store_phone,
                         'profile_image' => $store->profile_image ? asset('storage/' . $store->profile_image) : null,
                         'banner_image' => $store->banner_image ? asset('storage/' . $store->banner_image) : null,
-                        'owner_name' => $store->user->full_name ?? null,
-                        'owner_email' => $store->user->email ?? null,
+                        'owner_name' => $store->user ? $store->user->full_name : null,
+                        'owner_email' => $store->user ? $store->user->email : null,
+                        'owner_phone' => $store->user ? $store->user->phone : null,
+                        'status' => $store->status,
+                        'level' => $store->onboarding_level,
+                        'submission_date' => $store->created_at ? $store->created_at->format('m/d/Y') : null,
+                        'formatted_date' => $store->created_at ? $store->created_at->format('d-m-Y H:i A') : null,
                     ];
                 });
 
+            // Get summary statistics for cards
+            $stats = [
+                'total_stores' => [
+                    'count' => Store::count(),
+                    'increase' => 5, // Mock data - you can calculate actual increase
+                    'color' => 'red'
+                ],
+                'pending_kyc' => [
+                    'count' => Store::where('status', 'pending')->count(),
+                    'increase' => 5, // Mock data
+                    'color' => 'red'
+                ],
+                'approved_kyc' => [
+                    'count' => Store::where('status', 'approved')->count(),
+                    'increase' => 5, // Mock data
+                    'color' => 'red'
+                ]
+            ];
+
             return ResponseHelper::success([
                 'stores' => $stores,
-                'total_stores' => $stores->count()
+                'summary_stats' => $stats,
+                'pagination' => [
+                    'current_page' => $stores->currentPage(),
+                    'last_page' => $stores->lastPage(),
+                    'per_page' => $stores->perPage(),
+                    'total' => $stores->total(),
+                    'next_page_url' => $stores->nextPageUrl(),
+                    'prev_page_url' => $stores->previousPageUrl(),
+                ]
             ], 'Stores retrieved successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
