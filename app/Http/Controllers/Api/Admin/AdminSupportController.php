@@ -22,7 +22,7 @@ class AdminSupportController extends Controller
     public function getAllTickets(Request $request)
     {
         try {
-            $query = SupportTicket::with(['user', 'messages']);
+            $query = SupportTicket::with(['user.store', 'messages']);
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -106,7 +106,7 @@ class AdminSupportController extends Controller
     {
         try {
             $ticket = SupportTicket::with([
-                'user',
+                'user.store',
                 'messages.sender'
             ])->findOrFail($ticketId);
 
@@ -126,6 +126,9 @@ class AdminSupportController extends Controller
                     'email' => $ticket->user->email,
                     'phone' => $ticket->user->phone,
                     'role' => $ticket->user->role,
+                    'profile_picture' => $ticket->user->role === 'seller' && $ticket->user->store && $ticket->user->store->profile_image 
+                        ? asset('storage/' . $ticket->user->store->profile_image) 
+                        : ($ticket->user->profile_picture ? asset('storage/' . $ticket->user->profile_picture) : null),
                 ],
                 'messages' => $ticket->messages->map(function ($message) {
                     return [
@@ -329,6 +332,14 @@ class AdminSupportController extends Controller
     private function formatTicketsData($tickets)
     {
         return $tickets->map(function ($ticket) {
+            // Determine profile picture based on user role
+            $profilePicture = null;
+            if ($ticket->user->role === 'seller' && $ticket->user->store && $ticket->user->store->profile_image) {
+                $profilePicture = asset('storage/' . $ticket->user->store->profile_image);
+            } elseif ($ticket->user->profile_picture) {
+                $profilePicture = asset('storage/' . $ticket->user->profile_picture);
+            }
+
             return [
                 'id' => $ticket->id,
                 'subject' => $ticket->subject,
@@ -337,6 +348,7 @@ class AdminSupportController extends Controller
                 'category' => $ticket->category,
                 'user_name' => $ticket->user->full_name,
                 'user_email' => $ticket->user->email,
+                'user_profile_picture' => $profilePicture,
                 'messages_count' => $ticket->messages->count(),
                 'unread_messages' => $ticket->messages->where('is_read', false)->count(),
                 'created_at' => $ticket->created_at,

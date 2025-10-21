@@ -20,7 +20,7 @@ class AdminBalanceController extends Controller
     public function getAllBalances(Request $request)
     {
         try {
-            $query = User::with(['wallet']);
+            $query = User::with(['wallet', 'store']);
 
             // Apply filters
             if ($request->has('user_type') && $request->user_type !== 'all') {
@@ -114,6 +114,7 @@ class AdminBalanceController extends Controller
         try {
             $user = User::with([
                 'wallet',
+                'store',
                 'transactions' => function ($query) {
                     $query->latest()->limit(10);
                 }
@@ -128,6 +129,14 @@ class AdminBalanceController extends Controller
                 return ResponseHelper::error('User does not have a wallet', 404);
             }
 
+            // Determine profile picture based on user role
+            $profilePicture = null;
+            if ($user->role === 'seller' && $user->store && $user->store->profile_image) {
+                $profilePicture = asset('storage/' . $user->store->profile_image);
+            } elseif ($user->profile_picture) {
+                $profilePicture = asset('storage/' . $user->profile_picture);
+            }
+
             $balanceData = [
                 'user_info' => [
                     'id' => $user->id,
@@ -135,6 +144,7 @@ class AdminBalanceController extends Controller
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'role' => $user->role,
+                    'profile_picture' => $profilePicture,
                 ],
                 'wallet_info' => [
                     'id' => $user->wallet->id,
@@ -368,12 +378,21 @@ class AdminBalanceController extends Controller
                 ->where('status', 'active')
                 ->sum('amount');
 
+            // Determine profile picture based on user role
+            $profilePicture = null;
+            if ($user->role === 'seller' && $user->store && $user->store->profile_image) {
+                $profilePicture = asset('storage/' . $user->store->profile_image);
+            } elseif ($user->profile_picture) {
+                $profilePicture = asset('storage/' . $user->profile_picture);
+            }
+
             return [
                 'id' => $user->id,
                 'full_name' => $user->full_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role,
+                'profile_picture' => $profilePicture,
                 'shopping_balance' => $user->wallet ? $user->wallet->shopping_balance : 0,
                 'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,
                 'referral_balance' => $user->wallet ? $user->wallet->referral_balance : 0,
