@@ -17,11 +17,16 @@ class CartService
     public function show(Cart $cart): array
     {
         $cart->load(['items.product.images', 'items.variant', 'items.store']);
-
-        $grouped = $cart->items->groupBy('store_id')->map(function ($items) {
+    
+        // resolve default address id (optional); fallback to null if none
+        $addressId = \App\Models\UserAddress::where('user_id', $cart->user_id)
+            ->where(function ($q) { $q->where('is_default', true)->orWhere('is_default', 1); })
+            ->value('id');
+    
+        $grouped = $cart->items->groupBy('store_id')->map(function ($items) use ($addressId) {
             $subtotal = 0;
-
-            $lines = $items->map(function ($i) use (&$subtotal) {
+    
+            $lines = $items->map(function ($i) use (&$subtotal, $addressId) {
                 $basePrice = $i->variant?->price ?? $i->product->price;
                 $couponDiscountedPrice = $i->unit_discount_price
                     ?? $i->variant?->discount_price
@@ -31,7 +36,10 @@ class CartService
                 $finalUnitPrice = max(0, $couponDiscountedPrice - $pointsDiscount);
                 $lineTotal = $finalUnitPrice * $i->qty;
                 $subtotal += $lineTotal;
-
+    
+                // ✅ per-item shipping fee (address-aware; falls back to product default)
+                $deliveryFee = (float) ($i->product?->getDeliveryFee($addressId) ?? 0.0);
+    
                 return [
                     'id'               => $i->id,
                     'product_id'       => $i->product_id,
@@ -47,25 +55,30 @@ class CartService
                     'points_discount'  => $pointsDiscount,
                     'qty'              => $i->qty,
                     'line_total'       => $lineTotal,
+    
+                    // 🔹 only new field added to the item line:
+                    'delivery_fee'     => $deliveryFee,
+    
                     'product'          => $i->product,
                     'variant'          => $i->variant,
                     'store'            => $i->store,
                 ];
             });
-
+    
             return [
                 'items'          => $lines->values(),
                 'items_subtotal' => $subtotal,
             ];
         });
-
+    
         $itemsTotal = $grouped->sum('items_subtotal');
-
+    
         return [
             'stores'      => $grouped,
             'items_total' => $itemsTotal,
         ];
     }
+    
 
 
 
