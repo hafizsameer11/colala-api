@@ -136,8 +136,8 @@ class AdminProductsController extends Controller
                 'store_info' => [
                     'store_id' => $product->store->id,
                     'store_name' => $product->store->store_name,
-                    'seller_name' => $product->store->user->full_name,
-                    'seller_email' => $product->store->user->email,
+                    'seller_name' => $product->store->store_name,
+                    'seller_email' => $product->store->user ? $product->store->user->email : null,
                     'store_location' => $product->store->store_location,
                 ],
                 'images' => $product->images->map(function ($image) {
@@ -160,9 +160,9 @@ class AdminProductsController extends Controller
                         'id' => $review->id,
                         'rating' => $review->rating,
                         'comment' => $review->comment,
-                        'user_name' => $review->user->full_name,
+                        'user_name' => $review->user ? $review->user->full_name : 'Unknown User',
                         'created_at' => $review->created_at,
-                        'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
+                        'formatted_date' => $review->created_at ? $review->created_at->format('d-m-Y H:i A') : null,
                     ];
                 }),
                 'boost_info' => $product->boost ? [
@@ -408,7 +408,7 @@ class AdminProductsController extends Controller
                 'price' => $product->price,
                 'discount_price' => $product->discount_price,
                 'store_name' => $product->store->store_name,
-                'seller_name' => $product->store->user->full_name,
+                'seller_name' => $product->store->store_name,
                 'status' => $product->status,
                 'is_sold' => $product->is_sold,
                 'is_unavailable' => $product->is_unavailable,
@@ -417,7 +417,7 @@ class AdminProductsController extends Controller
                 'reviews_count' => $product->reviews->count(),
                 'average_rating' => $product->reviews->avg('rating') ?? 0,
                 'created_at' => $product->created_at,
-                'formatted_date' => $product->created_at->format('d-m-Y H:i A'),
+                'formatted_date' => $product->created_at ? $product->created_at->format('d-m-Y H:i A') : null,
                 'primary_image' => $product->images->first() ? 
                     asset('storage/' . $product->images->first()->path) : null,
             ];

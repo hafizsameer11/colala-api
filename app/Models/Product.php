@@ -127,5 +127,30 @@ public function isBoosted(): bool
         $this->update(['quantity' => $totalStock]);
         return $this;
     }
-    
+    public function getDeliveryFee(?int $addressId = null): float
+{
+    // Load the pivot table (product_delivery_pricing)
+    $delivery = $this->deliveryOptions()->first();
+
+    if (!$delivery) {
+        return 0;
+    }
+
+    // Optionally filter by the buyer’s location (if address model is linked)
+    if ($addressId) {
+        $address = \App\Models\UserAddress::find($addressId);
+        if ($address) {
+            $match = $this->deliveryOptions()
+                ->where('state', $address->state)
+                ->where('local_government', $address->city ?? $address->local_government)
+                ->first();
+
+            if ($match) return (float) $match->price;
+        }
+    }
+
+    // Default price
+    return (float) $delivery->price;
+}
+
 }

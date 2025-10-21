@@ -120,13 +120,13 @@ class AdminOrderManagementController extends Controller
                     'phone' => $storeOrder->store->store_phone,
                     'location' => $storeOrder->store->addresses->first()?->full_address
                 ],
-                'customer' => [
+                'customer' => $storeOrder->order->user ? [
                     'id' => $storeOrder->order->user->id,
-                    'name' => $storeOrder->order->user->full_name,
+                    'name' => $storeOrder->order->user ? $storeOrder->order->user->full_name : 'Unknown Customer',
                     'email' => $storeOrder->order->user->email,
                     'phone' => $storeOrder->order->user->phone,
                     'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
-                ],
+                ] : null,
                 'delivery_address' => $storeOrder->order->deliveryAddress ? [
                     'id' => $storeOrder->order->deliveryAddress->id,
                     'full_address' => $storeOrder->order->deliveryAddress->full_address,
@@ -183,14 +183,14 @@ class AdminOrderManagementController extends Controller
                             'reviews' => $item->product->reviews->map(function ($review) {
                                 return [
                                     'id' => $review->id,
-                                    'user' => [
+                                    'user' => $review->user ? [
                                         'id' => $review->user->id,
-                                        'name' => $review->user->full_name,
+                                        'name' => $review->user ? $review->user->full_name : 'Unknown User',
                                         'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null
-                                    ],
+                                    ] : null,
                                     'rating' => $review->rating,
                                     'comment' => $review->comment,
-                                    'created_at' => $review->created_at->format('d-m-Y H:i:s')
+                                    'created_at' => $review->created_at ? $review->created_at->format('d-m-Y H:i:s') : null
                                 ];
                             })
                         ],
@@ -421,13 +421,13 @@ class AdminOrderManagementController extends Controller
                 'store_order_id' => $order->id,
                 'order_number' => $order->order->order_no,
                 'store_name' => $order->store->store_name,
-                'seller_name' => $order->store->user->full_name,
-                'customer_name' => $order->order->user->full_name,
+                'seller_name' => $order->store->store_name,
+                'customer_name' => $order->order->user ? $order->order->user->full_name : 'Unknown Customer',
                 'status' => $order->status,
                 'items_count' => $order->items->count(),
                 'total_amount' => $order->subtotal_with_shipping,
                 'created_at' => $order->created_at,
-                'formatted_date' => $order->created_at->format('d-m-Y H:i A'),
+                'formatted_date' => $order->created_at ? $order->created_at->format('d-m-Y H:i A') : null,
             ];
         });
     }

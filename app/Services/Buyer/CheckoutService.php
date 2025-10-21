@@ -34,6 +34,9 @@ class CheckoutService
                 $unit = $i->unit_discount_price ?? $i->unit_price ?? $i->product->discount_price ?? $i->product->price;
                 $lineTotal = $unit * $i->qty;
                 $itemsSubtotal += $lineTotal;
+                $deliveryFee = $i->product->getDeliveryFee($addressId);
+                $shippingTotal += $deliveryFee;
+
                 $lines[] = [
                     'product_id' => $i->product_id,
                     'variant_id' => $i->variant_id,
@@ -50,6 +53,7 @@ class CheckoutService
                 'store_id' => $storeId,
                 'items_subtotal' => $itemsSubtotal,
                 'subtotal_with_shipping' => $itemsSubtotal,
+                'shipping_fee' => $shippingTotal,
                 'lines' => $lines,
             ];
         }
@@ -92,7 +96,7 @@ class CheckoutService
                     'order_id' => $order->id,
                     'store_id' => $S['store_id'],
                     'status'   => 'placed',
-                    'shipping_fee' => 10000,
+                    'shipping_fee' => $S['shipping_fee'] ?? 0,
                     'items_subtotal' => $S['items_subtotal'],
                     'discount' => 0,
                     'subtotal_with_shipping' => $S['items_subtotal'],
@@ -130,7 +134,7 @@ class CheckoutService
                     'store_order_id' => $so->id,
                     'user_id'        => $cart->user_id,
                     'store_id'       => $S['store_id'],
-                    'type'=>'order'
+                    'type' => 'order'
                 ]);
             }
 
