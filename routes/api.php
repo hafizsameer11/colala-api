@@ -68,6 +68,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/guest-token', [AuthController::class, 'generateGuestToken']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

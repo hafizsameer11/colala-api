@@ -13,6 +13,7 @@ use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -127,10 +128,36 @@ class AuthController extends Controller
 
         $updatedUser = $this->userService->update($data, $user->id);
 
-        return ResponseHelper::success($updatedUser, "Profile updated successfully");
+    return ResponseHelper::success($updatedUser, "Profile updated successfully");
+} catch (\Exception $e) {
+    Log::error($e->getMessage());
+    return ResponseHelper::error($e->getMessage());
+}
+}
+
+/**
+ * Generate guest token for anonymous users
+ *
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function generateGuestToken()
+{
+    try {
+        // Generate a unique guest token
+        $guestToken = 'guest_' . Str::random(32) . '_' . time();
+        
+        // You can store this token in cache with expiration if needed
+        // Cache::put("guest_token_{$guestToken}", true, now()->addHours(24));
+        
+        return ResponseHelper::success([
+            'guest_token' => $guestToken,
+            'expires_at' => now()->addHours(24)->toISOString(),
+            'token_type' => 'guest'
+        ], 'Guest token generated successfully');
+        
     } catch (\Exception $e) {
-        Log::error($e->getMessage());
-        return ResponseHelper::error($e->getMessage());
+        Log::error('Guest token generation failed: ' . $e->getMessage());
+        return ResponseHelper::error('Failed to generate guest token', 500);
     }
 }
 
