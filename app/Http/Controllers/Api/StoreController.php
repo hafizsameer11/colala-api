@@ -60,8 +60,9 @@ public function getById(Request $req, $storeId)
         $user=Auth::user();
         $store->posts=Post::where('user_id',$store->user_id)->latest()->get();
         //check current user has followed this store or not
-        $store->is_followed =StoreFollow::where('user_id',$user->id)->where('store_id',$storeId)->exists();
-        $store->rating=round($store->productReviews->avg('rating'),1) ?? 4.7;
+        $store->is_followed = $user
+        ? StoreFollow::where('user_id', $user->id)->where('store_id', $storeId)->exists()
+        : false;        $store->rating=round($store->productReviews->avg('rating'),1) ?? 4.7;
 
         return ResponseHelper::success($store);
     } catch (\Exception $e) {
