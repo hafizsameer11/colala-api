@@ -396,19 +396,35 @@ class AdminDisputeController extends Controller
 
         // Add user information
         if ($dispute->user) {
+            // Determine profile picture based on user role
+            $profilePicture = null;
+            if ($dispute->user->role === 'seller' && $dispute->user->store && $dispute->user->store->profile_image) {
+                $profilePicture = asset('storage/' . $dispute->user->store->profile_image);
+            } elseif ($dispute->user->profile_picture) {
+                $profilePicture = asset('storage/' . $dispute->user->profile_picture);
+            }
+
             $data['user'] = [
                 'id' => $dispute->user->id,
                 'name' => $dispute->user->first_name . ' ' . $dispute->user->last_name,
                 'email' => $dispute->user->email,
                 'phone' => $dispute->user->phone,
+                'profile_picture' => $profilePicture,
             ];
         }
 
         // Add chat information
         if ($dispute->chat) {
+            // Store profile picture
+            $storeProfilePicture = null;
+            if ($dispute->chat->store && $dispute->chat->store->profile_image) {
+                $storeProfilePicture = asset('storage/' . $dispute->chat->store->profile_image);
+            }
+
             $data['chat'] = [
                 'id' => $dispute->chat->id,
                 'store_name' => $dispute->chat->store->store_name ?? 'N/A',
+                'store_profile_picture' => $storeProfilePicture,
                 'user_name' => $dispute->chat->user->first_name . ' ' . $dispute->chat->user->last_name ?? 'N/A',
                 'last_message' => $dispute->chat->messages->first()->message ?? 'No messages',
                 'created_at' => $dispute->chat->created_at,
