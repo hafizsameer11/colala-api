@@ -106,7 +106,9 @@ class AdminSocialFeedController extends Controller
                     'user_id' => $post->user->id,
                     'name' => $post->user->full_name,
                     'email' => $post->user->email,
+                    'profile_picture' => $post->user->profile_picture ? asset('storage/' . $post->user->profile_picture) : null,
                     'store_name' => $post->user->store->store_name ?? null,
+                    'store_profile_picture' => $post->user->store->profile_image ? asset('storage/' . $post->user->store->profile_image) : null,
                     'location' => $post->user->store->store_location ?? null,
                 ],
                 'media' => $post->media->map(function ($media) {
