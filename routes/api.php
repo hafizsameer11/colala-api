@@ -238,11 +238,36 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('leaderboard/sellers', [SellerLeaderboardController::class, 'index']);
 
     // ---------- ESCROW / DISPUTE ----------
-    Route::get('escrow', [EscrowController::class, 'index']);
-    Route::get('escrow/history', [EscrowController::class, 'history']);
-    Route::post('dispute', [DisputeController::class, 'store']);
-    Route::get('dispute', [DisputeController::class, 'myDisputes']);
-    Route::get('dispute/{id}', [DisputeController::class, 'show']);
+    // Route::get('escrow', [EscrowController::class, 'index']);
+    // Route::get('escrow/history', [EscrowController::class, 'history']);
+    // Route::post('dispute', [DisputeController::class, 'store']);
+    // Route::get('dispute', [DisputeController::class, 'myDisputes']);
+    // Route::get('dispute/{id}', [DisputeController::class, 'show']);
+    Route::prefix('faqs')->group(function () {
+        // Public endpoint to get all categories with their faqs
+        Route::get('/', [FaqController::class, 'index']);
+
+        // Admin-only CRUD (add middleware('auth:sanctum','can:manage-faqs') if needed)
+        Route::get('/category/name/{name}', [FaqController::class, 'showByCategoryName']);
+
+        Route::post('/category', [FaqController::class, 'storeCategory']);
+        Route::put('/category/{id}', [FaqController::class, 'updateCategory']);
+        Route::delete('/category/{id}', [FaqController::class, 'destroyCategory']);
+
+        Route::post('/', [FaqController::class, 'storeFaq']);
+        Route::put('/{id}', [FaqController::class, 'updateFaq']);
+        Route::delete('/{id}', [FaqController::class, 'destroyFaq']);
+
+
+        //escrow
+        Route::get('escrow', [EscrowController::class, 'index']);        // total balance + full history
+        Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
+
+
+        Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
+        Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
+        Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
+    });
 
     // ---------- NOTIFICATIONS ----------
     Route::get('notifications', [NotificationController::class, 'getForUser']);
