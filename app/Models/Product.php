@@ -128,29 +128,56 @@ public function isBoosted(): bool
         return $this;
     }
     public function getDeliveryFee(?int $addressId = null): float
-{
-    // Load the pivot table (product_delivery_pricing)
-    $delivery = $this->deliveryOptions()->first();
-
-    if (!$delivery) {
-        return 0;
-    }
-
-    // Optionally filter by the buyer’s location (if address model is linked)
-    if ($addressId) {
-        $address = \App\Models\UserAddress::find($addressId);
-        if ($address) {
-            $match = $this->deliveryOptions()
-                ->where('state', $address->state)
-                ->where('local_government', $address->city ?? $address->local_government)
-                ->first();
-
-            if ($match) return (float) $match->price;
+    {
+        // ✅ Load all delivery options for this product
+        $query = $this->deliveryOptions();
+    
+        // 🧠 Default delivery pricing (if nothing matches)
+        $defaultDelivery = $query->first();
+        if (!$defaultDelivery) {
+            return 0;
         }
+    
+        // ✅ Check if this product has free delivery
+        if ($defaultDelivery->is_free) {
+            return 0;
+        }
+    
+        // ✅ Try to match the delivery price with user's address
+        if ($addressId) {
+            $address = \App\Models\UserAddress::find($addressId);
+    
+            if ($address) {
+                // Try exact match first
+                $matched = $this->deliveryOptions()
+                    ->where(function ($q) use ($address) {
+                        $q->where('state', $address->state)
+                          ->where('local_government', $address->city ?? $address->local_government);
+                    })
+                    ->first();
+    
+                if ($matched) {
+                    return $matched->is_free ? 0 : (float) $matched->price;
+                }
+    
+                // Try partial matches for flexibility (LIKE)
+                $matchedLike = $this->deliveryOptions()
+                    ->where(function ($q) use ($address) {
+                        $q->where('state', 'LIKE', "%{$address->state}%")
+                          ->orWhere('local_government', 'LIKE', "%{$address->city}%")
+                          ->orWhere('local_government', 'LIKE', "%{$address->local_government}%");
+                    })
+                    ->first();
+    
+                if ($matchedLike) {
+                    return $matchedLike->is_free ? 0 : (float) $matchedLike->price;
+                }
+            }
+        }
+    
+        // ✅ Fallback: default price or 0 if marked as free
+        return $defaultDelivery->is_free ? 0 : (float) $defaultDelivery->price;
     }
-
-    // Default price
-    return (float) $delivery->price;
-}
+    
 
 }
