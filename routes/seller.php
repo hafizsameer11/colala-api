@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Buyer\ChatController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
+use App\Http\Controllers\Api\SellerPhoneRequestController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -194,6 +195,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('store/users/add', [SimpleStoreUserController::class, 'addUser']);
     Route::delete('store/users/{userId}', [SimpleStoreUserController::class, 'removeUser']);
 
+    // Phone Number Requests (Seller)
+    Route::get('phone-requests', [SellerPhoneRequestController::class, 'getPendingRequests']);
+    Route::post('phone-requests/{revealPhoneId}/approve', [SellerPhoneRequestController::class, 'approvePhoneRequest']);
+    Route::post('phone-requests/{revealPhoneId}/decline', [SellerPhoneRequestController::class, 'declinePhoneRequest']);
 
 });
 

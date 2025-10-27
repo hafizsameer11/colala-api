@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\Buyer\EscrowController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UserNotificationController;
+use App\Http\Controllers\Buyer\PhoneRequestController;
 
 require __DIR__ . '/seller.php';
 require __DIR__ . '/admin.php';
@@ -215,6 +216,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('chats/{id}/send', [ChatController::class, 'send']);
         Route::post('chats/start/{store_id}', [ChatController::class, 'startChatWithStore']);
         Route::post('chats/start-service/{store_id}', [ChatController::class, 'startChatWithStoreForService']);
+
+        // Phone Number Requests
+        Route::post('phone-request', [PhoneRequestController::class, 'requestPhoneNumber']);
+        Route::get('phone-request/status', [PhoneRequestController::class, 'checkPhoneRequestStatus']);
 
         // Wallet
         Route::get('getBalance', [WalletController::class, 'getBalance']);
