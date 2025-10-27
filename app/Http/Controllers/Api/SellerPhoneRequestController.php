@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Chat;
-use App\Models\ChatMessage;
 use App\Models\RevealPhone;
 use App\Models\Store;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +25,7 @@ class SellerPhoneRequestController extends Controller
             $stores = Store::where('user_id', $userId)->pluck('id');
 
             // Get all pending phone requests
-            $requests = RevealPhone::with(['chat.user', 'store'])
+            $requests = RevealPhone::with(['user', 'store'])
                 ->whereIn('store_id', $stores)
                 ->where('is_revealed', false)
                 ->orderBy('created_at', 'desc')
@@ -35,13 +34,12 @@ class SellerPhoneRequestController extends Controller
             $formattedRequests = $requests->map(function ($request) {
                 return [
                     'id' => $request->id,
-                    'chat_id' => $request->chat_id,
                     'buyer' => [
                         'id' => $request->user_id,
-                        'name' => $request->chat->user->full_name ?? 'Unknown',
-                        'email' => $request->chat->user->email ?? null,
-                        'profile_picture' => $request->chat->user->profile_picture 
-                            ? asset('storage/' . $request->chat->user->profile_picture) 
+                        'name' => $request->user->full_name ?? 'Unknown',
+                        'email' => $request->user->email ?? null,
+                        'profile_picture' => $request->user->profile_picture 
+                            ? asset('storage/' . $request->user->profile_picture) 
                             : null,
                     ],
                     'store' => [
@@ -79,7 +77,7 @@ class SellerPhoneRequestController extends Controller
             $userId = Auth::id();
 
             // Find the reveal phone request
-            $revealPhone = RevealPhone::with(['chat', 'store', 'user'])
+            $revealPhone = RevealPhone::with(['store', 'user'])
                 ->find($revealPhoneId);
 
             if (!$revealPhone) {
@@ -112,36 +110,15 @@ class SellerPhoneRequestController extends Controller
                 'is_revealed' => true,
             ]);
 
-            // 2. Send message to buyer with phone number
+            // 2. Create notification for buyer with phone number embedded in content
             $storeName = $revealPhone->store->store_name ?? 'Store';
             $storePhone = $revealPhone->store->store_phone ?? 'Not available';
 
-            ChatMessage::create([
-                'chat_id' => $revealPhone->chat_id,
-                'sender_id' => $revealPhone->store->user_id,
-                'sender_type' => 'store',
-                'message' => "✅ Phone number approved! You can reach us at: {$storePhone}",
+            UserNotification::create([
+                'user_id' => $revealPhone->user_id,
+                'title' => 'Phone Number Approved',
+                'content' => "{$storeName} has approved your phone number request. Phone: {$storePhone}",
                 'is_read' => false,
-                'meta' => json_encode([
-                    'type' => 'phone_approved',
-                    'phone_number' => $storePhone,
-                    'reveal_phone_id' => $revealPhone->id,
-                ]),
-            ]);
-
-            // 3. Send confirmation message to seller
-            ChatMessage::create([
-                'chat_id' => $revealPhone->chat_id,
-                'sender_id' => $userId,
-                'sender_type' => 'store',
-                'message' => "You have approved the phone number request.",
-                'is_read' => true,
-            ]);
-
-            // Update chat last message
-            $revealPhone->chat->update([
-                'last_message' => 'Phone number shared',
-                'last_message_at' => now(),
             ]);
 
             DB::commit();
@@ -150,7 +127,6 @@ class SellerPhoneRequestController extends Controller
                 'status' => 'success',
                 'message' => 'Phone number shared successfully',
                 'data' => [
-                    'chat_id' => $revealPhone->chat_id,
                     'phone_number' => $storePhone,
                     'is_revealed' => true,
                 ],
@@ -176,7 +152,7 @@ class SellerPhoneRequestController extends Controller
             $userId = Auth::id();
 
             // Find the reveal phone request
-            $revealPhone = RevealPhone::with(['chat', 'store', 'user'])
+            $revealPhone = RevealPhone::with(['store', 'user'])
                 ->find($revealPhoneId);
 
             if (!$revealPhone) {
@@ -196,39 +172,18 @@ class SellerPhoneRequestController extends Controller
 
             DB::beginTransaction();
 
-            // 1. Delete the reveal phone request
-            $chatId = $revealPhone->chat_id;
-            $revealPhone->delete();
-
-            // 2. Send message to buyer
+            // 1. Create notification for buyer (declined)
             $storeName = $revealPhone->store->store_name ?? 'Store';
 
-            ChatMessage::create([
-                'chat_id' => $chatId,
-                'sender_id' => $revealPhone->store->user_id,
-                'sender_type' => 'store',
-                'message' => "❌ Sorry, we cannot share our phone number at this time. Please continue chatting here.",
+            UserNotification::create([
+                'user_id' => $revealPhone->user_id,
+                'title' => 'Phone Number Request Declined',
+                'content' => "{$storeName} has declined your phone number request. Please contact them through chat.",
                 'is_read' => false,
-                'meta' => json_encode([
-                    'type' => 'phone_declined',
-                    'reveal_phone_id' => $revealPhoneId,
-                ]),
             ]);
 
-            // 3. Send confirmation message to seller
-            ChatMessage::create([
-                'chat_id' => $chatId,
-                'sender_id' => $userId,
-                'sender_type' => 'store',
-                'message' => "You have declined the phone number request.",
-                'is_read' => true,
-            ]);
-
-            // Update chat last message
-            Chat::find($chatId)->update([
-                'last_message' => 'Phone request declined',
-                'last_message_at' => now(),
-            ]);
+            // 2. Delete the reveal phone request
+            $revealPhone->delete();
 
             DB::commit();
 
@@ -236,7 +191,6 @@ class SellerPhoneRequestController extends Controller
                 'status' => 'success',
                 'message' => 'Phone number request declined',
                 'data' => [
-                    'chat_id' => $chatId,
                     'is_revealed' => false,
                 ],
             ]);
@@ -252,4 +206,3 @@ class SellerPhoneRequestController extends Controller
         }
     }
 }
-

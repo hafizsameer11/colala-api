@@ -6,13 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RevealPhone extends Model
 {
-    // protected $table = 'reveal_phones';
-    protected $fillable = ['chat_id', 'user_id', 'store_id', 'is_revealed'];
-
-    public function chat()
-    {
-        return $this->belongsTo(Chat::class);
-    }
+    protected $fillable = ['user_id', 'store_id', 'is_revealed'];
 
     public function user()
     {

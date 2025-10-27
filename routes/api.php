@@ -220,6 +220,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Phone Number Requests
         Route::post('phone-request', [PhoneRequestController::class, 'requestPhoneNumber']);
         Route::get('phone-request/status', [PhoneRequestController::class, 'checkPhoneRequestStatus']);
+        Route::get('phone-request/revealed', [PhoneRequestController::class, 'getRevealedPhoneNumbers']);
 
         // Wallet
         Route::get('getBalance', [WalletController::class, 'getBalance']);

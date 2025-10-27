@@ -1,8 +1,8 @@
-# 📞 Phone Number Request API Guide
+# 📞 Phone Number Request API Guide (Notification-Based)
 
 ## Overview
 
-This system allows buyers to request phone numbers from sellers through the chat system. The seller can then approve or decline the request, and if approved, the phone number is shared via chat message.
+This system allows buyers to request phone numbers from sellers through a notification-based system. When a buyer requests a phone number, the seller receives a notification. If approved, the buyer receives a notification with the embedded phone number.
 
 ---
 
@@ -10,23 +10,19 @@ This system allows buyers to request phone numbers from sellers through the chat
 
 ### Step 1: Buyer Requests Phone Number
 1. Buyer clicks "Request Phone Number" button for a store
-2. System checks if chat exists between buyer and store
-3. If no chat exists, creates a new chat
-4. Creates a `RevealPhone` record with `is_revealed = false`
-5. Sends request message to seller in the chat
-6. Shows notification to seller
+2. System creates a `RevealPhone` record with `is_revealed = false`
+3. Seller receives a notification: "John Doe has requested your phone number"
 
 ### Step 2: Seller Reviews Request
-1. Seller sees pending phone requests in their dashboard
-2. Seller can view buyer information
-3. Seller can either:
-   - **Approve**: Phone number is shared in chat
-   - **Decline**: Request is deleted, buyer notified
+1. Seller sees notification with phone request
+2. Seller can either:
+   - **Approve**: Buyer gets notification with phone number
+   - **Decline**: Buyer gets notification that request was declined
 
 ### Step 3: Phone Number Shared (If Approved)
 1. System updates `RevealPhone` to `is_revealed = true`
-2. Sends message to buyer with phone number
-3. Buyer can now see the phone number in chat
+2. Buyer receives notification with embedded phone number
+3. Buyer can access phone number anytime from their revealed phone numbers list
 
 ---
 
@@ -52,7 +48,6 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "message": "Phone number request sent successfully",
   "data": {
-    "chat_id": 45,
     "reveal_phone_id": 12,
     "is_revealed": false
   }
@@ -66,7 +61,6 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "message": "Phone number already shared",
   "data": {
-    "chat_id": 45,
     "is_revealed": true,
     "phone_number": "+1234567890"
   }
@@ -79,7 +73,6 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "message": "Phone number request already pending",
   "data": {
-    "chat_id": 45,
     "is_revealed": false
   }
 }
@@ -105,8 +98,7 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "data": {
     "has_request": false,
-    "is_revealed": false,
-    "chat_id": 45
+    "is_revealed": false
   }
 }
 ```
@@ -117,8 +109,7 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "data": {
     "has_request": true,
-    "is_revealed": false,
-    "chat_id": 45
+    "is_revealed": false
   }
 }
 ```
@@ -130,8 +121,36 @@ This system allows buyers to request phone numbers from sellers through the chat
   "data": {
     "has_request": true,
     "is_revealed": true,
-    "chat_id": 45,
     "phone_number": "+1234567890"
+  }
+}
+```
+
+---
+
+#### 3. Get All Revealed Phone Numbers
+**Endpoint:** `GET /api/buyer/phone-request/revealed`
+
+**Authentication:** Required (`auth:sanctum`)
+
+**Success Response (200):**
+```json
+{
+  "status": "success",
+  "data": {
+    "total": 3,
+    "phone_numbers": [
+      {
+        "id": 12,
+        "store": {
+          "id": 123,
+          "name": "Tech Store",
+          "phone_number": "+1234567890",
+          "profile_image": "https://domain.com/storage/stores/profile.jpg"
+        },
+        "revealed_at": "27-10-2025 10:30 AM"
+      }
+    ]
   }
 }
 ```
@@ -140,7 +159,7 @@ This system allows buyers to request phone numbers from sellers through the chat
 
 ### **SELLER ENDPOINTS**
 
-#### 3. Get Pending Phone Requests
+#### 4. Get Pending Phone Requests
 **Endpoint:** `GET /api/seller/phone-requests`
 
 **Authentication:** Required (`auth:sanctum`)
@@ -154,7 +173,6 @@ This system allows buyers to request phone numbers from sellers through the chat
     "requests": [
       {
         "id": 12,
-        "chat_id": 45,
         "buyer": {
           "id": 78,
           "name": "John Doe",
@@ -175,7 +193,7 @@ This system allows buyers to request phone numbers from sellers through the chat
 
 ---
 
-#### 4. Approve Phone Request
+#### 5. Approve Phone Request
 **Endpoint:** `POST /api/seller/phone-requests/{revealPhoneId}/approve`
 
 **Authentication:** Required (`auth:sanctum`)
@@ -191,12 +209,16 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "message": "Phone number shared successfully",
   "data": {
-    "chat_id": 45,
     "phone_number": "+1234567890",
     "is_revealed": true
   }
 }
 ```
+
+**What Happens:**
+1. ✅ Updates `RevealPhone` to `is_revealed = true`
+2. ✅ Creates notification for buyer with type `phone_approved`
+3. ✅ Notification includes embedded phone number in `data.phone_number`
 
 **Error Responses:**
 
@@ -216,17 +238,9 @@ This system allows buyers to request phone numbers from sellers through the chat
 }
 ```
 
-**Already Approved (200):**
-```json
-{
-  "status": "success",
-  "message": "Phone number already shared"
-}
-```
-
 ---
 
-#### 5. Decline Phone Request
+#### 6. Decline Phone Request
 **Endpoint:** `POST /api/seller/phone-requests/{revealPhoneId}/decline`
 
 **Authentication:** Required (`auth:sanctum`)
@@ -242,11 +256,14 @@ This system allows buyers to request phone numbers from sellers through the chat
   "status": "success",
   "message": "Phone number request declined",
   "data": {
-    "chat_id": 45,
     "is_revealed": false
   }
 }
 ```
+
+**What Happens:**
+1. ✅ Creates notification for buyer with type `phone_declined`
+2. ✅ Deletes the `RevealPhone` record
 
 ---
 
@@ -256,68 +273,73 @@ This system allows buyers to request phone numbers from sellers through the chat
 ```sql
 CREATE TABLE reveal_phones (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    chat_id BIGINT UNSIGNED NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
     store_id BIGINT UNSIGNED NOT NULL,
     is_revealed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     
-    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_store (user_id, store_id)
 );
 ```
 
+**Key Features:**
+- No `chat_id` dependency
+- Unique constraint on `user_id` + `store_id` (prevents duplicate requests)
+- Cascade deletion when user or store is deleted
+
 ---
 
-## 💬 Chat Message Types
+## 🔔 Notification Types
 
-### 1. Request Message (Buyer to Seller)
+### 1. Phone Request Notification (Sent to Seller)
 ```json
 {
-  "sender_type": "user",
-  "message": "I would like to request your phone number to discuss further."
+  "id": 1,
+  "user_id": 45,
+  "title": "Phone Number Request",
+  "content": "John Doe has requested your phone number for Tech Store. Request ID: 12",
+  "is_read": false,
+  "created_at": "2025-10-27T10:30:00.000000Z",
+  "updated_at": "2025-10-27T10:30:00.000000Z"
 }
 ```
 
-### 2. Request Notification (System to Seller)
+**Content Format:** `{buyer_name} has requested your phone number for {store_name}. Request ID: {reveal_phone_id}`
+
+### 2. Phone Approved Notification (Sent to Buyer)
 ```json
 {
-  "sender_type": "store",
-  "message": "📞 John Doe has requested your phone number. [APPROVE] or [DECLINE]",
-  "meta": {
-    "type": "phone_request",
-    "reveal_phone_id": 12,
-    "status": "pending"
-  }
+  "id": 2,
+  "user_id": 78,
+  "title": "Phone Number Approved",
+  "content": "Tech Store has approved your phone number request. Phone: +1234567890",
+  "is_read": false,
+  "created_at": "2025-10-27T10:35:00.000000Z",
+  "updated_at": "2025-10-27T10:35:00.000000Z"
 }
 ```
 
-### 3. Approved Message (Seller to Buyer)
+**Content Format:** `{store_name} has approved your phone number request. Phone: {phone_number}`
+
+**✅ PHONE NUMBER EMBEDDED IN CONTENT**
+
+### 3. Phone Declined Notification (Sent to Buyer)
 ```json
 {
-  "sender_type": "store",
-  "message": "✅ Phone number approved! You can reach us at: +1234567890",
-  "meta": {
-    "type": "phone_approved",
-    "phone_number": "+1234567890",
-    "reveal_phone_id": 12
-  }
+  "id": 3,
+  "user_id": 78,
+  "title": "Phone Number Request Declined",
+  "content": "Tech Store has declined your phone number request. Please contact them through chat.",
+  "is_read": false,
+  "created_at": "2025-10-27T10:40:00.000000Z",
+  "updated_at": "2025-10-27T10:40:00.000000Z"
 }
 ```
 
-### 4. Declined Message (Seller to Buyer)
-```json
-{
-  "sender_type": "store",
-  "message": "❌ Sorry, we cannot share our phone number at this time. Please continue chatting here.",
-  "meta": {
-    "type": "phone_declined",
-    "reveal_phone_id": 12
-  }
-}
-```
+**Content Format:** `{store_name} has declined your phone number request. Please contact them through chat.`
 
 ---
 
@@ -326,8 +348,8 @@ CREATE TABLE reveal_phones (
 ### Authorization Rules
 1. **Buyer Requests:**
    - Must be authenticated
-   - Can only request phone for stores they can chat with
-   - Cannot spam requests (checked before creating)
+   - Cannot request phone from same store twice (database constraint)
+   - Can check status of their own requests only
 
 2. **Seller Actions:**
    - Must be authenticated
@@ -337,7 +359,7 @@ CREATE TABLE reveal_phones (
 ### Data Validation
 - `store_id` must exist in database
 - `reveal_phone_id` must be valid and belong to seller's store
-- Chat must exist before phone request can be processed
+- Unique constraint prevents duplicate requests
 
 ---
 
@@ -345,9 +367,29 @@ CREATE TABLE reveal_phones (
 
 ### Buyer Side
 
-#### 1. Display "Request Phone Number" Button
+#### 1. Request Phone Number
 ```javascript
-// Check if phone number is already revealed
+const requestPhoneNumber = async (storeId) => {
+  const response = await fetch('/api/buyer/phone-request', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ store_id: storeId })
+  });
+  
+  const data = await response.json();
+  
+  if (data.status === 'success') {
+    showSuccessToast('Phone number request sent!');
+    // Show "Request Pending" status
+  }
+};
+```
+
+#### 2. Check Request Status
+```javascript
 const checkPhoneStatus = async (storeId) => {
   const response = await fetch(`/api/buyer/phone-request/status?store_id=${storeId}`, {
     headers: {
@@ -369,24 +411,39 @@ const checkPhoneStatus = async (storeId) => {
 };
 ```
 
-#### 2. Request Phone Number
+#### 3. Display Notification with Phone Number
 ```javascript
-const requestPhoneNumber = async (storeId) => {
-  const response = await fetch('/api/buyer/phone-request', {
-    method: 'POST',
+const displayPhoneNotification = (notification) => {
+  if (notification.title === 'Phone Number Approved') {
+    // Extract phone number from content using regex
+    const phoneMatch = notification.content.match(/Phone: (.+)$/);
+    const phoneNumber = phoneMatch ? phoneMatch[1] : null;
+    
+    // Show notification
+    showNotification({
+      title: notification.title,
+      message: notification.content,
+      phoneNumber: phoneNumber,  // ✅ Extracted from content
+    });
+    
+    // Parse content to get store name
+    const storeNameMatch = notification.content.match(/^(.+?) has approved/);
+    const storeName = storeNameMatch ? storeNameMatch[1] : 'Store';
+  }
+};
+```
+
+#### 4. Get All Revealed Phone Numbers
+```javascript
+const getRevealedPhones = async () => {
+  const response = await fetch('/api/buyer/phone-request/revealed', {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ store_id: storeId })
+      'Authorization': `Bearer ${token}`
+    }
   });
   
   const data = await response.json();
-  
-  if (data.status === 'success') {
-    // Navigate to chat
-    navigateToChat(data.data.chat_id);
-  }
+  displayPhoneNumbersList(data.data.phone_numbers);
 };
 ```
 
@@ -394,19 +451,29 @@ const requestPhoneNumber = async (storeId) => {
 
 ### Seller Side
 
-#### 1. Display Pending Requests
+#### 1. Listen for Phone Request Notifications
 ```javascript
-const fetchPendingRequests = async () => {
-  const response = await fetch('/api/seller/phone-requests', {
-    headers: {
-      'Authorization': `Bearer ${token}`
+const listenForPhoneRequests = () => {
+  // When new notification arrives
+  socket.on('notification', (notification) => {
+    if (notification.title === 'Phone Number Request') {
+      // Extract request ID from content
+      const requestIdMatch = notification.content.match(/Request ID: (\d+)$/);
+      const revealPhoneId = requestIdMatch ? requestIdMatch[1] : null;
+      
+      // Extract buyer name and store name from content
+      const buyerMatch = notification.content.match(/^(.+?) has requested/);
+      const buyerName = buyerMatch ? buyerMatch[1] : 'A buyer';
+      
+      // Show notification with approve/decline buttons
+      showPhoneRequestNotification({
+        title: notification.title,
+        message: notification.content,
+        buyerName: buyerName,
+        revealPhoneId: revealPhoneId
+      });
     }
   });
-  
-  const data = await response.json();
-  
-  // Display requests in UI
-  displayRequests(data.data.requests);
 };
 ```
 
@@ -423,10 +490,9 @@ const approvePhoneRequest = async (revealPhoneId) => {
   const data = await response.json();
   
   if (data.status === 'success') {
-    // Show success message
     showSuccessToast('Phone number shared!');
-    // Navigate to chat
-    navigateToChat(data.data.chat_id);
+    // Remove from pending list
+    removeRequestFromList(revealPhoneId);
   }
 };
 ```
@@ -444,9 +510,7 @@ const declinePhoneRequest = async (revealPhoneId) => {
   const data = await response.json();
   
   if (data.status === 'success') {
-    // Show success message
     showSuccessToast('Request declined');
-    // Remove from pending list
     removeRequestFromList(revealPhoneId);
   }
 };
@@ -472,19 +536,25 @@ curl -X GET "https://api.example.com/api/buyer/phone-request/status?store_id=123
   -H "Authorization: Bearer {buyer_token}"
 ```
 
-**3. Seller Gets Pending Requests:**
+**3. Get Revealed Phone Numbers:**
+```bash
+curl -X GET https://api.example.com/api/buyer/phone-request/revealed \
+  -H "Authorization: Bearer {buyer_token}"
+```
+
+**4. Seller Gets Pending Requests:**
 ```bash
 curl -X GET https://api.example.com/api/seller/phone-requests \
   -H "Authorization: Bearer {seller_token}"
 ```
 
-**4. Seller Approves Request:**
+**5. Seller Approves Request:**
 ```bash
 curl -X POST https://api.example.com/api/seller/phone-requests/12/approve \
   -H "Authorization: Bearer {seller_token}"
 ```
 
-**5. Seller Declines Request:**
+**6. Seller Declines Request:**
 ```bash
 curl -X POST https://api.example.com/api/seller/phone-requests/12/decline \
   -H "Authorization: Bearer {seller_token}"
@@ -494,32 +564,55 @@ curl -X POST https://api.example.com/api/seller/phone-requests/12/decline \
 
 ## ✅ Implementation Checklist
 
-- [x] Created `RevealPhone` model
-- [x] Created `reveal_phones` migration
-- [x] Created `PhoneRequestController` for buyers
-- [x] Created `SellerPhoneRequestController` for sellers
-- [x] Added buyer routes to `api.php`
-- [x] Added seller routes to `seller.php`
-- [x] Implemented request creation
-- [x] Implemented approval flow
-- [x] Implemented decline flow
-- [x] Added chat message integration
-- [x] Added status checking
+- [x] Removed `chat_id` dependency from `RevealPhone` model
+- [x] Updated migration to remove `chat_id` field
+- [x] Added unique constraint on `user_id` + `store_id`
+- [x] Refactored buyer controller to use notifications
+- [x] Refactored seller controller to use notifications
+- [x] Phone number embedded in approval notification
+- [x] Added route for getting revealed phone numbers
 - [x] Added authorization checks
 - [x] Added null safety checks
+- [x] Updated API documentation
 
 ---
 
-## 🚀 Features
+## 🚀 Key Features
 
-✅ **Automatic Chat Creation**: Creates chat if none exists
-✅ **Duplicate Prevention**: Prevents multiple requests for same store
+✅ **No Chat Dependency**: Works independently of chat system
+✅ **Notification-Based**: All communication through notifications
+✅ **Phone Number Embedded**: Phone number included in approval notification
+✅ **Duplicate Prevention**: Unique constraint prevents multiple requests
 ✅ **Status Tracking**: Track request status (pending/revealed)
-✅ **Chat Integration**: All communication through existing chat system
 ✅ **Authorization**: Sellers can only manage their own store requests
-✅ **Notifications**: Both parties get notified via chat messages
 ✅ **Clean Decline**: Request is deleted when declined
-✅ **Phone Number Protection**: Only shared after explicit approval
+✅ **Phone Number History**: Buyers can access all revealed phone numbers
 
-The complete phone request system is now ready for production use! 🎯
+---
 
+## 📱 Notification Flow Diagram
+
+```
+BUYER                    SYSTEM                    SELLER
+  |                         |                         |
+  |  Request Phone          |                         |
+  |------------------------>|                         |
+  |                         |  Create RevealPhone     |
+  |                         |  (is_revealed = false)  |
+  |                         |                         |
+  |                         |  Send Notification      |
+  |                         |------------------------>|
+  |                         |  "John Doe has          |
+  |                         |   requested phone"      |
+  |                         |                         |
+  |                         |         <---------------|
+  |                         |         Approve/Decline |
+  |                         |                         |
+  |  Receive Notification   |                         |
+  |<------------------------|                         |
+  |  "Phone approved:       |                         |
+  |   +1234567890"          |                         |
+  |                         |                         |
+```
+
+The complete notification-based phone request system is now ready for production use! 🎯

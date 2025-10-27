@@ -13,11 +13,17 @@ return new class extends Migration
     {
         Schema::create('reveal_phones', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('chat_id')->nullable();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedBigInteger('store_id')->nullable();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('store_id');
             $table->boolean('is_revealed')->default(false);
             $table->timestamps();
+
+            // Foreign keys
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('store_id')->references('id')->on('stores')->onDelete('cascade');
+
+            // Unique constraint to prevent duplicate requests
+            $table->unique(['user_id', 'store_id']);
         });
     }
 

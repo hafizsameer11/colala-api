@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Buyer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Chat;
-use App\Models\ChatMessage;
 use App\Models\RevealPhone;
 use App\Models\Store;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +28,7 @@ class PhoneRequestController extends Controller
             $storeId = $request->store_id;
 
             // Get the store
-            $store = Store::find($storeId);
+            $store = Store::with('user')->find($storeId);
             if (!$store) {
                 return response()->json([
                     'status' => 'error',
@@ -39,26 +38,8 @@ class PhoneRequestController extends Controller
 
             DB::beginTransaction();
 
-            // 1. Check if chat exists (any type: product or service)
-            $chat = Chat::where('user_id', $buyerId)
-                ->where('store_id', $storeId)
-                ->first();
-
-            // 2. If no chat, create one
-            if (!$chat) {
-                $chat = Chat::create([
-                    'user_id' => $buyerId,
-                    'store_id' => $storeId,
-                    'product_id' => null, // General chat
-                    'service_id' => null,
-                    'last_message' => 'Phone number request',
-                    'last_message_at' => now(),
-                ]);
-            }
-
-            // 3. Check if phone number was already requested
-            $existingRequest = RevealPhone::where('chat_id', $chat->id)
-                ->where('user_id', $buyerId)
+            // Check if phone number was already requested
+            $existingRequest = RevealPhone::where('user_id', $buyerId)
                 ->where('store_id', $storeId)
                 ->first();
 
@@ -68,7 +49,6 @@ class PhoneRequestController extends Controller
                         'status' => 'success',
                         'message' => 'Phone number already shared',
                         'data' => [
-                            'chat_id' => $chat->id,
                             'is_revealed' => true,
                             'phone_number' => $store->store_phone,
                         ],
@@ -79,49 +59,30 @@ class PhoneRequestController extends Controller
                     'status' => 'success',
                     'message' => 'Phone number request already pending',
                     'data' => [
-                        'chat_id' => $chat->id,
                         'is_revealed' => false,
                     ],
                 ]);
             }
 
-            // 4. Create reveal phone request
+            // Create reveal phone request
             $revealPhone = RevealPhone::create([
-                'chat_id' => $chat->id,
                 'user_id' => $buyerId,
                 'store_id' => $storeId,
                 'is_revealed' => false,
             ]);
 
-            // 5. Send message to seller (from buyer)
+            // Get buyer name
             $buyerName = Auth::user()->full_name ?? 'A buyer';
-            ChatMessage::create([
-                'chat_id' => $chat->id,
-                'sender_id' => $buyerId,
-                'sender_type' => 'user',
-                'message' => "I would like to request your phone number to discuss further.",
-                'is_read' => false,
-            ]);
 
-            // 6. Send system message to seller (notification style)
-            ChatMessage::create([
-                'chat_id' => $chat->id,
-                'sender_id' => $store->user_id,
-                'sender_type' => 'store',
-                'message' => "📞 {$buyerName} has requested your phone number. [APPROVE] or [DECLINE]",
-                'is_read' => false,
-                'meta' => json_encode([
-                    'type' => 'phone_request',
-                    'reveal_phone_id' => $revealPhone->id,
-                    'status' => 'pending',
-                ]),
-            ]);
-
-            // Update chat last message
-            $chat->update([
-                'last_message' => 'Phone number requested',
-                'last_message_at' => now(),
-            ]);
+            // Create notification for seller
+            if ($store->user) {
+                UserNotification::create([
+                    'user_id' => $store->user_id,
+                    'title' => 'Phone Number Request',
+                    'content' => "{$buyerName} has requested your phone number for {$store->store_name}. Request ID: {$revealPhone->id}",
+                    'is_read' => false,
+                ]);
+            }
 
             DB::commit();
 
@@ -129,7 +90,6 @@ class PhoneRequestController extends Controller
                 'status' => 'success',
                 'message' => 'Phone number request sent successfully',
                 'data' => [
-                    'chat_id' => $chat->id,
                     'reveal_phone_id' => $revealPhone->id,
                     'is_revealed' => false,
                 ],
@@ -159,24 +119,8 @@ class PhoneRequestController extends Controller
             $buyerId = Auth::id();
             $storeId = $request->store_id;
 
-            // Find the chat
-            $chat = Chat::where('user_id', $buyerId)
-                ->where('store_id', $storeId)
-                ->first();
-
-            if (!$chat) {
-                return response()->json([
-                    'status' => 'success',
-                    'data' => [
-                        'has_request' => false,
-                        'is_revealed' => false,
-                    ],
-                ]);
-            }
-
             // Find the reveal phone request
-            $revealPhone = RevealPhone::where('chat_id', $chat->id)
-                ->where('user_id', $buyerId)
+            $revealPhone = RevealPhone::where('user_id', $buyerId)
                 ->where('store_id', $storeId)
                 ->first();
 
@@ -186,7 +130,6 @@ class PhoneRequestController extends Controller
                     'data' => [
                         'has_request' => false,
                         'is_revealed' => false,
-                        'chat_id' => $chat->id,
                     ],
                 ]);
             }
@@ -194,7 +137,6 @@ class PhoneRequestController extends Controller
             $response = [
                 'has_request' => true,
                 'is_revealed' => $revealPhone->is_revealed,
-                'chat_id' => $chat->id,
             ];
 
             // If revealed, include phone number
@@ -216,5 +158,50 @@ class PhoneRequestController extends Controller
             ], 500);
         }
     }
-}
 
+    /**
+     * Get all phone requests (revealed phone numbers)
+     */
+    public function getRevealedPhoneNumbers()
+    {
+        try {
+            $buyerId = Auth::id();
+
+            $revealedPhones = RevealPhone::with('store')
+                ->where('user_id', $buyerId)
+                ->where('is_revealed', true)
+                ->orderBy('updated_at', 'desc')
+                ->get();
+
+            $formattedPhones = $revealedPhones->map(function ($reveal) {
+                return [
+                    'id' => $reveal->id,
+                    'store' => [
+                        'id' => $reveal->store_id,
+                        'name' => $reveal->store->store_name ?? null,
+                        'phone_number' => $reveal->store->store_phone ?? null,
+                        'profile_image' => $reveal->store->profile_image 
+                            ? asset('storage/' . $reveal->store->profile_image) 
+                            : null,
+                    ],
+                    'revealed_at' => $reveal->updated_at ? $reveal->updated_at->format('d-m-Y H:i A') : null,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'total' => $formattedPhones->count(),
+                    'phone_numbers' => $formattedPhones,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get revealed phone numbers error: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to get phone numbers',
+            ], 500);
+        }
+    }
+}
