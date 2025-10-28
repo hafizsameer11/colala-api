@@ -41,8 +41,13 @@ class CheckoutController extends Controller
                 (int) $req->delivery_address_id,
                 $req->payment_method
             );
-            $order = $this->chk->place($cart, $preview);
-            return ResponseHelper::success($order);
+            $orders = $this->chk->place($cart, $preview); // Returns array of orders now
+            
+            return ResponseHelper::success([
+                'message' => count($orders) . ' order(s) created successfully',
+                'orders' => $orders,
+                'total_orders' => count($orders),
+            ]);
         } catch (\Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
@@ -61,38 +66,51 @@ class CheckoutController extends Controller
                 return ResponseHelper::error('Order not found', 404);
             }
 
+            // Check if store has accepted the order
+            $storeOrder = $order->storeOrders()->first();
+            if (!$storeOrder || $storeOrder->status !== 'accepted') {
+                return ResponseHelper::error('Order must be accepted by store before payment', 400);
+            }
+
             if ($order->payment_status === 'paid') {
                 return ResponseHelper::error('Order is already paid', 400);
             }
 
+            // Update order status
             $order->payment_status = 'paid';
+            $order->status = 'accepted';
+            $order->paid_at = now();
             $order->save();
 
+            // Update store order status
+            $storeOrder->update(['status' => 'paid']);
+
+            // Update order tracking
+            \App\Models\OrderTracking::where('store_order_id', $storeOrder->id)->update([
+                'status' => 'paid',
+                'notes' => 'Payment received. Order is being prepared.',
+            ]);
+
+            // Create transaction
             Transaction::create([
                 'tx_id' => $txId,
                 'amount' => $amount,
-                'status' => 'completed',
+                'status' => 'success',
                 'type' => 'order_payment',
                 'order_id' => $orderId,
                 'user_id' => $req->user()->id,
             ]);
 
-            // ✅ Lock escrow funds for each order item
-            foreach ($order->storeOrders as $storeOrder) {
-                foreach ($storeOrder->items as $item) {
-                    //shipping fee
-                    $perItemShipping = (float) ($item->product?->getDeliveryFee($order->delivery_address_id) ?? 0);
-
-                    \App\Models\Escrow::create([
-                        'user_id'       => $req->user()->id,
-                        'order_id'      => $order->id,
-                        'order_item_id' => $item->id,
-                        'amount'        => $item->line_total+$perItemShipping,
-                        'shipping_fee'  => $perItemShipping > 0 ? $perItemShipping : null,
-                        'status'        => 'locked',
-                    ]);
-                }
-            }
+            // ✅ Create escrow for the entire store order
+            \App\Models\Escrow::create([
+                'user_id'        => $req->user()->id,
+                'order_id'       => $order->id,
+                'store_order_id' => $storeOrder->id,
+                'order_item_id'  => null, // Store-order level escrow
+                'amount'         => $storeOrder->subtotal_with_shipping, // Total amount including delivery
+                'shipping_fee'   => $storeOrder->shipping_fee,
+                'status'         => 'locked',
+            ]);
 
             // Send payment confirmation notifications
             $this->sendPaymentConfirmationNotifications($order);

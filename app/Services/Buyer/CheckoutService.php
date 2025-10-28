@@ -73,44 +73,56 @@ class CheckoutService
         ];
     }
 
-    public function place(Cart $cart, array $preview): Order
+    public function place(Cart $cart, array $preview): array
     {
         return DB::transaction(function () use ($cart, $preview) {
-            $order = Order::create([
-                'order_no' => 'COL-' . now()->format('Ymd') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT),
-                'user_id' => $cart->user_id,
-                'delivery_address_id' => $preview['address_id'],
-                'payment_method' => $preview['payment_method'],
-                'payment_status' => 'pending',
-                'items_total' => $preview['items_total'],
-                'shipping_total' => $preview['shipping_total'],
-                'platform_fee' => $preview['platform_fee'],
-                'discount_total' => $preview['discount_total'],
-                'grand_total' => $preview['grand_total'],
-                'meta' => [],
-            ]);
+            $orders = [];
 
-            // Create order tracking and chat
+            // ✅ Create separate order for each store
             foreach ($preview['stores'] as $S) {
+                // Calculate per-store totals
+                $storeItemsTotal = $S['items_subtotal'];
+                $storeShippingTotal = $S['shipping_fee'] ?? 0;
+                $storePlatformFee = round($storeItemsTotal * 0.015, 2); // 1.5%
+                $storeGrandTotal = $storeItemsTotal + $storeShippingTotal + $storePlatformFee;
+
+                // Create individual order per store
+                $order = Order::create([
+                    'order_no' => 'COL-' . now()->format('Ymd') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT),
+                    'user_id' => $cart->user_id,
+                    'delivery_address_id' => $preview['address_id'],
+                    'payment_method' => $preview['payment_method'],
+                    'payment_status' => 'pending',
+                    'status' => 'pending',
+                    'items_total' => $storeItemsTotal,
+                    'shipping_total' => $storeShippingTotal,
+                    'platform_fee' => $storePlatformFee,
+                    'discount_total' => 0,
+                    'grand_total' => $storeGrandTotal,
+                    'meta' => json_encode(['store_id' => $S['store_id']]),
+                ]);
+
+                // Create single store order for this order
                 $so = StoreOrder::create([
                     'order_id' => $order->id,
                     'store_id' => $S['store_id'],
-                    'status'   => 'placed',
-                    'shipping_fee' => $S['shipping_fee'] ?? 0,
-                    'items_subtotal' => $S['items_subtotal'],
+                    'status'   => 'pending_acceptance',
+                    'shipping_fee' => $storeShippingTotal,
+                    'items_subtotal' => $storeItemsTotal,
                     'discount' => 0,
-                    'subtotal_with_shipping' => $S['items_subtotal'],
+                    'subtotal_with_shipping' => $storeItemsTotal + $storeShippingTotal,
                 ]);
 
-                // ✅ tracking per store order
+                // Create order tracking
                 $deliveryCode = random_int(1000, 9999);
                 \App\Models\OrderTracking::create([
-                    'store_order_id' => $so->id,   // now linked correctly
+                    'store_order_id' => $so->id,
                     'status'         => 'pending',
-                    'notes'          => 'Order has been placed and is pending processing.',
+                    'notes'          => 'Order placed. Waiting for store to accept.',
                     'delivery_code'  => $deliveryCode,
                 ]);
 
+                // Create order items
                 foreach ($S['lines'] as $L) {
                     OrderItem::create([
                         'store_order_id' => $so->id,
@@ -130,31 +142,41 @@ class CheckoutService
                     ProductStatHelper::record($L['product_id'], 'order');
                 }
 
+                // Create chat
                 Chat::firstOrCreate([
                     'store_order_id' => $so->id,
                     'user_id'        => $cart->user_id,
                     'store_id'       => $S['store_id'],
                     'type' => 'order'
                 ]);
+
+                // Send notification to this store
+                $store = Store::with('user')->find($S['store_id']);
+                if ($store && $store->user) {
+                    UserNotificationHelper::notify(
+                        $store->user->id,
+                        'New Order Received',
+                        "You have received a new order #{$order->order_no} for ₦" . number_format($storeGrandTotal, 2)
+                    );
+                }
+
+                $orders[] = $order->load('storeOrders.items');
             }
 
-            // Handle wallet payment and create escrow records
-            if ($preview['payment_method'] === 'wallet') {
-                $this->paymentConfirmationWIthShoppingWallet([
-                    'order_id' => $order->id,
-                    'amount'   => $preview['grand_total'],
-                    'tx_id'    => null,
-                ]);
-            }
-
+            // ✅ NO PAYMENT OR ESCROW AT THIS STAGE
+            // Payment will be processed after store accepts the order
 
             $cart->update(['checked_out' => true]);
             $cart->items()->delete();
 
-            // Send notifications for order placement
-            $this->sendOrderNotifications($order);
+            // Notify buyer
+            UserNotificationHelper::notify(
+                $cart->user_id,
+                'Orders Placed Successfully',
+                "Your " . count($orders) . " order(s) have been placed successfully. Total: ₦" . number_format($preview['grand_total'], 2)
+            );
 
-            return $order->load('storeOrders.items');
+            return $orders;
         });
     }
 
@@ -217,28 +239,4 @@ class CheckoutService
         });
     }
 
-    /**
-     * Send notifications for order placement
-     */
-    private function sendOrderNotifications(Order $order)
-    {
-        // Notify the buyer
-        UserNotificationHelper::notify(
-            $order->user_id,
-            'Order Placed Successfully',
-            "Your order #{$order->order_no} has been placed successfully. Total amount: ₦" . number_format($order->grand_total, 2)
-        );
-
-        // Notify each store owner
-        foreach ($order->storeOrders as $storeOrder) {
-            $store = Store::with('user')->find($storeOrder->store_id);
-            if ($store && $store->user) {
-                UserNotificationHelper::notify(
-                    $store->user->id,
-                    'New Order Received',
-                    "You have received a new order #{$order->order_no} for ₦" . number_format($storeOrder->subtotal_with_shipping, 2)
-                );
-            }
-        }
-    }
 }

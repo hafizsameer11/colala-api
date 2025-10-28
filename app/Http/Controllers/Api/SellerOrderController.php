@@ -158,16 +158,23 @@ class SellerOrderController extends Controller
     {
         try {
             return DB::transaction(function () use ($storeOrder) {
-                // Get all escrow records for this store order
-                $escrowRecords = Escrow::where('order_id', $storeOrder->order_id)
+                // Get escrow record for this specific store order (new flow)
+                $escrowRecord = Escrow::where('store_order_id', $storeOrder->id)
                     ->where('status', 'locked')
-                    ->get();
+                    ->first();
 
-                if ($escrowRecords->isEmpty()) {
+                // Fallback: Check old flow (by order_id) if no store_order_id escrow exists
+                if (!$escrowRecord) {
+                    $escrowRecord = Escrow::where('order_id', $storeOrder->order_id)
+                        ->where('status', 'locked')
+                        ->first();
+                }
+
+                if (!$escrowRecord) {
                     return; // No escrow funds to unlock
                 }
 
-                $totalAmount = $escrowRecords->sum('amount');
+                $totalAmount = $escrowRecord->amount;
                 
                 // Get store owner
                 $store = Store::with('user')->find($storeOrder->store_id);
@@ -176,9 +183,7 @@ class SellerOrderController extends Controller
                 }
 
                 // Update escrow status to 'released'
-                Escrow::where('order_id', $storeOrder->order_id)
-                    ->where('status', 'locked')
-                    ->update(['status' => 'released']);
+                $escrowRecord->update(['status' => 'released']);
 
                 // Create or update seller's wallet
                 $sellerWallet = Wallet::firstOrCreate(

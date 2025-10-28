@@ -30,6 +30,7 @@ use App\Http\Controllers\Buyer\ChatController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 use App\Http\Controllers\Api\SellerPhoneRequestController;
+use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -200,6 +201,64 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('phone-requests/{revealPhoneId}/approve', [SellerPhoneRequestController::class, 'approvePhoneRequest']);
     Route::post('phone-requests/{revealPhoneId}/decline', [SellerPhoneRequestController::class, 'declinePhoneRequest']);
 
+    // Order Acceptance (Seller)
+    Route::get('orders/pending', [SellerOrderAcceptanceController::class, 'getPendingOrders']);
+    Route::post('orders/{storeOrderId}/accept', [SellerOrderAcceptanceController::class, 'acceptOrder']);
+    Route::post('orders/{storeOrderId}/reject', [SellerOrderAcceptanceController::class, 'rejectOrder']);
+    Route::put('orders/{storeOrderId}/delivery', [SellerOrderAcceptanceController::class, 'updateDeliveryDetails']);
+    Route::get('orders/acceptance-stats', [SellerOrderAcceptanceController::class, 'getAcceptanceStats']);
+
 });
 
 // Removed duplicate loyalty routes - using the ones in the main seller group above
+
+/*
+|--------------------------------------------------------------------------
+| 🛍️ NEW ORDER FLOW - SELLER ROUTES (Separate Orders Per Store)
+|--------------------------------------------------------------------------
+|
+| FLOW SUMMARY:
+| 1. Buyer places order → Seller receives notification
+| 2. Seller reviews order at /orders/pending
+| 3. Seller accepts/rejects at /orders/{storeOrderId}/accept or /reject
+| 4. If accepted, seller sets delivery details (including delivery_fee)
+| 5. Buyer pays → Seller can fulfill order
+| 6. Seller marks as out-for-delivery → delivered
+|
+| KEY ROUTES:
+| ✅ GET  /seller/orders/pending - Get pending orders awaiting acceptance
+| ✅ POST /seller/orders/{storeOrderId}/accept - Accept order + set delivery details
+| ✅ POST /seller/orders/{storeOrderId}/reject - Reject order with reason
+| ✅ PUT  /seller/orders/{storeOrderId}/delivery - Update delivery details (fee, method, date)
+| ✅ GET  /seller/orders/acceptance-stats - Get acceptance statistics
+| ✅ GET  /seller/orders - All orders (existing)
+| ✅ GET  /seller/orders/{id} - Order details (existing)
+| ✅ POST /seller/orders/{orderId}/out-for-deliver - Mark as out for delivery (existing)
+| ✅ POST /seller/orders/{orderId}/delivered - Mark as delivered with code (existing)
+|
+| IMPORTANT NOTES:
+| - Each order now has ONE store (separate orders per store)
+| - Seller MUST set delivery_fee during acceptance
+| - Delivery fee is locked after buyer pays
+| - Order can only be accepted/rejected once
+| - After acceptance, buyer can pay
+| - Escrow is created when buyer pays
+| - Escrow is released when order is marked as delivered
+|
+| EXAMPLE FLOW:
+| 1. GET /seller/orders/pending → See new orders
+| 2. POST /seller/orders/123/accept
+|    Body: {
+|      "estimated_delivery_date": "2025-11-10",
+|      "delivery_method": "Express",
+|      "delivery_fee": 1500,
+|      "delivery_notes": "Will be delivered within 3 days"
+|    }
+| 3. Buyer pays on their end
+| 4. POST /seller/orders/123/out-for-deliver
+| 5. POST /seller/orders/123/delivered
+|    Body: { "delivery_code": "1234" }
+|
+| See: SEPARATE_ORDERS_PER_STORE_GUIDE.md for full documentation
+|
+*/

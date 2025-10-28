@@ -41,6 +41,7 @@ use App\Http\Controllers\WalletController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Buyer\PhoneRequestController;
+use App\Http\Controllers\Api\Buyer\BuyerOrderPaymentController;
 
 require __DIR__ . '/seller.php';
 require __DIR__ . '/admin.php';
@@ -177,6 +178,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('orders', [OrderController::class, 'list']);
         Route::get('orders/{orderId}', [OrderController::class, 'detail']);
         Route::post('orders/{storeOrderId}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
+        
+        // Order Payment (Post-Acceptance)
+        Route::get('orders/{orderId}/payment-info', [BuyerOrderPaymentController::class, 'getPaymentInfo']);
+        Route::post('orders/{orderId}/pay', [BuyerOrderPaymentController::class, 'processPayment']);
+        Route::post('orders/{orderId}/cancel', [BuyerOrderPaymentController::class, 'cancelOrder']);
 
         // Reviews
         Route::post('order-items/{orderItem}/review', [ReviewController::class, 'create']);
@@ -289,3 +295,168 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/banners/{id}/click', [AdminBannerController::class, 'trackBannerClick']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| 🛍️ NEW ORDER FLOW - BUYER ROUTES (Separate Orders Per Store)
+|--------------------------------------------------------------------------
+|
+| FLOW SUMMARY:
+| 1. Buyer adds items to cart from multiple stores
+| 2. Buyer previews checkout → sees total per store
+| 3. Buyer places order → creates SEPARATE orders (one per store)
+| 4. Each store accepts/rejects independently
+| 5. Buyer pays accepted orders (wallet OR card via Flutterwave)
+| 6. Track order until delivery
+|
+| KEY ROUTES:
+|
+| === CHECKOUT & ORDER PLACEMENT ===
+| ✅ POST /api/buyer/checkout/preview - Preview order with all stores
+|    Body: { "delivery_address_id": 1, "payment_method": "card" }
+|    Returns: { items_total, shipping_total, platform_fee, grand_total, stores: [...] }
+|
+| ✅ POST /api/buyer/checkout/place - Place order (creates separate orders per store)
+|    Body: { "delivery_address_id": 1, "payment_method": "card" }
+|    Returns: {
+|      "message": "3 order(s) created successfully",
+|      "total_orders": 3,
+|      "orders": [...]
+|    }
+|
+| === PAYMENT ===
+| ✅ GET /api/buyer/orders/{orderId}/payment-info - Get payment details for an order
+|    Returns: { order_no, amount_to_pay, store: {...}, status, can_pay }
+|
+| ✅ POST /api/buyer/orders/{orderId}/pay - Pay with WALLET
+|    Body: {} (no body needed, uses user's wallet)
+|    Returns: { "message": "Payment successful" }
+|
+| ✅ POST /api/buyer/payment/confirmation - Confirm CARD payment (after Flutterwave)
+|    Body: { "order_id": 1, "tx_id": "FLW-12345", "amount": 11150.00 }
+|    Returns: { "message": "Payment confirmed successfully" }
+|
+| ✅ POST /api/buyer/orders/{orderId}/cancel - Cancel unpaid order
+|    Body: { "reason": "Changed my mind" }
+|    Returns: { "message": "Order cancelled successfully" }
+|
+| === ORDER MANAGEMENT ===
+| ✅ GET /api/buyer/orders - Get all buyer orders
+| ✅ GET /api/buyer/orders/{id} - Get order details
+|
+| IMPORTANT NOTES:
+| - Each order is for ONE store only (no more multi-store orders)
+| - Order must be accepted by seller before payment
+| - Payment creates escrow automatically
+| - Wallet payment is immediate (POST /orders/{id}/pay)
+| - Card payment requires Flutterwave flow:
+|   1. Frontend initializes Flutterwave
+|   2. User completes payment
+|   3. Frontend calls /payment/confirmation
+| - Each order has its own order_no, grand_total, and payment_status
+| - Delivery fee is set by seller during acceptance
+|
+| EXAMPLE FLOW:
+|
+| 1. CHECKOUT:
+|    POST /api/buyer/checkout/preview
+|    {
+|      "delivery_address_id": 1,
+|      "payment_method": "card"
+|    }
+|
+|    Response:
+|    {
+|      "items_total": 45000,
+|      "shipping_total": 0,
+|      "platform_fee": 675,
+|      "grand_total": 45675,
+|      "stores": [
+|        { "store_id": 5, "items_subtotal": 10000, ... },
+|        { "store_id": 8, "items_subtotal": 15000, ... },
+|        { "store_id": 12, "items_subtotal": 20000, ... }
+|      ]
+|    }
+|
+| 2. PLACE ORDER:
+|    POST /api/buyer/checkout/place
+|    {
+|      "delivery_address_id": 1,
+|      "payment_method": "card"
+|    }
+|
+|    Response:
+|    {
+|      "message": "3 order(s) created successfully",
+|      "total_orders": 3,
+|      "orders": [
+|        { "id": 1, "order_no": "COL-20251028-123456", ... },
+|        { "id": 2, "order_no": "COL-20251028-123457", ... },
+|        { "id": 3, "order_no": "COL-20251028-123458", ... }
+|      ]
+|    }
+|
+| 3. WAIT FOR SELLER ACCEPTANCE:
+|    (Sellers accept/reject on their end)
+|    (You'll receive notifications when orders are accepted/rejected)
+|
+| 4A. PAY WITH WALLET:
+|    POST /api/buyer/orders/1/pay
+|    {}
+|
+|    Response:
+|    { "message": "Payment successful" }
+|
+| 4B. PAY WITH CARD (Flutterwave):
+|    Step 1: Get payment info
+|    GET /api/buyer/orders/1/payment-info
+|
+|    Response:
+|    {
+|      "order_no": "COL-20251028-123456",
+|      "amount_to_pay": 11150.00,
+|      "store": { "store_name": "Tech Store", ... },
+|      "can_pay": true
+|    }
+|
+|    Step 2: Initialize Flutterwave on frontend
+|    (Use amount_to_pay from response)
+|
+|    Step 3: After successful Flutterwave payment
+|    POST /api/buyer/payment/confirmation
+|    {
+|      "order_id": 1,
+|      "tx_id": "FLW-12345678",
+|      "amount": 11150.00
+|    }
+|
+|    Response:
+|    { "message": "Payment confirmed successfully" }
+|
+| 5. TRACK ORDER:
+|    GET /api/buyer/orders/1
+|
+|    Response:
+|    {
+|      "id": 1,
+|      "order_no": "COL-20251028-123456",
+|      "status": "paid",
+|      "payment_status": "paid",
+|      "grand_total": 11150.00,
+|      "storeOrders": [{
+|        "status": "processing",
+|        "estimated_delivery_date": "2025-11-10",
+|        ...
+|      }]
+|    }
+|
+| KEY DIFFERENCES FROM OLD FLOW:
+| ✅ Multiple orders created (one per store) instead of one order
+| ✅ Each order paid separately
+| ✅ Can use different payment methods for different orders
+| ✅ Clearer tracking (one order = one store)
+| ✅ Simpler payment flow
+| ✅ No partial payments confusion
+|
+| See: SEPARATE_ORDERS_PER_STORE_GUIDE.md for full documentation
+|
+*/
