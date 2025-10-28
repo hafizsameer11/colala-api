@@ -510,6 +510,7 @@ public function overview(Request $req)
             'phone'         => $store->store_phone,
             'location'      => $store->store_location,
             'theme_color'   => $store->theme_color,
+            'status'        => $store->status,
             'profile_image' => $this->url($store->profile_image),
             'banner_image'  => $this->url($store->banner_image),
             'announcements'=>$store->announcements,
