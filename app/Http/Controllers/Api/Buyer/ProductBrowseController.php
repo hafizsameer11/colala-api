@@ -64,6 +64,9 @@ public function productDetails($productId)
         // Record click/view event for product details
         ProductStatHelper::record($product->id, 'view');
 
+        // Track product visit
+        \App\Helpers\VisitorTracker::trackProductVisit($product->id);
+
         $data = $product->toArray();
         //get the quantity of product from variants which have stock
         $data['qty'] = $product->variations->where('stock', '>', 0)->sum('stock');

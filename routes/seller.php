@@ -208,6 +208,11 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::put('orders/{storeOrderId}/delivery', [SellerOrderAcceptanceController::class, 'updateDeliveryDetails']);
     Route::get('orders/acceptance-stats', [SellerOrderAcceptanceController::class, 'getAcceptanceStats']);
 
+    // Visitor Tracking & Management
+    Route::get('visitors', [\App\Http\Controllers\Api\SellerVisitorController::class, 'getVisitors']);
+    Route::get('visitors/{userId}/activity', [\App\Http\Controllers\Api\SellerVisitorController::class, 'getVisitorActivity']);
+    Route::post('visitors/{userId}/start-chat', [\App\Http\Controllers\Api\SellerVisitorController::class, 'startChatWithVisitor']);
+
 });
 
 // Removed duplicate loyalty routes - using the ones in the main seller group above
