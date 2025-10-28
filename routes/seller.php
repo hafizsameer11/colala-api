@@ -272,3 +272,42 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
 | See: SEPARATE_ORDERS_PER_STORE_GUIDE.md for full documentation
 |
 */
+
+/*
+|--------------------------------------------------------------------------
+| 📞 PHONE VISIBILITY SETTINGS - SELLER ROUTES
+|--------------------------------------------------------------------------
+|
+| FEATURE: Allow sellers to control phone number visibility on store profile
+|
+| KEY ROUTES:
+| ✅ GET  /seller/settings/phone-visibility - Get current phone visibility setting
+|    Returns: { "is_phone_visible": true/false, "store_phone": "..." }
+|
+| ✅ POST /seller/settings/phone-visibility - Update phone visibility setting
+|    Body: { "is_phone_visible": true/false }
+|    Returns: { "is_phone_visible": true/false, "store_phone": "..." }
+|
+| BEHAVIOR:
+| - Default: is_phone_visible = false (hidden)
+| - When false: Phone number is hidden from buyer's store view
+| - When true: Phone number is visible on store profile and "Call" button shows
+| - Setting is stored in stores.is_phone_visible column
+|
+| EXAMPLE USAGE:
+| 1. GET /seller/settings/phone-visibility
+|    → Check current setting
+|
+| 2. POST /seller/settings/phone-visibility
+|    Body: { "is_phone_visible": true }
+|    → Enable phone visibility (show "Call" button)
+|
+| 3. POST /seller/settings/phone-visibility
+|    Body: { "is_phone_visible": false }
+|    → Disable phone visibility (hide "Call" button)
+|
+| BUYER SIDE:
+| - GET /api/buyer/stores/{id} - Store phone is null if is_phone_visible = false
+| - Frontend should conditionally show/hide "Call" button based on store_phone value
+|
+*/
