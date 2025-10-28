@@ -14,10 +14,10 @@ class Level2DocumentsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nin_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'cac_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'utility_bill' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'store_video'  => 'nullable|file|mimes:mp4,mov,avi|max:10240',
+            'nin_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'cac_document' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'utility_bill' => 'nullable|file|mimes:jpg,jpeg,png,pdf',
+            'store_video'  => 'nullable|file|mimes:mp4,mov,avi',
         ];
     }
 }
