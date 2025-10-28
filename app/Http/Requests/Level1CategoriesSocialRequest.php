@@ -18,7 +18,7 @@ class Level1CategoriesSocialRequest extends FormRequest
             'categories.*'         => 'exists:categories,id',
             'social_links'         => 'nullable|array',
             'social_links.*.type'  => 'in:whatsapp,instagram,facebook,twitter,tiktok,linkedin',
-            'social_links.*.url'   => 'url',
+            'social_links.*.url'   => 'string',
         ];
     }
 }
