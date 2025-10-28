@@ -19,6 +19,7 @@ class Store extends Model
         'store_name',
         'store_email',
         'store_phone',
+        'is_phone_visible',
         'store_location',
         'profile_image',
         'banner_image',

@@ -68,6 +68,11 @@ public function getById(Request $req, $storeId)
         
         $store->rating=round($store->productReviews->avg('rating'),1) ?? 4.7;
 
+        // Hide phone number if visibility is disabled
+        if (!$store->is_phone_visible) {
+            $store->store_phone = null;
+        }
+
         // Track store visit
         \App\Helpers\VisitorTracker::trackStoreVisit($storeId, $req);
 

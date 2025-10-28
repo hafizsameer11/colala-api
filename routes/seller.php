@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 use App\Http\Controllers\Api\SellerPhoneRequestController;
 use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
+use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -212,6 +213,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('visitors', [\App\Http\Controllers\Api\SellerVisitorController::class, 'getVisitors']);
     Route::get('visitors/{userId}/activity', [\App\Http\Controllers\Api\SellerVisitorController::class, 'getVisitorActivity']);
     Route::post('visitors/{userId}/start-chat', [\App\Http\Controllers\Api\SellerVisitorController::class, 'startChatWithVisitor']);
+
+    // Store Settings (Phone Visibility)
+    Route::get('settings/phone-visibility', [SellerStoreSettingsController::class, 'getPhoneVisibility']);
+    Route::post('settings/phone-visibility', [SellerStoreSettingsController::class, 'updatePhoneVisibility']);
 
 });
 
