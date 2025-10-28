@@ -129,7 +129,7 @@ class SellerOnboardingController extends Controller
             $store->profile_image = $request->file('profile_image')->store("stores/{$store->id}", 'public');
             //allso update that users profile image
             $user = $request->user();
-            $user->profile_image = $store->profile_image;
+            $user->profile_picture = $store->profile_image;
             $user->save();
         }
         if ($request->hasFile('banner_image')) {
