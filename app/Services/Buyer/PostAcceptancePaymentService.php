@@ -47,7 +47,7 @@ class PostAcceptancePaymentService
             // Update order
             $order->update([
                 'payment_status' => 'paid',
-                'status' => 'accepted',
+                'status' => 'placed',
                 'paid_at' => now(),
                 'grand_total' => $paymentAmount, // Update with recalculated amount
             ]);

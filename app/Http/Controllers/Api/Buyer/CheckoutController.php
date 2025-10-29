@@ -78,12 +78,12 @@ class CheckoutController extends Controller
 
             // Update order status
             $order->payment_status = 'paid';
-            $order->status = 'accepted';
+            $order->status = 'placed';
             $order->paid_at = now();
             $order->save();
 
             // Update store order status
-            $storeOrder->update(['status' => 'paid']);
+            $storeOrder->update(['status' => 'placed']);
 
             // Update order tracking
             \App\Models\OrderTracking::where('store_order_id', $storeOrder->id)->update([
