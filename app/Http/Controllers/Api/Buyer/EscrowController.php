@@ -28,11 +28,11 @@ class EscrowController extends Controller
             // Full history (now using store_order_id instead of order_item_id)
             $history = Escrow::with([
                     'order:id,order_no,payment_status,status',
-                    'storeOrder:id,order_id,store_id,status,shipping_fee,items_subtotal,subtotal_with_shipping',
-                    'storeOrder.store:id,store_name,profile_image',
-                    'storeOrder.items:id,store_order_id,product_id,name,qty,unit_price,line_total',
-                    'storeOrder.items.product:id,name',
-                    'storeOrder.items.product.images:id,product_id,url'
+                    'storeOrderg',
+                    'storeOrder.store',
+                    'storeOrder.items',
+                    'storeOrder.items.product',
+                    'storeOrder.items.product.images'
                 ])
                 ->where('user_id', $user->id)
                 ->latest()
