@@ -36,50 +36,8 @@ class EscrowController extends Controller
                 ])
                 ->where('user_id', $user->id)
                 ->latest()
-                ->get()
-                ->map(function ($escrow) {
-                    return [
-                        'id' => $escrow->id,
-                        'amount' => $escrow->amount,
-                        'shipping_fee' => $escrow->shipping_fee,
-                        'status' => $escrow->status,
-                        'created_at' => $escrow->created_at,
-                        'order' => [
-                            'id' => $escrow->order->id ?? null,
-                            'order_no' => $escrow->order->order_no ?? null,
-                            'payment_status' => $escrow->order->payment_status ?? null,
-                            'status' => $escrow->order->status ?? null,
-                        ],
-                        'store' => $escrow->storeOrder && $escrow->storeOrder->store ? [
-                            'id' => $escrow->storeOrder->store->id,
-                            'store_name' => $escrow->storeOrder->store->store_name,
-                            'profile_image' => $escrow->storeOrder->store->profile_image 
-                                ? asset('storage/' . $escrow->storeOrder->store->profile_image) 
-                                : null,
-                        ] : null,
-                        'store_order' => $escrow->storeOrder ? [
-                            'id' => $escrow->storeOrder->id,
-                            'status' => $escrow->storeOrder->status,
-                            'items_subtotal' => $escrow->storeOrder->items_subtotal,
-                            'shipping_fee' => $escrow->storeOrder->shipping_fee,
-                            'total' => $escrow->storeOrder->subtotal_with_shipping,
-                        ] : null,
-                        'items' => $escrow->storeOrder && $escrow->storeOrder->items 
-                            ? $escrow->storeOrder->items->map(function ($item) {
-                                return [
-                                    'id' => $item->id,
-                                    'name' => $item->name,
-                                    'qty' => $item->qty,
-                                    'unit_price' => $item->unit_price,
-                                    'line_total' => $item->line_total,
-                                    'product_image' => $item->product && $item->product->images->isNotEmpty()
-                                        ? asset('storage/' . $item->product->images->first()->url)
-                                        : null,
-                                ];
-                            })->toArray()
-                            : [],
-                    ];
-                });
+                ->get();
+               
 
             return ResponseHelper::success([
                 'locked_balance' => $lockedBalance,
