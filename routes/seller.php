@@ -203,11 +203,11 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('phone-requests/{revealPhoneId}/decline', [SellerPhoneRequestController::class, 'declinePhoneRequest']);
 
     // Order Acceptance (Seller)
-    Route::get('orders/pending', [SellerOrderAcceptanceController::class, 'getPendingOrders']);
-    Route::post('orders/{storeOrderId}/accept', [SellerOrderAcceptanceController::class, 'acceptOrder']);
-    Route::post('orders/{storeOrderId}/reject', [SellerOrderAcceptanceController::class, 'rejectOrder']);
-    Route::put('orders/{storeOrderId}/delivery', [SellerOrderAcceptanceController::class, 'updateDeliveryDetails']);
-    Route::get('orders/acceptance-stats', [SellerOrderAcceptanceController::class, 'getAcceptanceStats']);
+    Route::get('store-orders/pending', [SellerOrderAcceptanceController::class, 'getPendingOrders']);
+    Route::post('store-orders/{storeOrderId}/accept', [SellerOrderAcceptanceController::class, 'acceptOrder']);
+    Route::post('store-orders/{storeOrderId}/reject', [SellerOrderAcceptanceController::class, 'rejectOrder']);
+    Route::put('store-orders/{storeOrderId}/delivery', [SellerOrderAcceptanceController::class, 'updateDeliveryDetails']);
+    Route::get('store-orders/acceptance-stats', [SellerOrderAcceptanceController::class, 'getAcceptanceStats']);
 
     // Visitor Tracking & Management
     Route::get('visitors', [\App\Http\Controllers\Api\SellerVisitorController::class, 'getVisitors']);
