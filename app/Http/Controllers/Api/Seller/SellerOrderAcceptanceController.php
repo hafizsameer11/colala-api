@@ -43,6 +43,7 @@ class SellerOrderAcceptanceController extends Controller
 
             return response()->json([
                 'status' => 'success',
+                'store'=>$store,
                 'data' => [
                     'total' => $formattedOrders->count(),
                     'orders' => $formattedOrders,
