@@ -32,6 +32,7 @@ use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 use App\Http\Controllers\Api\SellerPhoneRequestController;
 use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
+use App\Http\Controllers\Api\Seller\SellerInventoryController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -79,6 +80,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('products/create', [ProductController::class, 'create']);
     Route::post('products/update/{id}', [ProductController::class, 'update']);
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
+    
+    // Inventory Management
+    Route::get('inventory', [SellerInventoryController::class, 'getInventory']);
   
     Route::post('products/{productId}/variants/create', [ProductVariantController::class, 'create']);
     Route::post('products/{productId}/variants/update/{variantId}', [ProductVariantController::class, 'update']);
