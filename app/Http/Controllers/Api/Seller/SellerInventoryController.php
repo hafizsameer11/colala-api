@@ -263,7 +263,7 @@ class SellerInventoryController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to get inventory: ' . $e->getMessage());
-            return ResponseHelper::error('Failed to retrieve inventory', 500);
+            return ResponseHelper::error('Failed to retrieve inventory '.$e->getMessage(), 500);
         }
     }
 }
