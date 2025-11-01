@@ -12,8 +12,10 @@ use App\Models\StoreBusinessDetail;
 use App\Models\StoreDeliveryPricing;
 use App\Models\StoreSocialLink;
 use App\Models\User;
+use App\Models\SellerHelpRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class SellerRegistrationController extends Controller
 {
@@ -133,5 +135,75 @@ class SellerRegistrationController extends Controller
             'status'  => true,
             'message' => 'Step 3 completed, seller registration pending approval'
         ]);
+    }
+
+    /**
+     * Submit a help request for seller signup (No authentication required)
+     */
+    public function submitHelpRequest(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'service_type' => 'required|in:store_setup,profile_media,business_docs,store_config,complete_setup,custom',
+            'fee' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:2000',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'full_name' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $helpRequest = SellerHelpRequest::create([
+                'service_type' => $request->service_type,
+                'fee' => $request->fee ?? $this->getDefaultFee($request->service_type),
+                'notes' => $request->notes,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'full_name' => $request->full_name,
+                'status' => 'pending',
+            ]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Your help request has been submitted successfully. Our team will contact you shortly.',
+                'data' => [
+                    'id' => $helpRequest->id,
+                    'service_type' => $helpRequest->service_type,
+                    'fee' => $helpRequest->fee,
+                    'status' => $helpRequest->status,
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to submit help request. Please try again later.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get default fee for service type
+     */
+    private function getDefaultFee(string $serviceType): ?float
+    {
+        $serviceFees = [
+            'store_setup' => 5000,
+            'profile_media' => 3000,
+            'business_docs' => 7000,
+            'store_config' => 4000,
+            'complete_setup' => 15000,
+            'custom' => null,
+        ];
+
+        return $serviceFees[$serviceType] ?? null;
     }
 }
