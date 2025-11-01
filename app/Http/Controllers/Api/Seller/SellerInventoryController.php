@@ -34,7 +34,7 @@ class SellerInventoryController extends Controller
             $query = Product::where('store_id', $store->id)
                 ->with([
                     'category:id,title',
-                    'images:id,product_id,url,is_main',
+                    'images:id,product_id,path,is_main',
                     'variants:id,product_id,sku,color,size,price,discount_price,stock',
                     'orderItems' => function ($q) {
                         $q->select('id', 'product_id', 'variant_id', 'qty', 'line_total')
@@ -181,14 +181,15 @@ class SellerInventoryController extends Controller
                     'images' => $product->images->map(function ($image) {
                         return [
                             'id' => $image->id,
-                            'url' => asset('storage/' . $image->url),
+                            'url' => asset('storage/' . $image->path),
+                            'path' => $image->path,
                             'is_main' => $image->is_main,
                         ];
                     }),
                     'main_image' => $product->images->where('is_main', true)->first()
-                        ? asset('storage/' . $product->images->where('is_main', true)->first()->url)
+                        ? asset('storage/' . $product->images->where('is_main', true)->first()->path)
                         : ($product->images->first() 
-                            ? asset('storage/' . $product->images->first()->url)
+                            ? asset('storage/' . $product->images->first()->path)
                             : null),
                     
                     // Sales statistics
