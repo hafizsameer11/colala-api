@@ -117,6 +117,12 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/users/{id}', [AdminUserController::class, 'update']);
     // Delete user account
     Route::delete('/users/{id}', [AdminUserController::class, 'delete']);
+    // Top up user wallet (admin can top up for any user)
+    Route::post('/users/{id}/wallet/top-up', [AdminUserController::class, 'topUp']);
+    // Withdraw from user wallet (admin can withdraw for any user)
+    Route::post('/users/{id}/wallet/withdraw', [AdminUserController::class, 'withdraw']);
+    // Get user notifications (admin can view any user's notifications)
+    Route::get('/users/{id}/notifications', [AdminUserController::class, 'getUserNotifications']);
 
     // ========================================
     // BUYER ORDER MANAGEMENT MODULE

@@ -7,12 +7,15 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Transaction;
+use App\Models\UserNotification;
+use App\Models\UserActivity;
 use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class AdminUserController extends Controller
 {
@@ -1731,6 +1734,153 @@ class AdminUserController extends Controller
             $user->delete();
 
             return ResponseHelper::success(null, 'User deleted successfully');
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Top up user wallet (Admin can top up for any user)
+     */
+    public function topUp(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:1',
+                'description' => 'nullable|string|max:255'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            $user = User::where('role', 'buyer')->findOrFail($id);
+            $wallet = $this->walletService->topUp($user->id, $request->amount);
+
+            // Log admin activity
+            UserActivity::create([
+                'user_id' => $user->id,
+                'message' => "Wallet topped up by admin: ₦{$request->amount}" . ($request->description ? " - {$request->description}" : ''),
+            ]);
+
+            return ResponseHelper::success([
+                'wallet' => $wallet,
+                'message' => 'Wallet topped up successfully'
+            ], 'Wallet topped up successfully');
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Withdraw from user wallet (Admin can withdraw for any user)
+     */
+    public function withdraw(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'amount' => 'required|numeric|min:1',
+                'description' => 'nullable|string|max:255'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            $user = User::where('role', 'buyer')->findOrFail($id);
+            
+            // Ensure wallet exists
+            $walletData = $this->walletService->getBalance($user->id);
+            $wallet = Wallet::where('user_id', $user->id)->lockForUpdate()->first();
+
+            if (!$wallet || $wallet->shopping_balance < $request->amount) {
+                return ResponseHelper::error('Insufficient wallet balance.', 422);
+            }
+
+            DB::beginTransaction();
+            try {
+                // Deduct from shopping balance
+                $wallet->decrement('shopping_balance', $request->amount);
+
+                // Create transaction record
+                $txId = 'WD-ADMIN-' . now()->format('YmdHis') . '-' . random_int(100000, 999999);
+                Transaction::create([
+                    'tx_id' => $txId,
+                    'amount' => $request->amount,
+                    'status' => 'completed',
+                    'type' => 'withdrawl',
+                    'order_id' => null,
+                    'user_id' => $user->id,
+                ]);
+
+                // Log admin activity
+                UserActivity::create([
+                    'user_id' => $user->id,
+                    'message' => "Amount withdrawn by admin: ₦{$request->amount}" . ($request->description ? " - {$request->description}" : ''),
+                ]);
+
+                DB::commit();
+
+                return ResponseHelper::success([
+                    'wallet' => $this->walletService->getBalance($user->id),
+                    'message' => 'Amount withdrawn successfully'
+                ], 'Amount withdrawn successfully');
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Get user notifications (Admin can view any user's notifications)
+     */
+    public function getUserNotifications(Request $request, $id)
+    {
+        try {
+            $user = User::where('role', 'buyer')->findOrFail($id);
+            $perPage = $request->get('per_page', 20);
+            $status = $request->get('status'); // 'read', 'unread', or null for all
+
+            $query = UserNotification::where('user_id', $user->id)
+                ->orderBy('created_at', 'desc');
+
+            if ($status === 'read') {
+                $query->where('is_read', true);
+            } elseif ($status === 'unread') {
+                $query->where('is_read', false);
+            }
+
+            $notifications = $query->paginate($perPage);
+
+            return ResponseHelper::success([
+                'user' => [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                ],
+                'notifications' => $notifications->items(),
+                'pagination' => [
+                    'current_page' => $notifications->currentPage(),
+                    'last_page' => $notifications->lastPage(),
+                    'per_page' => $notifications->perPage(),
+                    'total' => $notifications->total(),
+                ],
+                'statistics' => [
+                    'total_notifications' => UserNotification::where('user_id', $user->id)->count(),
+                    'unread_count' => UserNotification::where('user_id', $user->id)->where('is_read', false)->count(),
+                    'read_count' => UserNotification::where('user_id', $user->id)->where('is_read', true)->count(),
+                ]
+            ]);
+
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
