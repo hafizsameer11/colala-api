@@ -8,6 +8,7 @@ use App\Models\{StoreVisitor, Store, Chat};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SellerVisitorController extends Controller
 {
@@ -130,11 +131,17 @@ class SellerVisitorController extends Controller
             ->where('user_id', $visitor->user_id)
             ->exists();
 
+        // Handle last_visit - it might be a string from MAX() aggregation or a Carbon instance
+        $lastVisit = $visitor->last_visit ?? $visitor->created_at;
+        if (is_string($lastVisit)) {
+            $lastVisit = Carbon::parse($lastVisit);
+        }
+
         return [
             'id' => $visitor->id,
             'visit_type' => $visitor->visit_type,
-            'last_visit' => $visitor->last_visit ?? $visitor->created_at,
-            'formatted_date' => ($visitor->last_visit ?? $visitor->created_at)->format('d M Y, h:i A'),
+            'last_visit' => $lastVisit,
+            'formatted_date' => $lastVisit->format('d M Y, h:i A'),
             'visitor' => [
                 'id' => $visitor->user_id,
                 'name' => $user?->full_name ?? 'Unknown',
