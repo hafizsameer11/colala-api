@@ -36,6 +36,26 @@ class SellerStoreSettingsController extends Controller
             return ResponseHelper::error('Failed to retrieve phone visibility setting', 500);
         }
     }
+    public function getPhoneVisibilityBySellerId($sellerId)
+    {
+        try {
+            $user = Auth::user();
+            $store = Store::where('user_id', $sellerId)->first();
+
+            if (!$store) {
+                return ResponseHelper::error('Store not found', 404);
+            }
+
+            return ResponseHelper::success([
+                'is_phone_visible' => (bool) $store->is_phone_visible,
+                'store_phone' => $store->store_phone,
+            ], 'Phone visibility setting retrieved successfully by seller id');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get phone visibility setting by seller id: ' . $e->getMessage());
+            return ResponseHelper::error('Failed to retrieve phone visibility setting', 500);
+        }
+    }
 
     /**
      * Update store phone visibility setting

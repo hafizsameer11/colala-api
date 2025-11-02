@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Buyer\PhoneRequestController;
 use App\Http\Controllers\Api\Buyer\BuyerOrderPaymentController;
 use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
+use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\UserActivityController;
 
 require __DIR__ . '/seller.php';
@@ -229,6 +230,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('phone-request', [PhoneRequestController::class, 'requestPhoneNumber']);
         Route::get('phone-request/status', [PhoneRequestController::class, 'checkPhoneRequestStatus']);
         Route::get('phone-request/revealed', [PhoneRequestController::class, 'getRevealedPhoneNumbers']);
+        Route::get('settings/phone-visibility/{sellerId}', [SellerStoreSettingsController::class, 'getPhoneVisibilityBySellerId']);
 
         // Wallet
         Route::get('getBalance', [WalletController::class, 'getBalance']);
