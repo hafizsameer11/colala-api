@@ -280,8 +280,9 @@ class SellerVisitorController extends Controller
                 \App\Models\ChatMessage::create([
                     'chat_id' => $chat->id,
                     'sender_id' => $user->id,
-                    'sender_type' => 'seller',
+                    'sender_type' => 'store',
                     'message' => $welcomeMessage,
+                    
                 ]);
             }
 
