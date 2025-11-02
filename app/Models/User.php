@@ -40,6 +40,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_seen_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -150,5 +151,56 @@ class User extends Authenticatable
     public function addresses()
     {
         return $this->hasMany(UserAddress::class);
+    }
+
+    /**
+     * Check if user is currently online
+     * User is considered online if last_seen_at is within the last 5 minutes
+     */
+    public function isOnline(int $onlineThresholdMinutes = 5): bool
+    {
+        if (!$this->last_seen_at) {
+            return false;
+        }
+
+        return $this->last_seen_at->diffInMinutes(now()) <= $onlineThresholdMinutes;
+    }
+
+    /**
+     * Get formatted last seen time
+     */
+    public function getLastSeenFormatted(): ?string
+    {
+        if (!$this->last_seen_at) {
+            return null;
+        }
+
+        $diffInMinutes = $this->last_seen_at->diffInMinutes(now());
+
+        if ($diffInMinutes < 1) {
+            return 'Just now';
+        } elseif ($diffInMinutes < 60) {
+            return $diffInMinutes . ' minutes ago';
+        } elseif ($diffInMinutes < 1440) { // Less than 24 hours
+            $hours = floor($diffInMinutes / 60);
+            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
+        } elseif ($diffInMinutes < 10080) { // Less than 7 days
+            $days = floor($diffInMinutes / 1440);
+            return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
+        } else {
+            return $this->last_seen_at->format('d M Y, h:i A');
+        }
+    }
+
+    /**
+     * Get online status with formatted last seen
+     */
+    public function getOnlineStatus(int $onlineThresholdMinutes = 5): array
+    {
+        return [
+            'is_online' => $this->isOnline($onlineThresholdMinutes),
+            'last_seen_at' => $this->last_seen_at?->toIso8601String(),
+            'last_seen_formatted' => $this->getLastSeenFormatted(),
+        ];
     }
 }

@@ -149,6 +149,9 @@ class SellerVisitorController extends Controller
                 'phone' => $user?->phone,
                 'profile_picture' => $user && $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
                 'has_chat' => $chatExists,
+                'is_online' => $user ? $user->isOnline() : false,
+                'last_seen_at' => $user?->last_seen_at?->toIso8601String(),
+                'last_seen_formatted' => $user?->getLastSeenFormatted(),
             ],
             'product' => $visitor->product ? [
                 'id' => $visitor->product->id,
@@ -216,6 +219,9 @@ class SellerVisitorController extends Controller
                 'first_visit' => $visits->last()->created_at->format('d M Y, h:i A'),
                 'last_visit' => $visits->first()->created_at->format('d M Y, h:i A'),
                 'total_visits' => $visits->count(),
+                'is_online' => $user ? $user->isOnline() : false,
+                'last_seen_at' => $user?->last_seen_at?->toIso8601String(),
+                'last_seen_formatted' => $user?->getLastSeenFormatted(),
             ];
 
             return ResponseHelper::success([

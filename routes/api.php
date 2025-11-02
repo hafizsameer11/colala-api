@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Buyer\PhoneRequestController;
 use App\Http\Controllers\Api\Buyer\BuyerOrderPaymentController;
 use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
+use App\Http\Controllers\Api\UserActivityController;
 
 require __DIR__ . '/seller.php';
 require __DIR__ . '/admin.php';
@@ -235,6 +236,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Knowledge Base
         Route::get('knowledge-base', [BuyerKnowledgeBaseController::class, 'index']);
         Route::get('knowledge-base/{id}', [BuyerKnowledgeBaseController::class, 'show']);
+
+        // User Activity (Heartbeat & Online Status)
+        Route::post('activity/heartbeat', [UserActivityController::class, 'heartbeat']);
+        Route::get('activity/status', [UserActivityController::class, 'getMyStatus']);
     });
 
     // ---------- USER PROFILE ----------

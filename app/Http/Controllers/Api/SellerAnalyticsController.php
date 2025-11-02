@@ -29,9 +29,34 @@ class SellerAnalyticsController extends Controller
                 return ResponseHelper::error('Store not found', 404);
             }
 
-            $period = $request->query('period', '30'); // days
-            $startDate = Carbon::now()->subDays($period);
-            $endDate = Carbon::now();
+            // Support both date range and period parameter
+            // Priority: date_from/date_to > period
+            if ($request->has('date_from') && $request->has('date_to')) {
+                // Custom date range
+                $startDate = Carbon::parse($request->query('date_from'))->startOfDay();
+                $endDate = Carbon::parse($request->query('date_to'))->endOfDay();
+                
+                // Validate date range
+                if ($startDate->gt($endDate)) {
+                    return ResponseHelper::error('date_from must be before or equal to date_to', 422);
+                }
+                
+                $dateRange = [
+                    'from' => $startDate->format('Y-m-d'),
+                    'to' => $endDate->format('Y-m-d'),
+                ];
+            } else {
+                // Use period parameter (defaults to 30 days)
+                $period = (int)$request->query('period', 30);
+                $startDate = Carbon::now()->subDays($period)->startOfDay();
+                $endDate = Carbon::now()->endOfDay();
+                
+                $dateRange = [
+                    'period_days' => $period,
+                    'from' => $startDate->format('Y-m-d'),
+                    'to' => $endDate->format('Y-m-d'),
+                ];
+            }
 
             // Summary chart data (daily breakdown)
             $chartData = $this->getChartData($store->id, $startDate, $endDate);
@@ -45,7 +70,7 @@ class SellerAnalyticsController extends Controller
             ];
 
             return ResponseHelper::success([
-                'period' => $period,
+                'date_range' => $dateRange,
                 'chart_data' => $chartData,
                 'analytics' => $analytics,
             ]);

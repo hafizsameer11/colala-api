@@ -15,6 +15,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'store.access' => \App\Http\Middleware\StoreAccessMiddleware::class,
         ]);
+        
+        // Track user activity - only runs if user is authenticated (checks Auth::check() internally)
+        $middleware->web(append: [
+            \App\Http\Middleware\TrackUserActivity::class,
+        ]);
+        
+        $middleware->api(append: [
+            \App\Http\Middleware\TrackUserActivity::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

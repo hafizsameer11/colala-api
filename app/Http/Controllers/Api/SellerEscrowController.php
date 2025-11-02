@@ -16,7 +16,8 @@ class SellerEscrowController extends Controller
 {
     /**
      * GET /api/seller/escrow
-     * Return the seller's locked escrow balance and history for their products.
+     * Return the seller's locked escrow balance and full escrow history.
+     * Matches the buyer escrow format for consistency.
      */
     public function index(Request $request)
     {
@@ -28,56 +29,42 @@ class SellerEscrowController extends Controller
                 return ResponseHelper::error('Store not found', 404);
             }
 
-            // Get escrow funds for products from this store
-            $lockedBalance = Escrow::whereHas('orderItem.product', function($query) use ($store) {
+            // Get escrow funds locked for this store (using store_order_id)
+            $lockedBalance = Escrow::whereHas('storeOrder', function($query) use ($store) {
                     $query->where('store_id', $store->id);
                 })
                 ->where('status', 'locked')
                 ->sum('amount');
 
-            // Get escrow history for this store's products
+            // Full history with all related data (matching buyer format)
             $history = Escrow::with([
-                    'order:id,order_no,payment_status,user_id',
-                    'orderItem:id,product_id,store_order_id,name,line_total',
-                    'orderItem.product:id,name,price,store_id',
-                    'order.user:id,full_name,email'
+                    'order:id,order_no,payment_status,status,user_id',
+                    'order.user:id,full_name,email,phone,profile_picture',
+                    'storeOrder',
+                    'storeOrder.store',
+                    'storeOrder.items',
+                    'storeOrder.items.product',
+                    'storeOrder.items.product.images'
                 ])
-                ->whereHas('orderItem.product', function($query) use ($store) {
+                ->whereHas('storeOrder', function($query) use ($store) {
                     $query->where('store_id', $store->id);
                 })
                 ->latest()
                 ->get();
 
-            // Calculate total escrow released (completed orders)
-            $releasedBalance = Escrow::whereHas('orderItem.product', function($query) use ($store) {
-                    $query->where('store_id', $store->id);
-                })
-                ->where('status', 'released')
-                ->sum('amount');
-
-            // Calculate total escrow refunded
-            $refundedBalance = Escrow::whereHas('orderItem.product', function($query) use ($store) {
-                    $query->where('store_id', $store->id);
-                })
-                ->where('status', 'refunded')
-                ->sum('amount');
-
             return ResponseHelper::success([
                 'locked_balance' => (float)$lockedBalance,
-                'released_balance' => (float)$releasedBalance,
-                'refunded_balance' => (float)$refundedBalance,
-                'total_escrow_processed' => (float)($releasedBalance + $refundedBalance),
                 'history' => $history
-            ], 'Seller escrow data retrieved successfully');
+            ]);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return ResponseHelper::error($e->getMessage(), 500);
+            Log::error('Seller escrow index error: ' . $e->getMessage());
+            return ResponseHelper::error($e->getMessage());
         }
     }
 
     /**
      * GET /api/seller/escrow/history
-     * Return paginated escrow history for seller's products.
+     * Return paginated escrow history (matching buyer format).
      */
     public function history(Request $request)
     {
@@ -90,21 +77,71 @@ class SellerEscrowController extends Controller
             }
 
             $history = Escrow::with([
-                    'order:id,order_no,payment_status,user_id',
-                    'orderItem:id,product_id,store_order_id,name,line_total',
-                    'orderItem.product:id,name,price,store_id',
-                    'order.user:id,full_name,email'
+                    'order:id,order_no,payment_status,status,user_id',
+                    'order.user:id,full_name,email,phone,profile_picture',
+                    'storeOrder',
+                    'storeOrder.store',
+                    'storeOrder.items',
+                    'storeOrder.items.product',
+                    'storeOrder.items.product.images'
                 ])
-                ->whereHas('orderItem.product', function($query) use ($store) {
+                ->whereHas('storeOrder', function($query) use ($store) {
                     $query->where('store_id', $store->id);
                 })
                 ->latest()
                 ->paginate($request->get('per_page', 15));
 
-            return ResponseHelper::success($history, 'Seller escrow history retrieved successfully');
+            // Transform the paginated results (matching buyer format)
+            $history->getCollection()->transform(function ($escrow) {
+                return [
+                    'id' => $escrow->id,
+                    'amount' => $escrow->amount,
+                    'shipping_fee' => $escrow->shipping_fee,
+                    'status' => $escrow->status,
+                    'created_at' => $escrow->created_at,
+                    'order' => [
+                        'id' => $escrow->order->id ?? null,
+                        'order_no' => $escrow->order->order_no ?? null,
+                        'payment_status' => $escrow->order->payment_status ?? null,
+                        'status' => $escrow->order->status ?? null,
+                    ],
+                    'buyer' => $escrow->order && $escrow->order->user ? [
+                        'id' => $escrow->order->user->id,
+                        'full_name' => $escrow->order->user->full_name,
+                        'email' => $escrow->order->user->email,
+                        'phone' => $escrow->order->user->phone,
+                        'profile_picture' => $escrow->order->user->profile_picture 
+                            ? asset('storage/' . $escrow->order->user->profile_picture) 
+                            : null,
+                    ] : null,
+                    'store_order' => $escrow->storeOrder ? [
+                        'id' => $escrow->storeOrder->id,
+                        'status' => $escrow->storeOrder->status,
+                        'items_subtotal' => $escrow->storeOrder->items_subtotal,
+                        'shipping_fee' => $escrow->storeOrder->shipping_fee,
+                        'total' => $escrow->storeOrder->subtotal_with_shipping,
+                    ] : null,
+                    'items' => $escrow->storeOrder && $escrow->storeOrder->items 
+                        ? $escrow->storeOrder->items->map(function ($item) {
+                            return [
+                                'id' => $item->id,
+                                'name' => $item->name,
+                                'qty' => $item->qty,
+                                'unit_price' => $item->unit_price,
+                                'line_total' => $item->line_total,
+                                'product_image' => $item->product && $item->product->images->isNotEmpty()
+                                    ? asset('storage/' . $item->product->images->first()->path)
+                                    : null,
+                            ];
+                        })->toArray()
+                        : [],
+                ];
+            });
+
+            return ResponseHelper::success($history);
         } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return ResponseHelper::error($e->getMessage(), 500);
+            Log::error('Seller escrow history error: ' . $e->getMessage());
+            return ResponseHelper::error($e->getMessage());
         }
     }
 
