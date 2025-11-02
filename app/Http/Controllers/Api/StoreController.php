@@ -73,13 +73,16 @@ public function getById(Request $req, $id)
         if (!$store->is_phone_visible) {
             $store->store_phone = null;
         }
-        StoreVisitor::create([
-            'store_id' => $id,
-            'user_id' => $user->id,
-            'visit_type' => 'store',
-            'ip_address' => $req->ip(),
-            'user_agent' => $req->userAgent(),
-        ]);
+        if($user){
+
+            StoreVisitor::create([
+                'store_id' => $id,
+                'user_id' => $user->id,
+                'visit_type' => 'store',
+                'ip_address' => $req->ip(),
+                'user_agent' => $req->userAgent(),
+            ]);
+        }
 
         // Track store visit (must be after store is loaded to ensure store exists)
         // \App\Helpers\VisitorTracker::trackStoreVisit($id, $req);
