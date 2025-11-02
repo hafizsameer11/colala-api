@@ -63,6 +63,27 @@ class ProductService
         return $products;
     }
 
+    /**
+     * Get all products that have referral fees set (for buyers)
+     * Returns products with referral_fee not null and all product details
+     */
+    public function getReferralProducts()
+    {
+        $products = Product::with(['variants.images', 'images', 'store', 'category'])
+            ->whereNotNull('referral_fee')
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->latest()
+            ->get();
+
+        // Record impression for each product
+        foreach ($products as $product) {
+            ProductStatHelper::record($product->id, 'impression');
+        }
+
+        return $products;
+    }
+
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {

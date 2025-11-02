@@ -36,6 +36,27 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Get products with referral fees set
+     * Returns products that have referral_fee not null
+     */
+    public function getReferralProducts(Request $request){
+        try {
+            $products = $this->productService->getReferralProducts();
+            $user = $request->user();
+            
+            $responseData = [
+                'user_code' => $user ? $user->user_code : null,
+                'products' => $products
+            ];
+            
+            return ResponseHelper::success($responseData);
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
     public function create(ProductCreateUpdateRequest $request)
     {
         try {

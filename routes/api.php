@@ -98,6 +98,7 @@ Route::prefix('brands')->group(function () {
 
 // Products (Buyer)
 Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
+Route::get('buyer/product/referral-products', [ProductController::class, 'getReferralProducts']);
 Route::get('buyer/categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
 Route::get('buyer/product-details/{id}', [ProductBrowseController::class, 'productDetails']);
 Route::get('buyer/products/top-selling', [ProductBrowseController::class, 'topSelling']);
