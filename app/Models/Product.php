@@ -26,6 +26,8 @@ class Product extends Model
         'is_sold',
         'is_unavailable',
         'quantity',
+        'referral_fee',
+        'referral_person_limit',
         'vision_product_name',
         'vision_product_set',
         'vision_index_status',

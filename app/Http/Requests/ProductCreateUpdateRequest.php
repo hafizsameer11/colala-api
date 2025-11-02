@@ -36,6 +36,9 @@ class ProductCreateUpdateRequest extends FormRequest
             'coupon_code'              => 'nullable|string|max:50',
             'discount'                 => 'nullable|string|max:50',
             'loyality_points_applicable' => 'boolean',
+            'quantity'                 => 'nullable|integer|min:0',
+            'referral_fee'             => 'nullable|numeric|min:0',
+            'referral_person_limit'   => 'nullable|integer|min:1',
 
             /* ---------- 🖼️ PRODUCT IMAGES ---------- */
             'images'                   => 'array',

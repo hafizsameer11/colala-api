@@ -118,7 +118,9 @@ class AdminProductServiceController extends Controller
                 'price' => 'required|numeric|min:0',
                 'discount_price' => 'nullable|numeric|min:0',
                 'category_id' => 'required|exists:categories,id',
-                'quantity' => 'required|integer|min:0',
+                'quantity' => 'nullable|integer|min:0',
+                'referral_fee' => 'nullable|numeric|min:0',
+                'referral_person_limit' => 'nullable|integer|min:1',
                 'images' => 'nullable|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
                 'video' => 'nullable|file|mimes:mp4,avi,mov|max:10240',
@@ -149,7 +151,9 @@ class AdminProductServiceController extends Controller
                     'price' => $data['price'],
                     'discount_price' => $data['discount_price'] ?? null,
                     'category_id' => $data['category_id'],
-                    'quantity' => $data['quantity'],
+                    'quantity' => $data['quantity'] ?? 0,
+                    'referral_fee' => $data['referral_fee'] ?? null,
+                    'referral_person_limit' => $data['referral_person_limit'] ?? null,
                 ]);
 
                 // Handle video upload

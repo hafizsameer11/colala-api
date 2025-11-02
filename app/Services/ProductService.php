@@ -75,10 +75,14 @@ class ProductService
             $data['store_id'] = $store->id;
 
             /** Create main product */
+            // Handle quantity: if provided directly, use it; otherwise calculate from variants
+            $quantityFromRequest = $data['quantity'] ?? null;
+            unset($data['quantity']); // Remove from data as we'll set it after variant processing
+            
             $product = Product::create($data);
             
-            // Set initial quantity based on variants or default to 0
-            $initialQuantity = 0;
+            // Set initial quantity based on variants or use provided quantity
+            $initialQuantity = $quantityFromRequest ?? 0;
               if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
             $videoPath = $data['video']->store('products/videos', 'public');
             $product->update(['video' => $videoPath]);
@@ -98,30 +102,59 @@ class ProductService
 
             /** Handle variants (if provided) */
             if (!empty($data['variants'])) {
-                foreach ($data['variants'] as $i => $variantData) {
-                    // Create variant
-                    $variant = ProductVariant::create([
-                        'product_id'      => $product->id,
-                        'sku'             => $variantData['sku'] ?? null,
-                        'color'           => $variantData['color'] ?? null,
-                        'size'            => $variantData['size'] ?? null,
-                        'price'           => $variantData['price'] ?? null,
-                        'discount_price'  => $variantData['discount_price'] ?? null,
-                        'stock'           => $variantData['stock'] ?? 0,
-                    ]);
-                    
-                    // Add to total quantity
-                    $initialQuantity += $variantData['stock'] ?? 0;
+                // Only calculate from variants if quantity was not provided directly
+                if ($quantityFromRequest === null) {
+                    foreach ($data['variants'] as $i => $variantData) {
+                        // Create variant
+                        $variant = ProductVariant::create([
+                            'product_id'      => $product->id,
+                            'sku'             => $variantData['sku'] ?? null,
+                            'color'           => $variantData['color'] ?? null,
+                            'size'            => $variantData['size'] ?? null,
+                            'price'           => $variantData['price'] ?? null,
+                            'discount_price'  => $variantData['discount_price'] ?? null,
+                            'stock'           => $variantData['stock'] ?? 0,
+                        ]);
+                        
+                        // Add to total quantity
+                        $initialQuantity += $variantData['stock'] ?? 0;
 
-                    // Upload variant images
-                    if (!empty($variantData['images'])) {
-                        foreach ($variantData['images'] as $file) {
-                            $path = $file->store('products', 'public');
-                            ProductImage::create([
-                                'product_id' => $product->id,
-                                'variant_id' => $variant->id,
-                                'path'       => $path,
-                            ]);
+                        // Upload variant images
+                        if (!empty($variantData['images'])) {
+                            foreach ($variantData['images'] as $file) {
+                                $path = $file->store('products', 'public');
+                                ProductImage::create([
+                                    'product_id' => $product->id,
+                                    'variant_id' => $variant->id,
+                                    'path'       => $path,
+                                ]);
+                            }
+                        }
+                    }
+                } else {
+                    // Quantity was provided directly, still create variants but don't calculate quantity
+                    foreach ($data['variants'] as $i => $variantData) {
+                        // Create variant
+                        $variant = ProductVariant::create([
+                            'product_id'      => $product->id,
+                            'sku'             => $variantData['sku'] ?? null,
+                            'color'           => $variantData['color'] ?? null,
+                            'size'            => $variantData['size'] ?? null,
+                            'price'           => $variantData['price'] ?? null,
+                            'discount_price'  => $variantData['discount_price'] ?? null,
+                            'stock'           => $variantData['stock'] ?? 0,
+                        ]);
+
+                        // Upload variant images
+                        if (!empty($variantData['images'])) {
+                            foreach ($variantData['images'] as $file) {
+                                $path = $file->store('products', 'public');
+                                ProductImage::create([
+                                    'product_id' => $product->id,
+                                    'variant_id' => $variant->id,
+                                    'path'       => $path,
+                                ]);
+                            }
                         }
                     }
                 }
@@ -142,6 +175,11 @@ class ProductService
         return DB::transaction(function () use ($id, $data) {
             $storeId = Store::where('user_id', Auth::id())->pluck('id')->first();
             $product = Product::where('store_id', $storeId)->findOrFail($id);
+            
+            // Handle quantity: if provided directly, use it; otherwise recalculate from variants
+            $quantityFromRequest = $data['quantity'] ?? null;
+            unset($data['quantity']); // Remove from data as we'll handle it separately
+            
             $product->update($data);
 
             /** Replace or append new product images */
@@ -201,8 +239,12 @@ class ProductService
                 }
             }
             
-            // Update product quantity after variant changes
-            $product->updateQuantityFromVariants();
+            // Update product quantity: use provided quantity or recalculate from variants
+            if ($quantityFromRequest !== null) {
+                $product->update(['quantity' => $quantityFromRequest]);
+            } else {
+                $product->updateQuantityFromVariants();
+            }
 
             return $product->load(['images', 'variants.images']);
         });
