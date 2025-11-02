@@ -40,6 +40,12 @@ class OrderAcceptanceService
                 'delivery_notes' => $data['delivery_notes'] ?? null,
             ]);
 
+            // ✅ Update parent Order totals with shipping fee
+            $order = $storeOrder->order;
+            $order->shipping_total = $deliveryFee;
+            $order->grand_total = $order->items_total + $deliveryFee + $order->platform_fee;
+            $order->save();
+
             // Update order tracking
             OrderTracking::where('store_order_id', $storeOrder->id)->update([
                 'status' => 'accepted',
@@ -148,6 +154,12 @@ class OrderAcceptanceService
             $deliveryFee = (float) $data['delivery_fee'];
             $updateData['shipping_fee'] = $deliveryFee;
             $updateData['subtotal_with_shipping'] = $storeOrder->items_subtotal + $deliveryFee;
+            
+            // ✅ Update parent Order totals with new shipping fee
+            $order = $storeOrder->order;
+            $order->shipping_total = $deliveryFee;
+            $order->grand_total = $order->items_total + $deliveryFee + $order->platform_fee;
+            $order->save();
         }
 
         $storeOrder->update($updateData);

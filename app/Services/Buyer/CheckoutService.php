@@ -22,7 +22,7 @@ class CheckoutService
 
         $summaryStores = [];
         $itemsTotal = 0;
-        $shippingTotal = 0;     // no delivery pricing → 0 shipping
+        $shippingTotal = 0;     
         $platformFee = 0;
         $discountTotal = 0;
 
@@ -34,8 +34,8 @@ class CheckoutService
                 $unit = $i->unit_discount_price ?? $i->unit_price ?? $i->product->discount_price ?? $i->product->price;
                 $lineTotal = $unit * $i->qty;
                 $itemsSubtotal += $lineTotal;
-                $deliveryFee = $i->product->getDeliveryFee($addressId);
-                $shippingTotal += $deliveryFee;
+                // ✅ Shipping fee will be set by seller when accepting order
+                // No need to calculate delivery fee here
 
                 $lines[] = [
                     'product_id' => $i->product_id,
@@ -52,12 +52,14 @@ class CheckoutService
             $summaryStores[] = [
                 'store_id' => $storeId,
                 'items_subtotal' => $itemsSubtotal,
-                'subtotal_with_shipping' => $itemsSubtotal,
-                'shipping_fee' => $shippingTotal,
+                'subtotal_with_shipping' => $itemsSubtotal, // Will be updated when seller sets shipping
+                'shipping_fee' => 0, // ✅ Shipping will be set by seller during order acceptance
                 'lines' => $lines,
             ];
         }
 
+        // ✅ Shipping total is 0 - will be added when seller accepts order
+        $shippingTotal = 0;
         $platformFee = round($itemsTotal * 0.015, 2); // 1.5%
         $grand = $itemsTotal + $shippingTotal + $platformFee - $discountTotal;
 
@@ -82,7 +84,7 @@ class CheckoutService
             foreach ($preview['stores'] as $S) {
                 // Calculate per-store totals
                 $storeItemsTotal = $S['items_subtotal'];
-                $storeShippingTotal = $S['shipping_fee'] ?? 0;
+                $storeShippingTotal = 0; // ✅ Shipping will be set by seller when accepting order
                 $storePlatformFee = round($storeItemsTotal * 0.015, 2); // 1.5%
                 $storeGrandTotal = $storeItemsTotal + $storeShippingTotal + $storePlatformFee;
 
@@ -156,7 +158,7 @@ class CheckoutService
                     UserNotificationHelper::notify(
                         $store->user->id,
                         'New Order Received',
-                        "You have received a new order #{$order->order_no} for ₦" . number_format($storeGrandTotal, 2)
+                        "You have received a new order #{$order->order_no}. Items total: ₦" . number_format($storeItemsTotal, 2) . " (Shipping fee to be set upon acceptance)"
                     );
                 }
 
@@ -173,7 +175,7 @@ class CheckoutService
             UserNotificationHelper::notify(
                 $cart->user_id,
                 'Orders Placed Successfully',
-                "Your " . count($orders) . " order(s) have been placed successfully. Total: ₦" . number_format($preview['grand_total'], 2)
+                "Your " . count($orders) . " order(s) have been placed successfully. Items total: ₦" . number_format($preview['items_total'], 2) . ". Shipping fees will be set by sellers upon order acceptance."
             );
 
             return $orders;
@@ -221,12 +223,18 @@ class CheckoutService
             ]);
 
             // ✅ Lock escrow funds for each order item
+            // Use the shipping fee from store order (set by seller) instead of calculating
+            $storeOrder = $order->storeOrders->first();
+            $storeShippingFee = $storeOrder ? (float) ($storeOrder->shipping_fee ?? 0) : 0;
+            $itemsCount = $storeOrder ? $storeOrder->items->count() : 0;
+            $perItemShipping = $itemsCount > 0 ? ($storeShippingFee / $itemsCount) : 0;
+
             foreach ($order->storeOrders as $storeOrder) {
                 foreach ($storeOrder->items as $item) {
-                    $perItemShipping = (float) ($item->product?->getDeliveryFee($order->delivery_address_id) ?? 0);
                     Escrow::create([
                         'user_id'       => $user->id,
                         'order_id'      => $order->id,
+                        'store_order_id' => $storeOrder->id,
                         'order_item_id' => $item->id,
                         'amount'        => $item->line_total + $perItemShipping,
                         'status'        => 'locked',
