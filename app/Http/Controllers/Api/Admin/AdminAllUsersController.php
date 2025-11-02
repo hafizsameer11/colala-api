@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Models\Escrow;
 use App\Models\LoyaltyPoint;
 use App\Models\Order;
 use App\Models\Store;
@@ -112,10 +113,13 @@ class AdminAllUsersController extends Controller
                 ],
                 'wallet_info' => $user->wallet ? [
                     'id' => $user->wallet->id,
-                    'balance' => $user->wallet->balance,
-                    'escrow_balance' => $user->wallet->escrow_balance,
-                    'points_balance' => $user->wallet->points_balance,
+                    'shopping_balance' => $user->wallet->shopping_balance,
+                    'reward_balance' => $user->wallet->reward_balance,
+                    'referral_balance' => $user->wallet->referral_balance,
+                    'loyality_points' => $user->wallet->loyality_points,
+                    'escrow_balance' => Escrow::where('user_id', $user->id)->where('status', 'locked')->sum('amount'),
                     'created_at' => $user->wallet->created_at,
+                    'updated_at' => $user->wallet->updated_at,
                 ] : null,
                 'store_info' => $user->store ? [
                     'store_id' => $user->store->id,
@@ -298,6 +302,11 @@ class AdminAllUsersController extends Controller
     private function formatUsersData($users)
     {
         return $users->map(function ($user) {
+            $escrowBalance = 0;
+            if ($user->wallet) {
+                $escrowBalance = Escrow::where('user_id', $user->id)->where('status', 'locked')->sum('amount');
+            }
+            
             return [
                 'id' => $user->id,
                 'full_name' => $user->full_name,
@@ -306,9 +315,11 @@ class AdminAllUsersController extends Controller
                 'role' => $user->role,
                 'status' => $user->status,
                 'profile_picture' => $user->profile_picture,
-                'wallet_balance' => $user->wallet ? $user->wallet->balance : 0,
-                'escrow_balance' => $user->wallet ? $user->wallet->escrow_balance : 0,
-                'points_balance' => $user->wallet ? $user->wallet->points_balance : 0,
+                'shopping_balance' => $user->wallet ? $user->wallet->shopping_balance : 0,
+                'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,
+                'referral_balance' => $user->wallet ? $user->wallet->referral_balance : 0,
+                'loyality_points' => $user->wallet ? $user->wallet->loyality_points : 0,
+                'escrow_balance' => $escrowBalance,
                 'store_name' => $user->store ? $user->store->store_name : null,
                 'created_at' => $user->created_at,
                 'formatted_date' => $user->created_at ? $user->created_at->format('d-m-Y H:i A') : null,
