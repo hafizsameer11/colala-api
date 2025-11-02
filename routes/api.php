@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Buyer\PhoneRequestController;
 use App\Http\Controllers\Api\Buyer\BuyerOrderPaymentController;
+use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
 
 require __DIR__ . '/seller.php';
 require __DIR__ . '/admin.php';
@@ -230,6 +231,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Wallet
         Route::get('getBalance', [WalletController::class, 'getBalance']);
+
+        // Knowledge Base
+        Route::get('knowledge-base', [BuyerKnowledgeBaseController::class, 'index']);
+        Route::get('knowledge-base/{id}', [BuyerKnowledgeBaseController::class, 'show']);
     });
 
     // ---------- USER PROFILE ----------

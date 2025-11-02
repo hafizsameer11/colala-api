@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Admin\AdminSupportController;
 use App\Http\Controllers\Api\Admin\AdminDisputeController;
 use App\Http\Controllers\Api\Admin\AdminUserManagementController;
 use App\Http\Controllers\Api\Admin\AdminFaqController;
+use App\Http\Controllers\Api\Admin\AdminKnowledgeBaseController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -860,4 +861,20 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/faq/bulk-action', [AdminFaqController::class, 'bulkAction']);
     // Update FAQ category
     Route::put('/faq/categories/{id}', [AdminFaqController::class, 'updateCategory']);
+
+    // ========================================
+    // KNOWLEDGE BASE MANAGEMENT MODULE
+    // ========================================
+    // Get all knowledge base items with filtering
+    Route::get('/knowledge-base', [AdminKnowledgeBaseController::class, 'index']);
+    // Get single knowledge base item
+    Route::get('/knowledge-base/{id}', [AdminKnowledgeBaseController::class, 'show']);
+    // Create new knowledge base item
+    Route::post('/knowledge-base', [AdminKnowledgeBaseController::class, 'store']);
+    // Update knowledge base item
+    Route::put('/knowledge-base/{id}', [AdminKnowledgeBaseController::class, 'update']);
+    // Delete knowledge base item
+    Route::delete('/knowledge-base/{id}', [AdminKnowledgeBaseController::class, 'destroy']);
+    // Toggle active status
+    Route::post('/knowledge-base/{id}/toggle-status', [AdminKnowledgeBaseController::class, 'toggleStatus']);
 });

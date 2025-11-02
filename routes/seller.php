@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\SellerPhoneRequestController;
 use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\Seller\SellerInventoryController;
+use App\Http\Controllers\Api\Seller\SellerKnowledgeBaseController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -224,6 +225,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Store Settings (Phone Visibility)
     Route::get('settings/phone-visibility', [SellerStoreSettingsController::class, 'getPhoneVisibility']);
     Route::post('settings/phone-visibility', [SellerStoreSettingsController::class, 'updatePhoneVisibility']);
+
+    // Knowledge Base
+    Route::get('knowledge-base', [SellerKnowledgeBaseController::class, 'index']);
+    Route::get('knowledge-base/{id}', [SellerKnowledgeBaseController::class, 'show']);
 
 });
 
