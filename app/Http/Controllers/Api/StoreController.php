@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\Store;
 use App\Models\StoreFollow;
+use App\Models\StoreVisitor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class StoreController extends Controller
         }
     }
 
-public function getById(Request $req, $storeId)
+public function getById(Request $req, $id)
 {
     try {
         $store = Store::with([
@@ -56,14 +57,14 @@ public function getById(Request $req, $storeId)
                 $q->select(DB::raw('COALESCE(SUM(qty),0)'));
             }
         ], 'qty')
-        ->findOrFail($storeId);
+        ->findOrFail($id);
         
         $user=Auth::user();
         $store->posts=Post::where('user_id',$store->user_id)->latest()->get();
         
         //check current user has followed this store or not
         $store->is_followed = $user
-        ? StoreFollow::where('user_id', $user->id)->where('store_id', $storeId)->exists()
+        ? StoreFollow::where('user_id', $user->id)->where('store_id', $id)->exists()
         : false;
         
         $store->rating=round($store->productReviews->avg('rating'),1) ?? 4.7;
@@ -72,9 +73,16 @@ public function getById(Request $req, $storeId)
         if (!$store->is_phone_visible) {
             $store->store_phone = null;
         }
+        StoreVisitor::create([
+            'store_id' => $id,
+            'user_id' => $user->id,
+            'visit_type' => 'store',
+            'ip_address' => $req->ip(),
+            'user_agent' => $req->userAgent(),
+        ]);
 
-        // Track store visit
-        \App\Helpers\VisitorTracker::trackStoreVisit($storeId, $req);
+        // Track store visit (must be after store is loaded to ensure store exists)
+        // \App\Helpers\VisitorTracker::trackStoreVisit($id, $req);
 
         return ResponseHelper::success($store);
     } catch (\Exception $e) {
