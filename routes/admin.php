@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\Admin\AdminDisputeController;
 use App\Http\Controllers\Api\Admin\AdminUserManagementController;
 use App\Http\Controllers\Api\Admin\AdminFaqController;
 use App\Http\Controllers\Api\Admin\AdminKnowledgeBaseController;
+use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -877,4 +878,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::delete('/knowledge-base/{id}', [AdminKnowledgeBaseController::class, 'destroy']);
     // Toggle active status
     Route::post('/knowledge-base/{id}/toggle-status', [AdminKnowledgeBaseController::class, 'toggleStatus']);
+
+    // ========================================
+    // SELLER HELP REQUESTS (LISTING)
+    // ========================================
+    Route::get('/seller-help/requests', [AdminSellerHelpRequestController::class, 'index']);
 });
