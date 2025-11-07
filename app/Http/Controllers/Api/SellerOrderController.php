@@ -44,7 +44,7 @@ class SellerOrderController extends Controller
                 ->where('store_id', $store->id)
                 ->latest()
                 ->paginate(20);
-            $newOrders = StoreOrder::with(['order', 'store', 'items', 'orderTracking'])->whereNot('status', 'delivered')->where('store_id', $store->id)->latest()->paginate(20);
+            $newOrders = StoreOrder::with(['order.user', 'store', 'items', 'orderTracking'])->whereNot('status', 'delivered')->where('store_id', $store->id)->latest()->paginate(20);
             return ResponseHelper::success([
                 'completed_orders' => $completedOrder,
                 'new_orders' => $newOrders

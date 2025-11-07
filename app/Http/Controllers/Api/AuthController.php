@@ -8,12 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Models\UserNotification;
+use App\Models\Subscription;
 use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -136,7 +138,7 @@ class AuthController extends Controller
 }
 
 /**
- * Get authenticated user's plan
+ * Get authenticated user's plan with complete subscription details
  *
  * @param Request $request
  * @return \Illuminate\Http\JsonResponse
@@ -150,10 +152,78 @@ public function getPlan(Request $request)
             return ResponseHelper::error('Unauthenticated', 401);
         }
 
+        // Get user's store
+        $store = $user->store;
+        $subscription = null;
+        $needsRenewal = false;
+        $isExpired = false;
+
+        if ($store) {
+            // Get active subscription for the store
+            $subscription = Subscription::with('plan')
+                ->where('store_id', $store->id)
+                ->where('status', 'active')
+                ->latest()
+                ->first();
+
+            if ($subscription) {
+                // Check if subscription has expired
+                $today = Carbon::today();
+                // end_date is already a Carbon instance due to model cast
+                $endDate = $subscription->end_date instanceof \Carbon\Carbon 
+                    ? $subscription->end_date 
+                    : Carbon::parse($subscription->end_date);
+
+                if ($endDate->lt($today)) {
+                    // Subscription has expired - update user plan to basic
+                    $user->plan = 'basic';
+                    $user->save();
+
+                    // Update subscription status to expired
+                    $subscription->status = 'expired';
+                    $subscription->save();
+
+                    $isExpired = true;
+                    $needsRenewal = true;
+                } elseif ($endDate->lte($today->copy()->addDays(7))) {
+                    // Subscription expires within 7 days - needs renewal
+                    $needsRenewal = true;
+                }
+            }
+        }
+
+        // If no active subscription or expired, ensure user plan is basic
+        if (!$subscription || $isExpired) {
+            if ($user->plan !== 'basic') {
+                $user->plan = 'basic';
+                $user->save();
+            }
+        }
+
         return ResponseHelper::success([
             'plan' => $user->plan ?? 'basic',
             'user_id' => $user->id,
             'full_name' => $user->full_name,
+            'subscription' => $subscription ? [
+                'id' => $subscription->id,
+                'plan_id' => $subscription->plan_id,
+                'plan_name' => $subscription->plan ? $subscription->plan->name : null,
+                'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
+                'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
+                'status' => $subscription->status,
+                'payment_method' => $subscription->payment_method,
+                'payment_status' => $subscription->payment_status,
+                'transaction_ref' => $subscription->transaction_ref,
+                'created_at' => $subscription->created_at ? $subscription->created_at->format('Y-m-d H:i:s') : null,
+                'updated_at' => $subscription->updated_at ? $subscription->updated_at->format('Y-m-d H:i:s') : null,
+            ] : null,
+            'needs_renewal' => $needsRenewal,
+            'is_expired' => $isExpired,
+            'days_until_expiry' => $subscription && !$isExpired 
+                ? max(0, ($subscription->end_date instanceof \Carbon\Carbon 
+                    ? $subscription->end_date 
+                    : Carbon::parse($subscription->end_date))->diffInDays(Carbon::today(), false))
+                : null,
         ], 'User plan retrieved successfully');
     } catch (\Exception $e) {
         Log::error($e->getMessage());
