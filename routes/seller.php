@@ -153,7 +153,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('products/{id}/mark-sold', [ProductController::class, 'markAsSold']);
     Route::post('products/{id}/mark-unavailable', [ProductController::class, 'markAsUnavailable']);
     
-    // Add-on Services
+    // Add-on ServicesrequestWithdrawrequestWithdraw
     Route::get('add-on-services', [AddOnServiceController::class, 'index']);
     Route::post('add-on-services', [AddOnServiceController::class, 'store']);
     Route::get('add-on-services/{id}', [AddOnServiceController::class, 'show']);
