@@ -5,7 +5,9 @@ namespace App\Services;
 
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class SubscriptionService
 {
@@ -13,6 +15,9 @@ class SubscriptionService
     {
         $start = Carbon::today();
         $end   = $start->copy()->addDays($plan->duration_days);
+        $user=Auth::user();
+        $user=User::where('id',$user->id)->first();
+        $user->plan=$plan->name;
 
         return Subscription::create([
             'store_id'       => $storeId,
