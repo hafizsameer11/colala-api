@@ -247,6 +247,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------- USER PROFILE ----------
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);
+    Route::get('/auth/plan', [AuthController::class, 'getPlan']);
 
     // ---------- WALLET ----------
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);

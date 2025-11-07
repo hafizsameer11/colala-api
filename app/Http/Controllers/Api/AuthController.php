@@ -136,6 +136,32 @@ class AuthController extends Controller
 }
 
 /**
+ * Get authenticated user's plan
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function getPlan(Request $request)
+{
+    try {
+        $user = $request->user();
+        
+        if (!$user) {
+            return ResponseHelper::error('Unauthenticated', 401);
+        }
+
+        return ResponseHelper::success([
+            'plan' => $user->plan ?? 'basic',
+            'user_id' => $user->id,
+            'full_name' => $user->full_name,
+        ], 'User plan retrieved successfully');
+    } catch (\Exception $e) {
+        Log::error($e->getMessage());
+        return ResponseHelper::error($e->getMessage());
+    }
+}
+
+/**
  * Generate guest token for anonymous users
  *
  * @return \Illuminate\Http\JsonResponse
