@@ -18,6 +18,7 @@ class SubscriptionService
         $user=Auth::user();
         $user=User::where('id',$user->id)->first();
         $user->plan=$plan->name;
+        $user->save;
 
         return Subscription::create([
             'store_id'       => $storeId,
