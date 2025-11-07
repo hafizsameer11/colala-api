@@ -20,21 +20,31 @@ public function getForUser($userId)
         ->map(function ($transaction) {
             // Find matching withdrawal request by user_id, amount, and created within 5 minutes
             // This matches the transaction with the withdrawal request created around the same time
-            $transactionDate = $transaction->created_at;
-            $withdrawalRequest = WithdrawalRequest::where('user_id', $transaction->user_id)
-                ->where('amount', $transaction->amount)
-                ->whereBetween('created_at', [
-                    $transactionDate->copy()->subMinutes(5),
-                    $transactionDate->copy()->addMinutes(5)
-                ])
-                ->orderBy('created_at', 'desc')
-                ->first();
+            $withdrawalRequest = null;
             
-            // If not found with time window, try matching by date only (fallback)
-            if (!$withdrawalRequest) {
+            if ($transaction->created_at) {
+                $transactionDate = $transaction->created_at;
                 $withdrawalRequest = WithdrawalRequest::where('user_id', $transaction->user_id)
                     ->where('amount', $transaction->amount)
-                    ->whereDate('created_at', $transactionDate->toDateString())
+                    ->whereBetween('created_at', [
+                        $transactionDate->copy()->subMinutes(5),
+                        $transactionDate->copy()->addMinutes(5)
+                    ])
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                // If not found with time window, try matching by date only (fallback)
+                if (!$withdrawalRequest) {
+                    $withdrawalRequest = WithdrawalRequest::where('user_id', $transaction->user_id)
+                        ->where('amount', $transaction->amount)
+                        ->whereDate('created_at', $transactionDate->toDateString())
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                }
+            } else {
+                // If transaction has no created_at, try matching by user_id and amount only
+                $withdrawalRequest = WithdrawalRequest::where('user_id', $transaction->user_id)
+                    ->where('amount', $transaction->amount)
                     ->orderBy('created_at', 'desc')
                     ->first();
             }
