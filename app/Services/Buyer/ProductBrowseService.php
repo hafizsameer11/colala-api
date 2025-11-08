@@ -62,18 +62,42 @@ class ProductBrowseService {
 
     public function topSelling() {
         // Get products that have active boosts (running or scheduled, and paid)
+        // Use subquery to get the latest boost per product, then join
         $products = Product::with(['images', 'store', 'boost'])
-            ->join('boost_products', 'products.id', '=', 'boost_products.product_id')
-            ->whereIn('boost_products.status', ['running', 'scheduled'])
-            ->where('boost_products.payment_status', 'paid')
-            ->where('products.status', 'active')
-            ->where('products.is_unavailable', false)
-            ->orderByDesc('boost_products.start_date')
-            ->orderByDesc('boost_products.created_at')
-            ->select('products.*')
-            ->distinct()
+            ->whereIn('id', function ($query) {
+                $query->select('product_id')
+                    ->from('boost_products')
+                    ->whereIn('status', ['running', 'scheduled'])
+                    ->where('payment_status', 'paid')
+                    ->whereIn('id', function ($subQuery) {
+                        // Get the latest boost for each product
+                        $subQuery->selectRaw('MAX(id)')
+                            ->from('boost_products')
+                            ->whereIn('status', ['running', 'scheduled'])
+                            ->where('payment_status', 'paid')
+                            ->groupBy('product_id');
+                    });
+            })
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->whereHas('boost', function ($query) {
+                $query->whereIn('status', ['running', 'scheduled'])
+                      ->where('payment_status', 'paid');
+            })
+            ->with(['boost' => function ($query) {
+                $query->whereIn('status', ['running', 'scheduled'])
+                      ->where('payment_status', 'paid')
+                      ->latest('start_date')
+                      ->latest('created_at');
+            }])
+            ->get()
+            ->sortByDesc(function ($product) {
+                $boost = $product->boost;
+                if (!$boost) return 0;
+                return $boost->start_date ? $boost->start_date->timestamp : $boost->created_at->timestamp;
+            })
             ->take(20)
-            ->get();
+            ->values();
 
         // Record impression for top selling products and update boost records
         foreach ($products as $product) {
