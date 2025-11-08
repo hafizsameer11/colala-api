@@ -132,6 +132,7 @@ class AdminProductsController extends Controller
                     'is_unavailable' => $product->is_unavailable,
                     'created_at' => $product->created_at,
                     'updated_at' => $product->updated_at,
+                    'video'=>$product->video,
                 ],
                 'store_info' => [
                     'store_id' => $product->store->id,
