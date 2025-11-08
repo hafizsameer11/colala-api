@@ -85,7 +85,7 @@ class CheckoutService
                 // Calculate per-store totals
                 $storeItemsTotal = $S['items_subtotal'];
                 $storeShippingTotal = 0; // ✅ Shipping will be set by seller when accepting order
-                $storePlatformFee = round($storeItemsTotal * 0.015, 2); // 1.5%
+                $storePlatformFee = 0; // 1.5%
                 $storeGrandTotal = $storeItemsTotal + $storeShippingTotal + $storePlatformFee;
 
                 // Create individual order per store
