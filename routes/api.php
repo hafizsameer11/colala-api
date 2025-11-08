@@ -108,7 +108,7 @@ Route::get('buyer/products/top-selling', [ProductBrowseController::class, 'topSe
 // Stores
 Route::prefix('buyer')->group(function () {
     Route::get('stores', [StoreController::class, 'getAll']);
-    Route::get('stores/{id}', [StoreController::class, 'getById']);
+    Route::get('stores/{id}', [StoreController::class, 'getById'])->middleware('auth:sanctum');
     Route::get('stores/{storeId}/reviews', [StoreReviewController::class, 'index']);
 });
 
