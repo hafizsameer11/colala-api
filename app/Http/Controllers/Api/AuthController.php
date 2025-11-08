@@ -7,6 +7,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Mail\OtpMail;
 use App\Models\UserNotification;
 use App\Models\Subscription;
 use App\Services\UserService;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -34,7 +36,11 @@ class AuthController extends Controller
             $data['user_code'] =   $this->userService->createUserCode($data['full_name']);
             $user = $this->userService->create($data);
             $wallet=$this->walletService->create(['user_id'=>$user->id]);
-            return ResponseHelper::success($user);
+            $otp=rand(1000,9999);
+            $user->otp=$otp;
+            $user->save();
+            Mail::to($user->email)->send(new OtpMail($otp));
+            return ResponseHelper::success($user, "OTP sent successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());

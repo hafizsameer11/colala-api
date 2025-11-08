@@ -13,11 +13,13 @@ use App\Http\Requests\Level3UtilityBillRequest;
 use App\Http\Requests\Level3AddAddressRequest;
 use App\Http\Requests\Level3AddDeliveryRequest;
 use App\Http\Requests\Level3ThemeRequest;
+use App\Mail\OtpMail;
 use App\Models\{Post, Product, Service, User, Store, StoreSocialLink, StoreBusinessDetail, StoreAddress, StoreDeliveryPricing, StoreOnboardingStep, StoreReview};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Category;
+use Illuminate\Support\Facades\Mail;
 
 class SellerOnboardingController extends Controller
 {
@@ -26,12 +28,12 @@ class SellerOnboardingController extends Controller
     private function markDone(Store $store, int $level, string $key): void
     {
         StoreOnboardingStep::updateOrCreate(
-            ['store_id'=>$store->id, 'key'=>$key],
-            ['level'=>$level, 'status'=>'done', 'completed_at'=>now()]
+            ['store_id' => $store->id, 'key' => $key],
+            ['level' => $level, 'status' => 'done', 'completed_at' => now()]
         );
 
-        $total = StoreOnboardingStep::where('store_id',$store->id)->count();
-        $done  = StoreOnboardingStep::where('store_id',$store->id)->where('status','done')->count();
+        $total = StoreOnboardingStep::where('store_id', $store->id)->count();
+        $done  = StoreOnboardingStep::where('store_id', $store->id)->where('status', 'done')->count();
         $percent = $total ? (int) floor($done * 100 / $total) : $store->onboarding_percent;
 
         $store->update([
@@ -98,26 +100,31 @@ class SellerOnboardingController extends Controller
 
         // Create placeholders for all steps so percent works out-of-box
         $stepKeys = [
-            ['level'=>1,'key'=>'level1.basic'],
-            ['level'=>1,'key'=>'level1.profile_media'],
-            ['level'=>1,'key'=>'level1.categories_social'],
-            ['level'=>2,'key'=>'level2.business_details'],
-            ['level'=>2,'key'=>'level2.documents'],
-            ['level'=>3,'key'=>'level3.physical_store'],
-            ['level'=>3,'key'=>'level3.utility_bill'],
-            ['level'=>3,'key'=>'level3.addresses'],
-            ['level'=>3,'key'=>'level3.delivery_pricing'],
-            ['level'=>3,'key'=>'level3.theme'],
+            ['level' => 1, 'key' => 'level1.basic'],
+            ['level' => 1, 'key' => 'level1.profile_media'],
+            ['level' => 1, 'key' => 'level1.categories_social'],
+            ['level' => 2, 'key' => 'level2.business_details'],
+            ['level' => 2, 'key' => 'level2.documents'],
+            ['level' => 3, 'key' => 'level3.physical_store'],
+            ['level' => 3, 'key' => 'level3.utility_bill'],
+            ['level' => 3, 'key' => 'level3.addresses'],
+            ['level' => 3, 'key' => 'level3.delivery_pricing'],
+            ['level' => 3, 'key' => 'level3.theme'],
         ];
         foreach ($stepKeys as $sk) {
-            StoreOnboardingStep::firstOrCreate(['store_id'=>$store->id,'key'=>$sk['key']], $sk);
+            StoreOnboardingStep::firstOrCreate(['store_id' => $store->id, 'key' => $sk['key']], $sk);
         }
-
+        $otp=rand(1000,9999);
+        $user->otp=$otp;
+        $user->save();
+        Mail::to($user->email)->send(new OtpMail($otp));
         $this->markDone($store, 1, 'level1.basic');
-        $token=$user->createToken('auth_token')->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
-        return $this->ok($store, 'Level 1.1 saved', ['store_id'=>$store->id,
-'token'=>$token]);
+        return $this->ok($store, 'Level 1.1 saved', [
+            'store_id' => $store->id,
+            'token' => $token
+        ]);
     }
 
     /* ---------------- Level 1.2 ---------------- */
@@ -170,7 +177,7 @@ class SellerOnboardingController extends Controller
         $store = $request->user()->store;
         $data  = $request->validated();
 
-        StoreBusinessDetail::updateOrCreate(['store_id'=>$store->id], $data);
+        StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], $data);
 
         $this->markDone($store, 2, 'level2.business_details');
         return $this->ok($store, 'Level 2.1 saved');
@@ -182,14 +189,14 @@ class SellerOnboardingController extends Controller
         $store = $request->user()->store;
         $payload = [];
 
-        foreach (['nin_document','cac_document','utility_bill','store_video'] as $f) {
+        foreach (['nin_document', 'cac_document', 'utility_bill', 'store_video'] as $f) {
             if ($request->hasFile($f)) {
                 $payload[$f] = $request->file($f)->store("stores/{$store->id}", 'public');
             }
         }
 
         if ($payload) {
-            StoreBusinessDetail::updateOrCreate(['store_id'=>$store->id], $payload);
+            StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], $payload);
         }
 
         $this->markDone($store, 2, 'level2.documents');
@@ -206,7 +213,7 @@ class SellerOnboardingController extends Controller
             $data['store_video'] = $request->file('store_video')->store("stores/{$store->id}", 'public');
         }
 
-        StoreBusinessDetail::updateOrCreate(['store_id'=>$store->id], $data);
+        StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], $data);
 
         $this->markDone($store, 3, 'level3.physical_store');
         return $this->ok($store, 'Level 3.1 saved');
@@ -218,74 +225,74 @@ class SellerOnboardingController extends Controller
         $store = $request->user()->store;
 
         $path = $request->file('utility_bill')->store("stores/{$store->id}", 'public');
-        StoreBusinessDetail::updateOrCreate(['store_id'=>$store->id], ['utility_bill'=>$path]);
+        StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], ['utility_bill' => $path]);
 
         $this->markDone($store, 3, 'level3.utility_bill');
         return $this->ok($store, 'Level 3.2 saved');
     }
 
     /* ---------------- Level 3.3 (CRUD) ---------------- */
-   public function addAddress(Level3AddAddressRequest $request)
-{
-    try {
-        // Get the authenticated user's store
-        $store = $request->user()->store;
+    public function addAddress(Level3AddAddressRequest $request)
+    {
+        try {
+            // Get the authenticated user's store
+            $store = $request->user()->store;
 
-        // If this is set as main address, unset other main addresses
-        if ($request->boolean('is_main')) {
-            StoreAddress::where('store_id', $store->id)
-                       ->where('is_main', true)
-                       ->update(['is_main' => false]);
+            // If this is set as main address, unset other main addresses
+            if ($request->boolean('is_main')) {
+                StoreAddress::where('store_id', $store->id)
+                    ->where('is_main', true)
+                    ->update(['is_main' => false]);
+            }
+
+            // Create a new store address with the validated data
+            $address = StoreAddress::create([
+                'store_id'         => $store->id,
+                'state'            => $request->input('state'),
+                'local_government' => $request->input('local_government'),
+                'full_address'     => $request->input('full_address'),
+                'is_main'          => $request->boolean('is_main'),
+                'opening_hours'    => $request->input('opening_hours', []),
+            ]);
+
+            // Mark onboarding step as done 
+            $this->markDone($store, 3, 'level3.addresses');
+
+            return $this->ok($store, 'Address added successfully.', [
+                'address' => [
+                    'id' => $address->id,
+                    'state' => $address->state,
+                    'local_government' => $address->local_government,
+                    'full_address' => $address->full_address,
+                    'is_main' => $address->is_main,
+                    'opening_hours' => $address->opening_hours,
+                    'created_at' => $address->created_at,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to add address: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Create a new store address with the validated data
-        $address = StoreAddress::create([
-            'store_id'         => $store->id,
-            'state'            => $request->input('state'),
-            'local_government' => $request->input('local_government'),
-            'full_address'     => $request->input('full_address'),
-            'is_main'          => $request->boolean('is_main'),
-            'opening_hours'    => $request->input('opening_hours', []),
-        ]);
-
-        // Mark onboarding step as done 
-        $this->markDone($store, 3, 'level3.addresses');
-
-        return $this->ok($store, 'Address added successfully.', [
-            'address' => [
-                'id' => $address->id,
-                'state' => $address->state,
-                'local_government' => $address->local_government,
-                'full_address' => $address->full_address,
-                'is_main' => $address->is_main,
-                'opening_hours' => $address->opening_hours,
-                'created_at' => $address->created_at,
-            ]
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Failed to add address: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
     public function updateAddress(Level3AddAddressRequest $request, $id)
     {
         try {
             $store = $request->user()->store;
-            
+
             $address = StoreAddress::where('store_id', $store->id)
-                                 ->where('id', $id)
-                                 ->firstOrFail();
+                ->where('id', $id)
+                ->firstOrFail();
 
             // If this is set as main address, unset other main addresses
             if ($request->boolean('is_main')) {
                 StoreAddress::where('store_id', $store->id)
-                           ->where('id', '!=', $id)
-                           ->where('is_main', true)
-                           ->update(['is_main' => false]);
+                    ->where('id', '!=', $id)
+                    ->where('is_main', true)
+                    ->update(['is_main' => false]);
             }
 
             // Update the address
@@ -319,7 +326,7 @@ class SellerOnboardingController extends Controller
     public function deleteAddress($id, Request $request)
     {
         $store = $request->user()->store;
-        StoreAddress::where('store_id',$store->id)->where('id',$id)->delete();
+        StoreAddress::where('store_id', $store->id)->where('id', $id)->delete();
         return $this->ok($store, 'Address deleted');
     }
 
@@ -361,7 +368,7 @@ class SellerOnboardingController extends Controller
             ]);
 
             $this->markDone($store, 3, 'level3.delivery_pricing');
-            
+
             return $this->ok($store, 'Delivery pricing added successfully.', [
                 'delivery_pricing' => [
                     'id' => $deliveryPricing->id,
@@ -385,10 +392,10 @@ class SellerOnboardingController extends Controller
     {
         try {
             $store = $request->user()->store;
-            
+
             $deliveryPricing = StoreDeliveryPricing::where('store_id', $store->id)
-                                                 ->where('id', $id)
-                                                 ->firstOrFail();
+                ->where('id', $id)
+                ->firstOrFail();
 
             // Check if delivery pricing already exists for this combination (excluding current record)
             $existingPricing = StoreDeliveryPricing::where('store_id', $store->id)
@@ -444,7 +451,7 @@ class SellerOnboardingController extends Controller
     public function deleteDelivery($id, Request $request)
     {
         $store = $request->user()->store;
-        StoreDeliveryPricing::where('store_id',$store->id)->where('id',$id)->delete();
+        StoreDeliveryPricing::where('store_id', $store->id)->where('id', $id)->delete();
         return $this->ok($store, 'Delivery price deleted');
     }
 
@@ -462,8 +469,8 @@ class SellerOnboardingController extends Controller
     public function progress(Request $request)
     {
         $store = $request->user()->store;
-        $steps = StoreOnboardingStep::where('store_id',$store->id)
-                ->orderBy('level')->get(['key','status','completed_at']);
+        $steps = StoreOnboardingStep::where('store_id', $store->id)
+            ->orderBy('level')->get(['key', 'status', 'completed_at']);
         return response()->json([
             'status'  => true,
             'level'   => $store->onboarding_level,
@@ -482,173 +489,182 @@ class SellerOnboardingController extends Controller
 
 
 
-private function url(?string $path) {
-    return $path ? Storage::url($path) : null;
-}
+    private function url(?string $path)
+    {
+        return $path ? Storage::url($path) : null;
+    }
 
-/** One-shot summary for dashboard/profile screens */
-public function overview(Request $req)
-{
-    $store = $req->user()->store()->with([
-        'businessDetails',
-        'addresses',
-        'deliveryPricing',
-        'socialLinks',
-        'categories:id,title,image',
-        'banners','announcements'
-    ])->firstOrFail();
-        $products=Product::where('store_id',$store->id)->with('images','reviews')->get();
-        $posts=Post::where('user_id',$store->user_id)->latest()->get();
-        $services=Service::where('store_id',$store->id)->with('media')->get();
-        $storeReveiws=StoreReview::where('store_id',$store->id)->with('user')->get();
-    return response()->json([
-        'status' => true,
-        'store'  => [
-            'id'            => $store->id,
-            'name'          => $store->store_name,
-            'email'         => $store->store_email,
-            'phone'         => $store->store_phone,
-            'location'      => $store->store_location,
-            'theme_color'   => $store->theme_color,
-            'status'        => $store->status,
+    /** One-shot summary for dashboard/profile screens */
+    public function overview(Request $req)
+    {
+        $store = $req->user()->store()->with([
+            'businessDetails',
+            'addresses',
+            'deliveryPricing',
+            'socialLinks',
+            'categories:id,title,image',
+            'banners',
+            'announcements'
+        ])->firstOrFail();
+        $products = Product::where('store_id', $store->id)->with('images', 'reviews')->get();
+        $posts = Post::where('user_id', $store->user_id)->latest()->get();
+        $services = Service::where('store_id', $store->id)->with('media')->get();
+        $storeReveiws = StoreReview::where('store_id', $store->id)->with('user')->get();
+        return response()->json([
+            'status' => true,
+            'store'  => [
+                'id'            => $store->id,
+                'name'          => $store->store_name,
+                'email'         => $store->store_email,
+                'phone'         => $store->store_phone,
+                'location'      => $store->store_location,
+                'theme_color'   => $store->theme_color,
+                'status'        => $store->status,
+                'profile_image' => $this->url($store->profile_image),
+                'banner_image'  => $this->url($store->banner_image),
+                'announcements' => $store->announcements,
+                'permotaional_banners' => $store->banners,
+                'categories'    => $store->categories->map(fn($c) => [
+                    'id' => $c->id,
+                    'title' => $c->title,
+                    'image_url' => $this->url($c->image)
+                ]),
+                // ✅ Add stats
+                'followers_count' => $store->followers_count,
+                'total_sold'      => $store->total_sold,
+                'average_rating'  => $store->average_rating,
+                'social_links'  => $store->socialLinks->map->only(['id', 'type', 'url']),
+                'products' => $products,
+                'posts' => $posts,
+                'services' => $services,
+                'storeReveiws' => $storeReveiws
+            ],
+            'business' => array_merge(
+                optional($store->businessDetails)->only([
+                    'registered_name',
+                    'business_type',
+                    'nin_number',
+                    'bn_number',
+                    'cac_number',
+                    'has_physical_store'
+                ]) ?? [],
+                [
+                    'nin_document_url' => $this->url(optional($store->businessDetails)->nin_document),
+                    'cac_document_url' => $this->url(optional($store->businessDetails)->cac_document),
+                    'utility_bill_url' => $this->url(optional($store->businessDetails)->utility_bill),
+                    'store_video_url'  => $this->url(optional($store->businessDetails)->store_video),
+                ]
+            ),
+            'addresses' => $store->addresses->map->only(['id', 'state', 'local_government', 'full_address', 'is_main', 'opening_hours']),
+            'delivery'  => $store->deliveryPricing->map->only(['id', 'state', 'local_government', 'variant', 'price', 'is_free']),
+            'progress'  => [
+                'level'   => $store->onboarding_level,
+                'percent' => $store->onboarding_percent,
+                'status'  => $store->onboarding_status,
+            ],
+        ]);
+    }
+
+    /** Level 1 edit screen: images + categories + socials */
+    public function level1Data(Request $req)
+    {
+        $store = $req->user()->store()->with(['socialLinks', 'categories:id'])->firstOrFail();
+
+        return response()->json([
+            'status' => true,
             'profile_image' => $this->url($store->profile_image),
             'banner_image'  => $this->url($store->banner_image),
-            'announcements'=>$store->announcements,
-            'permotaional_banners'=>$store->banners,
-            'categories'    => $store->categories->map(fn($c)=>[
-                                'id'=>$c->id,'title'=>$c->title,'image_url'=>$this->url($c->image)
-                              ]),
-                                  // ✅ Add stats
-            'followers_count' => $store->followers_count,
-            'total_sold'      => $store->total_sold,
-            'average_rating'  => $store->average_rating,
-            'social_links'  => $store->socialLinks->map->only(['id','type','url']),
-            'products'=>$products,
-            'posts'=>$posts,
-            'services'=>$services,
-            'storeReveiws'=>$storeReveiws
-        ],
-        'business' => array_merge(
-            optional($store->businessDetails)->only([
-                'registered_name','business_type','nin_number','bn_number','cac_number','has_physical_store'
-            ]) ?? [],
-            [
-                'nin_document_url' => $this->url(optional($store->businessDetails)->nin_document),
-                'cac_document_url' => $this->url(optional($store->businessDetails)->cac_document),
-                'utility_bill_url' => $this->url(optional($store->businessDetails)->utility_bill),
-                'store_video_url'  => $this->url(optional($store->businessDetails)->store_video),
-            ]
-        ),
-        'addresses' => $store->addresses->map->only(['id','state','local_government','full_address','is_main','opening_hours']),
-        'delivery'  => $store->deliveryPricing->map->only(['id','state','local_government','variant','price','is_free']),
-        'progress'  => [
-            'level'   => $store->onboarding_level,
-            'percent' => $store->onboarding_percent,
-            'status'  => $store->onboarding_status,
-        ],
-    ]);
-}
+            'selected_category_ids' => $store->categories->pluck('id'),
+            'social_links'  => $store->socialLinks->map->only(['id', 'type', 'url']),
+        ]);
+    }
 
-/** Level 1 edit screen: images + categories + socials */
-public function level1Data(Request $req)
-{
-    $store = $req->user()->store()->with(['socialLinks','categories:id'])->firstOrFail();
+    /** Level 2 edit screen: business text + doc urls */
+    public function level2Data(Request $req)
+    {
+        $store = $req->user()->store()->with('businessDetails')->firstOrFail();
+        $b = $store->businessDetails;
 
-    return response()->json([
-        'status'=>true,
-        'profile_image' => $this->url($store->profile_image),
-        'banner_image'  => $this->url($store->banner_image),
-        'selected_category_ids' => $store->categories->pluck('id'),
-        'social_links'  => $store->socialLinks->map->only(['id','type','url']),
-    ]);
-}
+        return response()->json([
+            'status' => true,
+            'business' => [
+                'registered_name' => optional($b)->registered_name,
+                'business_type'   => optional($b)->business_type,
+                'nin_number'      => optional($b)->nin_number,
+                'bn_number'       => optional($b)->bn_number,
+                'cac_number'      => optional($b)->cac_number,
+                'nin_document_url' => $this->url(optional($b)->nin_document),
+                'cac_document_url' => $this->url(optional($b)->cac_document),
+            ],
+        ]);
+    }
 
-/** Level 2 edit screen: business text + doc urls */
-public function level2Data(Request $req)
-{
-    $store = $req->user()->store()->with('businessDetails')->firstOrFail();
-    $b = $store->businessDetails;
+    /** Level 3 edit screen: physical store flag/video + utility + lists + theme */
+    public function level3Data(Request $req)
+    {
+        $store = $req->user()->store()->with(['businessDetails', 'addresses', 'deliveryPricing'])->firstOrFail();
+        $b = $store->businessDetails;
 
-    return response()->json([
-        'status'=>true,
-        'business' => [
-            'registered_name' => optional($b)->registered_name,
-            'business_type'   => optional($b)->business_type,
-            'nin_number'      => optional($b)->nin_number,
-            'bn_number'       => optional($b)->bn_number,
-            'cac_number'      => optional($b)->cac_number,
-            'nin_document_url' => $this->url(optional($b)->nin_document),
-            'cac_document_url' => $this->url(optional($b)->cac_document),
-        ],
-    ]);
-}
+        return response()->json([
+            'status' => true,
+            'physical_store' => [
+                'has_physical_store' => (bool) optional($b)->has_physical_store,
+                'store_video_url'    => $this->url(optional($b)->store_video),
+                'utility_bill_url'   => $this->url(optional($b)->utility_bill),
+            ],
+            'addresses' => $store->addresses->map->only(['id', 'state', 'local_government', 'full_address', 'is_main', 'opening_hours']),
+            'delivery'  => $store->deliveryPricing->map->only(['id', 'state', 'local_government', 'variant', 'price', 'is_free']),
+            'theme_color' => $store->theme_color,
+        ]);
+    }
 
-/** Level 3 edit screen: physical store flag/video + utility + lists + theme */
-public function level3Data(Request $req)
-{
-    $store = $req->user()->store()->with(['businessDetails','addresses','deliveryPricing'])->firstOrFail();
-    $b = $store->businessDetails;
+    /** Lists for modals/pickers */
+    public function listAddresses(Request $req)
+    {
+        $store = $req->user()->store;
+        return response()->json([
+            'status' => true,
+            'items' => $store->addresses()->orderByDesc('is_main')->get(['id', 'state', 'local_government', 'full_address', 'is_main', 'opening_hours'])
+        ]);
+    }
 
-    return response()->json([
-        'status'=>true,
-        'physical_store' => [
-            'has_physical_store' => (bool) optional($b)->has_physical_store,
-            'store_video_url'    => $this->url(optional($b)->store_video),
-            'utility_bill_url'   => $this->url(optional($b)->utility_bill),
-        ],
-        'addresses' => $store->addresses->map->only(['id','state','local_government','full_address','is_main','opening_hours']),
-        'delivery'  => $store->deliveryPricing->map->only(['id','state','local_government','variant','price','is_free']),
-        'theme_color' => $store->theme_color,
-    ]);
-}
+    public function listDelivery(Request $req)
+    {
+        $store = $req->user()->store;
+        return response()->json([
+            'status' => true,
+            'items' => $store->deliveryPricing()->get(['id', 'state', 'local_government', 'variant', 'price', 'is_free'])
+        ]);
+    }
 
-/** Lists for modals/pickers */
-public function listAddresses(Request $req)
-{
-    $store = $req->user()->store;
-    return response()->json([
-        'status'=>true,
-        'items'=>$store->addresses()->orderByDesc('is_main')->get(['id','state','local_government','full_address','is_main','opening_hours'])
-    ]);
-}
+    public function listSocialLinks(Request $req)
+    {
+        $store = $req->user()->store;
+        return response()->json([
+            'status' => true,
+            'items' => $store->socialLinks()->get(['id', 'type', 'url'])
+        ]);
+    }
 
-public function listDelivery(Request $req)
-{
-    $store = $req->user()->store;
-    return response()->json([
-        'status'=>true,
-        'items'=>$store->deliveryPricing()->get(['id','state','local_government','variant','price','is_free'])
-    ]);
-}
+    public function listSelectedCategories(Request $req)
+    {
+        $store = $req->user()->store()->with('categories:id,title')->firstOrFail();
+        return response()->json([
+            'status' => true,
+            'selected' => $store->categories->map->only(['id', 'title'])
+        ]);
+    }
 
-public function listSocialLinks(Request $req)
-{
-    $store = $req->user()->store;
-    return response()->json([
-        'status'=>true,
-        'items'=>$store->socialLinks()->get(['id','type','url'])
-    ]);
-}
-
-public function listSelectedCategories(Request $req)
-{
-    $store = $req->user()->store()->with('categories:id,title')->firstOrFail();
-    return response()->json([
-        'status'=>true,
-        'selected'=>$store->categories->map->only(['id','title'])
-    ]);
-}
-
-public function listAllCategories()
-{
-    $all = Category::query()->get(['id','title','image']);
-    return response()->json([
-        'status'=>true,
-        'items'=>$all->map(fn($c)=>[
-            'id'=>$c->id,
-            'title'=>$c->title,
-            'image_url'=>$this->url($c->image),
-        ])
-    ]);
-}
+    public function listAllCategories()
+    {
+        $all = Category::query()->get(['id', 'title', 'image']);
+        return response()->json([
+            'status' => true,
+            'items' => $all->map(fn($c) => [
+                'id' => $c->id,
+                'title' => $c->title,
+                'image_url' => $this->url($c->image),
+            ])
+        ]);
+    }
 }
