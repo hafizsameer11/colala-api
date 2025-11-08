@@ -18,6 +18,7 @@ class Post extends Model
     public function likes(){ return $this->hasMany(PostLike::class); }
     public function comments(){ return $this->hasMany(PostComment::class); }
     public function shares(){ return $this->hasMany(PostShare::class); }
+    public function reports(){ return $this->hasMany(PostReport::class); }
 
     public function getMediaUrlsAttribute(){
         return $this->media->map(fn($m)=>[

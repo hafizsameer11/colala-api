@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Buyer\UserAddressController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PostReportController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\ServiceCategoryController;
@@ -98,6 +99,8 @@ Route::prefix('brands')->group(function () {
 
 // Products (Buyer)
 Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
+Route::get('buyer/product/referral-products', [ProductController::class, 'getReferralProducts']);
+Route::get('buyer/product/vip-products', [ProductController::class, 'getVipProducts']);
 Route::get('buyer/categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
 Route::get('buyer/product-details/{id}', [ProductBrowseController::class, 'productDetails']);
 Route::get('buyer/products/top-selling', [ProductBrowseController::class, 'topSelling']);
@@ -160,6 +163,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts/{id}/comments', [PostController::class, 'addComment']);
     Route::delete('/posts/{postId}/comments/{commentId}', [PostController::class, 'deleteComment']);
     Route::post('/posts/{id}/share', [PostController::class, 'share']);
+    Route::post('/posts/{id}/report', [PostReportController::class, 'report']);
 
     // ---------- BUYER ----------
     Route::prefix('buyer')->group(function () {
@@ -244,6 +248,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('activity/heartbeat', [UserActivityController::class, 'heartbeat']);
         Route::get('activity/status', [UserActivityController::class, 'getMyStatus']);
     });
+    Route::get('users/{userId}/status', [UserActivityController::class, 'getUserStatus']);
 
     // ---------- USER PROFILE ----------
     Route::post('/auth/edit-profile', [AuthController::class, 'editProfile']);

@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\Admin\AdminFaqController;
 use App\Http\Controllers\Api\Admin\AdminKnowledgeBaseController;
 use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
 use App\Http\Controllers\Api\Admin\AdminWithdrawalRequestController;
+use App\Http\Controllers\Api\Admin\AdminPostReportController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -896,4 +897,16 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/withdrawal-requests/{id}/approve', [AdminWithdrawalRequestController::class, 'approve']);
     // Reject withdrawal request (refunds amount back to user)
     Route::post('/withdrawal-requests/{id}/reject', [AdminWithdrawalRequestController::class, 'reject']);
+
+    // ========================================
+    // POST REPORTS MANAGEMENT
+    // ========================================
+    // Get all post reports with filtering
+    Route::get('/post-reports', [AdminPostReportController::class, 'index']);
+    // Get single post report details
+    Route::get('/post-reports/{id}', [AdminPostReportController::class, 'show']);
+    // Update report status (reviewed, resolved, dismissed)
+    Route::put('/post-reports/{id}/status', [AdminPostReportController::class, 'updateStatus']);
+    // Delete post report
+    Route::delete('/post-reports/{id}', [AdminPostReportController::class, 'destroy']);
 });

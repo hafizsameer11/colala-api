@@ -57,6 +57,21 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Get products from VIP users
+     * Returns complete product details for products from users with plan='vip'
+     */
+    public function getVipProducts(Request $request){
+        try {
+            $products = $this->productService->getVipProducts();
+            
+            return ResponseHelper::success($products);
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
     public function create(ProductCreateUpdateRequest $request)
     {
         try {

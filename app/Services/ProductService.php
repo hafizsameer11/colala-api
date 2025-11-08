@@ -84,6 +84,38 @@ class ProductService
         return $products;
     }
 
+    /**
+     * Get products from users with VIP plan
+     * Returns complete product details for products from VIP users
+     */
+    public function getVipProducts()
+    {
+        $products = Product::with([
+                'store.user',
+                'store.socialLinks',
+                'category',
+                'images',
+                'variants.images',
+                'deliveryOptions',
+                'reviews.user',
+                'boost',
+            ])
+            ->whereHas('store.user', function ($query) {
+                $query->where('plan', 'vip');
+            })
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->latest()
+            ->get();
+
+        // Record impression for each product
+        foreach ($products as $product) {
+            ProductStatHelper::record($product->id, 'impression');
+        }
+
+        return $products;
+    }
+
     public function create(array $data)
     {
         return DB::transaction(function () use ($data) {
