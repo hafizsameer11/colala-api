@@ -29,6 +29,7 @@ class BoostProductResource extends JsonResource
             'status'         => $this->status,
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
+            'amount_spent'   => $this->amount_spent,
             'start_date'     => optional($this->start_date)->toDateString(),
             'created_at'     => $this->created_at->toIso8601String(),
             'product' => [
