@@ -15,7 +15,7 @@ class WalletService{
     public function getBalance($user_id){
         $wallet=Wallet::where('user_id',$user_id)->first();
         if(!$wallet){
-            $wallet=$this->create(['user_id'=>$user_id,'shopping_balance'=>0,'reward_balance'=>0,'loyality_points'=>0]);
+            $wallet=$this->create(['user_id'=>$user_id,'shopping_balance'=>0,'reward_balance'=>0,'loyality_points'=>0,'ad_credit'=>0]);
         }
         $escrowBalance=Escrow::where('user_id',$user_id)->where('status','locked')->sum('amount');
         $wallet->escrow_balance=$escrowBalance;
