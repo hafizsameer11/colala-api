@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class ProductReview extends Model
 {
     //
-    protected $fillable = ['order_item_id','user_id','rating','comment','images'];
-    protected $casts = ['images'=>'array'];
+    protected $fillable = ['order_item_id','user_id','rating','comment','images','seller_reply','seller_replied_at'];
+    protected $casts = ['images'=>'array','seller_replied_at'=>'datetime'];
     public function orderItem(){ return $this->belongsTo(OrderItem::class); }
     public function user(){ return $this->belongsTo(User::class); }
 }

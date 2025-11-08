@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\Seller\SellerInventoryController;
 use App\Http\Controllers\Api\Seller\SellerKnowledgeBaseController;
+use App\Http\Controllers\Api\Seller\SellerReviewReplyController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -229,6 +230,17 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Knowledge Base
     Route::get('knowledge-base', [SellerKnowledgeBaseController::class, 'index']);
     Route::get('knowledge-base/{id}', [SellerKnowledgeBaseController::class, 'show']);
+
+    // Review Replies
+    // Store Review Replies
+    Route::post('reviews/store/{reviewId}/reply', [SellerReviewReplyController::class, 'replyToStoreReview']);
+    Route::put('reviews/store/{reviewId}/reply', [SellerReviewReplyController::class, 'updateStoreReviewReply']);
+    Route::delete('reviews/store/{reviewId}/reply', [SellerReviewReplyController::class, 'deleteStoreReviewReply']);
+    
+    // Product Review Replies
+    Route::post('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'replyToProductReview']);
+    Route::put('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'updateProductReviewReply']);
+    Route::delete('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'deleteProductReviewReply']);
 
 });
 
