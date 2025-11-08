@@ -23,6 +23,10 @@ class BoostProduct extends Model
         'payment_method',
         'payment_status',
     ];
+
+    protected $casts = [
+        'start_date' => 'date',
+    ];
     // relations
     public function product()
     {

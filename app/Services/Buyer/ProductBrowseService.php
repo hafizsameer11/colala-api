@@ -94,7 +94,11 @@ class ProductBrowseService {
             ->sortByDesc(function ($product) {
                 $boost = $product->boost;
                 if (!$boost) return 0;
-                return $boost->start_date ? $boost->start_date->timestamp : $boost->created_at->timestamp;
+                
+                // Use start_date if available, otherwise fallback to created_at
+                // Both are now Carbon instances due to model casting
+                $date = $boost->start_date ?? $boost->created_at;
+                return $date ? $date->timestamp : 0;
             })
             ->take(20)
             ->values();
