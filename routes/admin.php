@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Admin\AdminUserManagementController;
 use App\Http\Controllers\Api\Admin\AdminFaqController;
 use App\Http\Controllers\Api\Admin\AdminKnowledgeBaseController;
 use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
+use App\Http\Controllers\Api\Admin\AdminWithdrawalRequestController;
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -883,4 +884,16 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // SELLER HELP REQUESTS (LISTING)
     // ========================================
     Route::get('/seller-help/requests', [AdminSellerHelpRequestController::class, 'index']);
+
+    // ========================================
+    // WITHDRAWAL REQUESTS MANAGEMENT
+    // ========================================
+    // Get all withdrawal requests with filtering
+    Route::get('/withdrawal-requests', [AdminWithdrawalRequestController::class, 'index']);
+    // Get single withdrawal request details
+    Route::get('/withdrawal-requests/{id}', [AdminWithdrawalRequestController::class, 'show']);
+    // Approve withdrawal request
+    Route::post('/withdrawal-requests/{id}/approve', [AdminWithdrawalRequestController::class, 'approve']);
+    // Reject withdrawal request (refunds amount back to user)
+    Route::post('/withdrawal-requests/{id}/reject', [AdminWithdrawalRequestController::class, 'reject']);
 });
