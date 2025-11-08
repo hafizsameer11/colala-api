@@ -28,7 +28,7 @@ class OtpMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your OTP Code - EarlyBaze Wallet',
+            subject: 'Your OTP Code - Colala Express',
         );
     }
 
