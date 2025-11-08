@@ -18,6 +18,12 @@ class SubscriptionService
         $user=Auth::user();
         $user=User::where('id',$user->id)->first();
         $user->plan=$plan->name;
+        
+        // Mark free trial as claimed on first subscription (if not already claimed)
+        if (!$user->is_free_trial_claimed) {
+            $user->is_free_trial_claimed = true;
+        }
+        
         $user->save();
 
         return Subscription::create([

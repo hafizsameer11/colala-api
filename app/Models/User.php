@@ -29,6 +29,7 @@ class User extends Authenticatable
         'is_active',
         'store_id',
         'plan',
+        'is_free_trial_claimed',
     ];
 
     protected $hidden = [

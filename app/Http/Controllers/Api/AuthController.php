@@ -210,6 +210,7 @@ public function getPlan(Request $request)
             'plan' => $user->plan ?? 'basic',
             'user_id' => $user->id,
             'full_name' => $user->full_name,
+            'is_free_trial_claimed' => (bool)($user->is_free_trial_claimed ?? false),
             'subscription' => $subscription ? [
                 'id' => $subscription->id,
                 'plan_id' => $subscription->plan_id,
