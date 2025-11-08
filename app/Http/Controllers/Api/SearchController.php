@@ -39,7 +39,7 @@ class SearchController extends Controller
                 break;
 
             case 'service':
-                $query = Service::when($q, fn($qBuilder) =>
+                $query = Service::with('store:id,store_name','media')-> when($q, fn($qBuilder) =>
                         $qBuilder->where('name', 'LIKE', "%$q%")
                                  ->orWhere('full_description', 'LIKE', "%$q%")
                     );
