@@ -17,7 +17,7 @@ class SubscriptionService
         $end   = $start->copy()->addDays($plan->duration_days);
         $user=Auth::user();
         $user=User::where('id',$user->id)->first();
-        $user->plan=$plan->name;
+        $user->plan=$plan->base_name;
         
         // Mark free trial as claimed on first subscription (if not already claimed)
         if (!$user->is_free_trial_claimed) {
