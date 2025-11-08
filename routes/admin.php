@@ -773,6 +773,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Create banner
     Route::post('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'createBanner']);
     
+    // Get active banners
+    Route::get('/banners/active', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getActiveBanners']);
+    
     // Get banner details
     Route::get('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerDetails']);
     
