@@ -65,6 +65,7 @@ class SimpleStoreUserService
                 'password' => Hash::make($data['password']),
                 'user_code' => 'USR' . Str::random(8),
                 'store_id' => $storeId,
+                'role'=>$data['role'],
             ]);
         }
 
