@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Buyer;
 
 use App\Helpers\ProductStatHelper;
+use App\Helpers\BoostMetricsHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
@@ -66,6 +67,9 @@ public function productDetails($productId)
 
         // Track product visit
         \App\Helpers\VisitorTracker::trackProductVisit($product->id);
+
+        // Update boost metrics for boosted products (view = click)
+        BoostMetricsHelper::recordClick($product->id);
 
         $data = $product->toArray();
         //get the quantity of product from variants which have stock

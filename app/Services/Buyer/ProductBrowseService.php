@@ -4,8 +4,10 @@
 namespace App\Services\Buyer;
 
 use App\Helpers\ProductStatHelper;
+use App\Helpers\BoostMetricsHelper;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\BoostProduct;
 use Carbon\Carbon;
 
 class ProductBrowseService {
@@ -59,13 +61,27 @@ class ProductBrowseService {
     }
 
     public function topSelling() {
-        $products = Product::with(['images','store'])
-            ->take(20)->latest()
+        // Get products that have active boosts (running or scheduled, and paid)
+        $products = Product::with(['images', 'store', 'boost'])
+            ->join('boost_products', 'products.id', '=', 'boost_products.product_id')
+            ->whereIn('boost_products.status', ['running', 'scheduled'])
+            ->where('boost_products.payment_status', 'paid')
+            ->where('products.status', 'active')
+            ->where('products.is_unavailable', false)
+            ->orderByDesc('boost_products.start_date')
+            ->orderByDesc('boost_products.created_at')
+            ->select('products.*')
+            ->distinct()
+            ->take(20)
             ->get();
 
-        // Record impression for top selling products
+        // Record impression for top selling products and update boost records
         foreach ($products as $product) {
+            // Record impression in product stats
             ProductStatHelper::record($product->id, 'impression');
+            
+            // Update boost metrics (impressions, reach, amount_spent, CPC)
+            BoostMetricsHelper::recordImpression($product->id);
         }
 
         return $products;

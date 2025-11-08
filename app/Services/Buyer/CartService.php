@@ -3,6 +3,7 @@
 namespace App\Services\Buyer;
 
 use App\Helpers\ProductStatHelper;
+use App\Helpers\BoostMetricsHelper;
 use App\Models\{Cart, CartItem, Product, ProductVariant, Coupon, LoyaltyPoint, Wallet};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -111,6 +112,9 @@ class CartService
 
             // Record add_to_cart event
             ProductStatHelper::record($product->id, 'add_to_cart');
+            
+            // Update boost metrics for boosted products (add_to_cart = click)
+            BoostMetricsHelper::recordAddToCart($product->id);
 
             return $cart->fresh('items');
         });

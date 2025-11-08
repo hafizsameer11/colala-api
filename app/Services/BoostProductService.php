@@ -44,9 +44,11 @@ class BoostProductService
             'location'       => $validated['location'] ?? null,
             'duration'       => $validated['duration'],
             'budget'         => $validated['budget'],
-            'total_amount'   => $calc['total'],
-            'reach'          => $calc['reach'],
-            'cpc'            => $calc['est_cpc'],
+            'total_amount'   => $calc['total'], // This is the payment amount, so it's calculated
+            'reach'          => 0, // No actual reach yet - starts at 0
+            'impressions'    => 0, // No impressions yet - starts at 0
+            'cpc'            => 0, // No actual CPC yet - starts at 0
+            'clicks'         => 0, // No clicks yet - starts at 0
             'start_date'     => $validated['start_date'] ?? null,
             'status'         => isset($validated['start_date']) ? 'scheduled' : 'running',
             'payment_method' => $validated['payment_method'] ?? 'wallet',

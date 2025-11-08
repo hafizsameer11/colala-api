@@ -16,6 +16,7 @@ class BoostProduct extends Model
         'location',
         'reach',
         'total_amount',
+        'amount_spent',
         'impressions',
         'cpc',
         'clicks',
