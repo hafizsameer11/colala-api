@@ -109,6 +109,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('/boosts/{boost}',           [BoostProductController::class, 'show']);
     Route::patch('/boosts/{boost}/status',  [BoostProductController::class, 'updateStatus']);
     Route::patch('/boosts/{boost}/metrics', [BoostProductController::class, 'updateMetrics']);
+    Route::delete('/boosts/{boost}',        [BoostProductController::class, 'destroy']);
     Route::get('/plans', [SubscriptionController::class, 'plans']);
     Route::get('/subscriptions', [SubscriptionController::class, 'mySubscriptions']);
     Route::post('/subscriptions', [SubscriptionController::class, 'subscribe']);
