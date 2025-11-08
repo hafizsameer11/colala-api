@@ -166,6 +166,7 @@ class SimpleStoreUserService
             'profile_picture' => $store->user->profile_picture,
             'is_owner' => true,
             'joined_at' => $store->user->created_at,
+            'role'=>'owner'
         ]);
         
         // Add other users
@@ -177,6 +178,7 @@ class SimpleStoreUserService
                 'profile_picture' => $user->profile_picture,
                 'is_owner' => false,
                 'joined_at' => $user->created_at,
+                'role'=>$user->role,
             ]);
         }
         
