@@ -122,6 +122,7 @@ Route::get('service/{categoryId}', [ServiceController::class, 'relatedServices']
 // Search
 Route::get('/search', [SearchController::class, 'search']);
 Route::post('/search/camera', [ImageSearchController::class, 'search']);
+Route::post('/search/by-image', [ImageSearchController::class, 'search']);
 Route::post('/search/barcode', [CameraSearchController::class, 'searchByBarcode']);
 Route::post('/search/image-exact', [ProductImageSearchController::class, 'search']);
 
