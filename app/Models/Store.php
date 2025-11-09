@@ -146,8 +146,10 @@ public function getAverageRatingAttribute(): float
     $average = round($this->storeReveiews()->avg('rating') ?? 0, 1);
     if ($average <= 0) {
         // generate a random rating between 4.0 and 5.0 inclusive, one decimal place
-        return round(mt_rand(40, 50) / 10, 1);
+        // return round(mt_rand(40, 50) / 10, 1);
+        return 0;
     }
+    
     return $average;
 }
 
