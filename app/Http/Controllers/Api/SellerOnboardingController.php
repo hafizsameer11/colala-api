@@ -466,15 +466,20 @@ class SellerOnboardingController extends Controller
     }
 
     /* ---------------- Progress + Submit ---------------- */
-    public function progress(Request $request)
+   public function progress(Request $request)
 {
     $store = $request->user()->store;
 
+    // Fetch steps and ignore 'delivery_pricing'
     $steps = StoreOnboardingStep::where('store_id', $store->id)
         ->orderBy('level')
-        ->get(['key', 'status', 'completed_at']);
+        ->get(['key', 'status', 'completed_at'])
+        ->reject(function ($step) {
+            return $step->key === 'level3.delivery_pricing';
+        })
+        ->values(); // reindex after rejection
 
-    // Determine if all steps are complete
+    // Determine if all remaining steps are complete
     $isComplete = $steps->every(function ($step) {
         return $step->status === 'done';
     });
@@ -488,6 +493,7 @@ class SellerOnboardingController extends Controller
         'steps'         => $steps,
     ]);
 }
+
 
 
     public function submitForReview(Request $request)
