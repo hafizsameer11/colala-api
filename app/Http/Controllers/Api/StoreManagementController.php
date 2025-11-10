@@ -117,7 +117,7 @@ class StoreManagementController extends Controller
             // social links
             'social_links' => ['nullable', 'array'],
             'social_links.*.type' => ['required_with:social_links', 'string', 'in:facebook,twitter,instagram,linkedin,youtube,tiktok,website,whatsapp'],
-            'social_links.*.url' => ['required_with:social_links', 'url', 'max:500'],
+            'social_links.*.url' => ['required_with:social_links'],
 
             // delivery pricing
             'delivery_pricing' => ['nullable', 'array'],
