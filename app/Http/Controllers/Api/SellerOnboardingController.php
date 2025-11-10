@@ -467,18 +467,28 @@ class SellerOnboardingController extends Controller
 
     /* ---------------- Progress + Submit ---------------- */
     public function progress(Request $request)
-    {
-        $store = $request->user()->store;
-        $steps = StoreOnboardingStep::where('store_id', $store->id)
-            ->orderBy('level')->get(['key', 'status', 'completed_at']);
-        return response()->json([
-            'status'  => true,
-            'level'   => $store->onboarding_level,
-            'percent' => $store->onboarding_percent,
-            'status_label' => $store->onboarding_status,
-            'steps'   => $steps,
-        ]);
-    }
+{
+    $store = $request->user()->store;
+
+    $steps = StoreOnboardingStep::where('store_id', $store->id)
+        ->orderBy('level')
+        ->get(['key', 'status', 'completed_at']);
+
+    // Determine if all steps are complete
+    $isComplete = $steps->every(function ($step) {
+        return $step->status === 'done';
+    });
+
+    return response()->json([
+        'status'        => true,
+        'level'         => $store->onboarding_level,
+        'percent'       => $store->onboarding_percent,
+        'status_label'  => $store->onboarding_status,
+        'is_complete'   => $isComplete,
+        'steps'         => $steps,
+    ]);
+}
+
 
     public function submitForReview(Request $request)
     {
