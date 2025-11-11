@@ -18,17 +18,12 @@ class SellerLoyaltyController extends Controller
         try {
             $user = Auth::user();
             $store = Store::where('user_id', $user->id)->first();
-            
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
             }
-
-            // Get total points awarded by this store
             $totalPointsAwarded = LoyaltyPoint::where('store_id', $store->id)
                 ->where('source', 'order')
                 ->sum('points');
-
-            // Get customers with their total points for this store
             $customers = LoyaltyPoint::select([
                     'user_id',
                     DB::raw('SUM(points) as total_points')
