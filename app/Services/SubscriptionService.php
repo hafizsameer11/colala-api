@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
+use App\Models\Wallet;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,6 +26,15 @@ class SubscriptionService
         }
         
         $user->save();
+        $userWallet=Wallet::where('user_id',$user->id)->first();
+        //now check the bbakance type nd need to add credit balance
+        if($plan->base_name == 'pro'){
+            $userWallet->ad_credit += 5000;
+            $userWallet->save();
+        }elseif($plan->base_name == 'vip'){
+            $userWallet->ad_credit += 10000;
+            $userWallet->save();
+        }
 
         return Subscription::create([
             'store_id'       => $storeId,
