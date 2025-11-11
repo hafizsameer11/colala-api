@@ -107,7 +107,7 @@ class WalletService{
             'tx_id'   => uniqid('tx_'),
             'amount'  => $amount,
             'status'  => 'completed',
-            'type'    => 'transfer_referral_to_shopping',
+            'type'    => 'deposit',
             'user_id' => $userId,
             'order_id'=> null,
         ]);
