@@ -2,16 +2,26 @@
 
 namespace App\Services;
 
-use App\Models\{Chat, ChatMessage, Store, User};
+use App\Models\{Chat, ChatMessage, Store, StoreUser, User};
 use App\Helpers\UserNotificationHelper;
+use Exception;
 
 class SellerChatService
 {
     public function fetchChatList(int $sellerId)
     {
-        $store = Store::where('user_id', $sellerId)->firstOrFail();
+        $store = Store::where('user_id', $sellerId)->first();
+        if (!$store) {
+            $storeUser = StoreUser::where('user_id', $sellerId)->first();
+            if ($storeUser) {
+                $store = $storeUser->store;
+            }
+        }
+        if (!$store) {
+            throw new Exception('Store not found');
+        }
 
-        return Chat::with(['user','lastMessage','service','store'])
+        return Chat::with(['user', 'lastMessage', 'service', 'store'])
             ->where('store_id', $store->id)
             ->get()
             ->map(function ($chat) {
@@ -24,21 +34,30 @@ class SellerChatService
                     'last_message'    => $chat->lastMessage?->message,
                     'last_message_at' => $chat->lastMessage?->created_at,
                     'unread_count'    => $unread,
-                    'profile_picture'   => $chat->user?->profile_picture ,
-                    'avatar'          => $chat->user?->profile_picture 
-                                          ? asset('storage/'.$chat->user->profile_picture) 
-                                          : null,
-                                          'user_id'         => $chat->user?->id ,
-                                          'store_id'        => $chat->store?->id ,
+                    'profile_picture'   => $chat->user?->profile_picture,
+                    'avatar'          => $chat->user?->profile_picture
+                        ? asset('storage/' . $chat->user->profile_picture)
+                        : null,
+                    'user_id'         => $chat->user?->id,
+                    'store_id'        => $chat->store?->id,
                 ];
             });
     }
 
     public function fetchMessages(int $chatId, int $sellerId)
     {
-        $store = Store::where('user_id', $sellerId)->firstOrFail();
+        $store = Store::where('user_id', $sellerId)->first();
+        if (!$store) {
+            $storeUser = StoreUser::where('user_id', $sellerId)->first();
+            if ($storeUser) {
+                $store = $storeUser->store;
+            }
+        }
+        if (!$store) {
+            throw new Exception('Store not found');
+        }
 
-        $chat = Chat::with(['user','dispute'])
+        $chat = Chat::with(['user', 'dispute'])
             ->where('id', $chatId)
             ->where('store_id', $store->id)
             ->firstOrFail();
@@ -47,7 +66,7 @@ class SellerChatService
         $chat->messages()->where('sender_type', 'buyer')->update(['is_read' => true]);
 
         return [
-            'messages' => $chat->messages()->with('sender')->orderBy('created_at','asc')->get(),
+            'messages' => $chat->messages()->with('sender')->orderBy('created_at', 'asc')->get(),
             'user'     => $chat->user,
             'dispute'  => $chat->dispute,
         ];
@@ -56,7 +75,16 @@ class SellerChatService
     public function sendMessage(int $chatId, int $sellerId, string $text, $imageFile = null)
     {
         $chat = Chat::findOrFail($chatId);
-        $store = Store::where('user_id', $sellerId)->firstOrFail();
+        $store = Store::where('user_id', $sellerId)->first();
+        if (!$store) {
+            $storeUser = StoreUser::where('user_id', $sellerId)->first();
+            if ($storeUser) {
+                $store = $storeUser->store;
+            }
+        }
+        if (!$store) {
+            throw new Exception('Store not found');
+        }
 
         if ($chat->store_id !== $store->id) {
             throw new \Exception("Unauthorized: Seller does not own this chat");
@@ -64,7 +92,7 @@ class SellerChatService
 
         $path = null;
         if ($imageFile) {
-            $path = $imageFile->store('chat_images','public');
+            $path = $imageFile->store('chat_images', 'public');
         }
 
         $message = ChatMessage::create([

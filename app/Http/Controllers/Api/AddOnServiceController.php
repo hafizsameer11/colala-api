@@ -17,6 +17,7 @@ class AddOnServiceController extends Controller
     {
         try {
             $user = Auth::user();
+            
             $services = AddOnService::where('seller_id', $user->id)
                 ->with(['latestChat'])
                 ->latest()

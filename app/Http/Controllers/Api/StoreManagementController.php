@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\StoreAddress;
 use App\Models\Category; // assumed Category model exists
+use App\Models\StoreUser;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +33,22 @@ class StoreManagementController extends Controller
             'deliveryPricing'
         ])->where('user_id', $userId)->first();
 
+        if (!$store) {
+            $storeUser = StoreUser::where('user_id', $userId)->first();
+            if ($storeUser) {
+                $store =  Store::with([
+                    'addresses' => fn($q) => $q->orderByDesc('is_main'),
+                    'banners',
+                    'categories:id,title',
+                    'socialLinks',
+                    'deliveryPricing'
+                ])->where('user_id', $storeUser->store_id)->first();
+            }
+        }
+        if (!$store) {
+            throw new Exception('Store not found');
+        }
+
 
         // For the picker
         $allCategories = Category::select('id', 'title')->orderBy('title')->get();
@@ -50,7 +68,7 @@ class StoreManagementController extends Controller
                 'followers_count' => $store->followers_count,
                 'total_sold'      => $store->total_sold,
                 'average_rating'  => $store->average_rating,
-                'banners'=>$store->banners,
+                'banners' => $store->banners,
                 'social_links' => $store->socialLinks->map(function ($link) {
                     return [
                         'id' => $link->id,
@@ -143,10 +161,10 @@ class StoreManagementController extends Controller
             $profilePath = $request->file('profile_image')
                 ->store('stores/profile_images', 'public');
 
-                //also update that users profile image
-                $user = $request->user();
-                $user->profile_picture = $profilePath;
-                $user->save();
+            //also update that users profile image
+            $user = $request->user();
+            $user->profile_picture = $profilePath;
+            $user->save();
         }
         if ($request->hasFile('banner_image')) {
             $bannerPath = $request->file('banner_image')
@@ -194,7 +212,7 @@ class StoreManagementController extends Controller
             if (isset($validated['social_links'])) {
                 // Delete existing social links
                 $store->socialLinks()->delete();
-                
+
                 // Create new social links
                 foreach ($validated['social_links'] as $link) {
                     $store->socialLinks()->create([
@@ -208,7 +226,7 @@ class StoreManagementController extends Controller
             if (isset($validated['delivery_pricing'])) {
                 // Delete existing delivery pricing
                 $store->deliveryPricing()->delete();
-                
+
                 // Create new delivery pricing
                 foreach ($validated['delivery_pricing'] as $pricing) {
                     $store->deliveryPricing()->create([
@@ -249,7 +267,7 @@ class StoreManagementController extends Controller
             }
 
             return $store->fresh([
-                'addresses' => fn($q) => $q->orderByDesc('is_main'), 
+                'addresses' => fn($q) => $q->orderByDesc('is_main'),
                 'categories:id,title',
                 'socialLinks',
                 'deliveryPricing'

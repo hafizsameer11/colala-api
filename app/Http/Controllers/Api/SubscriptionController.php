@@ -8,6 +8,7 @@ use App\Http\Requests\SubscriptionRequest;
 use App\Http\Resources\SubscriptionResource;
 use App\Http\Resources\SubscriptionPlanResource;
 use App\Models\Store;
+use App\Models\StoreUser;
 use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use App\Services\SubscriptionService;
@@ -23,7 +24,17 @@ class SubscriptionController extends Controller
     }
 
     protected function userStore(): Store {
-        return Store::where('user_id', Auth::id())->firstOrFail();
+        $store = Store::where('user_id', Auth::id())->first();
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
+        if(!$store){
+            throw new Exception('Store not found');
+        }
+        return $store;
     }
 
     public function plans() {

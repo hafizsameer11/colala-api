@@ -14,6 +14,7 @@ use App\Models\StoreReferralEarning;
 use App\Models\Store;
 use App\Models\StoreOrder;
 use App\Models\Escrow;
+use App\Models\StoreUser;
 use App\Models\Transaction;
 use Exception;
 use Illuminate\Http\Request;
@@ -26,7 +27,17 @@ class SellerOrderController extends Controller
     public function userStore()
     {
         $user = Auth::user();
+
         $store = Store::where('user_id', $user->id)->first();
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', $user->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
+        if(!$store){
+            throw new Exception('Store not found');
+        }
         return $store;
     }
     public function index(Request $request)

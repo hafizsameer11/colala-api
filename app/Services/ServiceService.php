@@ -15,6 +15,16 @@ class ServiceService
     {
         $user=Auth::user();
         $store=Store::where('user_id',$user->id)->first();
+        // if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
+        if(!$store){
+            throw new Exception('Store not found'); 
+        }
         $data['store_id']=$store->id;
         
         //check if have video 

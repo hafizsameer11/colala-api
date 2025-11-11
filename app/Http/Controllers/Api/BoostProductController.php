@@ -11,6 +11,7 @@ use App\Http\Resources\BoostProductResource;
 use App\Models\BoostProduct;
 use App\Models\Product;
 use App\Models\Store;
+use App\Models\StoreUser;
 use App\Services\BoostProductService;
 use Exception;
 use Illuminate\Http\Request;
@@ -25,6 +26,12 @@ class BoostProductController extends Controller
     protected function userStore(): Store
     {
         $store = Store::where('user_id', Auth::id())->first();
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
         abort_if(!$store, Response::HTTP_UNPROCESSABLE_ENTITY, 'No store linked to this user.');
         return $store;
     }
@@ -41,10 +48,10 @@ class BoostProductController extends Controller
         try {
             $store = $this->userStore();
 
-          $q = BoostProduct::with(['product.images', 'store'])
-    ->forStore($store->id)
-    ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
-    ->latest();
+            $q = BoostProduct::with(['product.images', 'store'])
+                ->forStore($store->id)
+                ->when($request->query('status'), fn($q, $s) => $q->where('status', $s))
+                ->latest();
 
 
             $data = BoostProductResource::collection($q->paginate(20));
@@ -62,8 +69,8 @@ class BoostProductController extends Controller
             $this->assertProductBelongsToStore((int)$request->product_id, $store->id);
 
             $calc = $this->svc->computeTotals((int)$request->budget, (int)$request->duration);
-            $product=Product::with(['images', 'store'])->find((int)$request->product_id);
-            
+            $product = Product::with(['images', 'store'])->find((int)$request->product_id);
+
             return response()->json([
                 'product'      => $product,
                 'daily_budget' => (int)$request->budget,
@@ -115,45 +122,45 @@ class BoostProductController extends Controller
     }
 
     public function update(UpdateBoostProductRequest $request, $id)
-{
-    try {
-        $store = $this->userStore();
+    {
+        try {
+            $store = $this->userStore();
 
-        $boost = BoostProduct::findOrFail($id);
-        abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN, 'Unauthorized to update this boost.');
+            $boost = BoostProduct::findOrFail($id);
+            abort_if($boost->store_id !== $store->id, Response::HTTP_FORBIDDEN, 'Unauthorized to update this boost.');
 
-        // Restrict updates if boost already finished
-        if (in_array($boost->status, ['completed', 'cancelled'])) {
-            return ResponseHelper::error("Cannot update a {$boost->status} boost.");
-        }
+            // Restrict updates if boost already finished
+            if (in_array($boost->status, ['completed', 'cancelled'])) {
+                return ResponseHelper::error("Cannot update a {$boost->status} boost.");
+            }
 
-        $validated = $request->validated();
+            $validated = $request->validated();
 
-        // Recalculate totals only if budget or duration changed
-        if (isset($validated['budget']) || isset($validated['duration'])) {
-            $calc = $this->svc->computeTotals(
-                $validated['budget'] ?? $boost->daily_budget,
-                $validated['duration'] ?? $boost->duration
+            // Recalculate totals only if budget or duration changed
+            if (isset($validated['budget']) || isset($validated['duration'])) {
+                $calc = $this->svc->computeTotals(
+                    $validated['budget'] ?? $boost->daily_budget,
+                    $validated['duration'] ?? $boost->duration
+                );
+
+                $validated['subtotal']        = $calc['subtotal'];
+                $validated['platform_fee']    = $calc['platform_fee'];
+                $validated['total_amount']    = $calc['total'];
+                $validated['estimated_reach'] = $calc['reach'];
+                $validated['estimated_clicks'] = $calc['est_clicks'];
+                $validated['estimated_cpc']   = $calc['est_cpc'];
+            }
+
+            $boost->update($validated);
+
+            return ResponseHelper::success(
+                new BoostProductResource($boost->fresh()),
+                "Boost updated successfully"
             );
-
-            $validated['subtotal']        = $calc['subtotal'];
-            $validated['platform_fee']    = $calc['platform_fee'];
-            $validated['total_amount']    = $calc['total'];
-            $validated['estimated_reach'] = $calc['reach'];
-            $validated['estimated_clicks'] = $calc['est_clicks'];
-            $validated['estimated_cpc']   = $calc['est_cpc'];
+        } catch (Exception $e) {
+            return ResponseHelper::error("Failed to update boost: " . $e->getMessage());
         }
-
-        $boost->update($validated);
-
-        return ResponseHelper::success(
-            new BoostProductResource($boost->fresh()),
-            "Boost updated successfully"
-        );
-    } catch (Exception $e) {
-        return ResponseHelper::error("Failed to update boost: " . $e->getMessage());
     }
-}
     // PATCH /api/boosts/{boost}/status
     public function updateStatus(Request $request, BoostProduct $boost)
     {

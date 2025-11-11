@@ -9,6 +9,7 @@ use App\Http\Requests\BannerRequest;
 use App\Http\Resources\BannerResource;
 use App\Models\Banner;
 use App\Models\Store;
+use App\Models\StoreUser;
 use App\Services\BannerService;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,17 @@ class BannerController extends Controller
     }
 
     protected function userStore(): Store {
-        return Store::where('user_id', Auth::id())->firstOrFail();
+        $store = Store::where('user_id', Auth::id())->first();
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
+        if(!$store){
+            throw new Exception('Store not found');
+        }
+        return $store;
     }
 
     public function index() {
