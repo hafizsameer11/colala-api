@@ -15,7 +15,7 @@ class BannerRequest extends FormRequest
     public function rules(): array {
         return [
             'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'link'  => 'nullable|url',
+            'link'  => 'nullable',
         ];
     }
      protected function failedValidation(Validator $validator)
