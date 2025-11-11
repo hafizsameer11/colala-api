@@ -14,11 +14,12 @@ use App\Http\Requests\Level3AddAddressRequest;
 use App\Http\Requests\Level3AddDeliveryRequest;
 use App\Http\Requests\Level3ThemeRequest;
 use App\Mail\OtpMail;
-use App\Models\{Post, Product, Service, User, Store, StoreSocialLink, StoreBusinessDetail, StoreAddress, StoreDeliveryPricing, StoreOnboardingStep, StoreReview};
+use App\Models\{Post, Product, Service, User, Store, StoreSocialLink, StoreBusinessDetail, StoreAddress, StoreDeliveryPricing, StoreOnboardingStep, StoreReview, StoreUser};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Category;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class SellerOnboardingController extends Controller
@@ -513,6 +514,14 @@ class SellerOnboardingController extends Controller
     /** One-shot summary for dashboard/profile screens */
     public function overview(Request $req)
     {
+        $store = $req->user()->store;
+        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        if(!$store){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $store = $storeUser->store;
+            }
+        }
         $store = $req->user()->store()->with([
             'businessDetails',
             'addresses',
