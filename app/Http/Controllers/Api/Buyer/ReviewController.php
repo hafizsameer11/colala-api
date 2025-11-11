@@ -27,7 +27,7 @@ class ReviewController extends Controller {
         try{
             $user=Auth::user();
             $storeReveiws=StoreReview::with('user')->where('user_id',$user->id)->latest()->get();
-            $productReveiews=ProductReview::with('user')->where('user_id',$user->id)->latest()->get();
+            $productReveiews=ProductReview::with('user','orderItem.product')->where('user_id',$user->id)->latest()->get();
             return ResponseHelper::success([
                'store_reviews'=>$storeReveiws,
                'product_reviews'=>$productReveiews
