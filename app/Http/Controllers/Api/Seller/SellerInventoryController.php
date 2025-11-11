@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\OrderItem;
+use App\Models\StoreUser;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +27,16 @@ class SellerInventoryController extends Controller
         try {
             $user = Auth::user();
             $store = Store::where('user_id', $user->id)->first();
-
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if(!$store){
+                $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+                if($storeUser){
+                    $store = $storeUser->store;
+                }
+            }
+            if(!$store){
+                throw new Exception('Store not found');
+            }
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
             }

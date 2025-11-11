@@ -4,7 +4,9 @@ namespace App\Services;
 use App\Models\Service;
 use App\Models\ServiceMedia;
 use App\Models\Store;
+use App\Models\StoreUser;
 use App\Models\SubService;
+use Exception;
 use Illuminate\Support\Facades\Auth;
 
 class ServiceService
@@ -90,6 +92,16 @@ class ServiceService
 {
     $user = Auth::user();
     $store = Store::where('user_id', $user->id)->first();
+    //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+    if(!$store){
+        $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+        if($storeUser){
+            $store = $storeUser->store;
+        }
+    }
+    if(!$store){
+        throw new Exception('Store not found');
+    }
     return Service::with(['media','subServices'])->where('store_id', $store->id)
         ->withCount([
             'stats as views'       => fn($q) => $q->where('event_type', 'view'),

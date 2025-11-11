@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\Store;
+use App\Models\StoreUser;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,13 @@ class ProductService
     public function getAll()
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
 
         return Product::with(['variants.images', 'images','category'])
             ->withCount([
@@ -35,7 +43,16 @@ class ProductService
     {
         
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-
+        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
+        if(!$storeId){
+            throw new Exception('Store not found');
+        }
         return Product::with(['variants.images', 'images', 'category'])
             ->withCount([
                 'productStats as views' => fn($q) => $q->where('event_type', 'view'),
@@ -121,9 +138,17 @@ class ProductService
         return DB::transaction(function () use ($data) {
             $user = Auth::user();
             $store = Store::where('user_id', $user->id)->first();
-            if (!$store) {
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if(!$store){
+                $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+                if($storeUser){
+                    $store = $storeUser->store;
+                }
+            }
+            if(!$store){
                 throw new Exception('Store not found');
             }
+
 
             $data['store_id'] = $store->id;
 
@@ -227,6 +252,16 @@ class ProductService
     {
         return DB::transaction(function () use ($id, $data) {
             $storeId = Store::where('user_id', Auth::id())->pluck('id')->first();
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if(!$storeId){
+                $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+                if($storeUser){
+                    $storeId = $storeUser->store_id;
+                }
+            }
+            if(!$storeId){
+                throw new Exception('Store not found');
+            }
             $product = Product::where('store_id', $storeId)->findOrFail($id);
             
             // Handle quantity: if provided directly, use it; otherwise recalculate from variants
@@ -307,6 +342,16 @@ class ProductService
     public function delete($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+         if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
+        if(!$storeId){
+            throw new Exception('Store not found');
+        }
 
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         return $product->delete();
@@ -315,7 +360,16 @@ class ProductService
     public function markAsSold($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        
+         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+         if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
+        if(!$storeId){
+            throw new Exception('Store not found');
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => true,
@@ -341,7 +395,16 @@ class ProductService
     public function markAsAvailable($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        
+
+            if(!$storeId){
+                $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+                if($storeUser){
+                    $storeId = $storeUser->store_id;
+                }
+            }
+            if(!$storeId){
+                throw new Exception('Store not found');
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => false, // Reset sold when marking as available
@@ -354,7 +417,15 @@ class ProductService
     public function updateQuantity($id, $quantity)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        
+        if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
+        if(!$storeId){
+            throw new Exception('Store not found');
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update(['quantity' => $quantity]);
         
