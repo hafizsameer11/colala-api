@@ -821,6 +821,9 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/disputes/bulk-action', [AdminDisputeController::class, 'bulkAction']);
     // Get dispute analytics and trends
     Route::get('/disputes/analytics', [AdminDisputeController::class, 'getDisputeAnalytics']);
+    // Dispute chat management
+    Route::get('/disputes/{disputeId}/chat', [AdminDisputeController::class, 'getDisputeChatMessages']); // get dispute chat messages
+    Route::post('/disputes/{disputeId}/message', [AdminDisputeController::class, 'sendMessage']); // send message in dispute chat
 
     // ========================================
     // ADMIN USER MANAGEMENT MODULE

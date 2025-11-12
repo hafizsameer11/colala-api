@@ -7,10 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 class Dispute extends Model
 {
     //
-     protected $fillable = [
-        'chat_id','store_order_id','user_id',
-        'category','details','images','status',
-        'won_by','resolution_notes','resolved_at','closed_at'
+    protected $fillable = [
+        'chat_id',
+        'dispute_chat_id',
+        'store_order_id',
+        'user_id',
+        'category',
+        'details',
+        'images',
+        'status',
+        'won_by',
+        'resolution_notes',
+        'resolved_at',
+        'closed_at'
     ];
 
     protected $casts = [
@@ -19,7 +28,24 @@ class Dispute extends Model
         'closed_at' => 'datetime',
     ];
 
-    public function chat()        { return $this->belongsTo(Chat::class); }
-    public function storeOrder()  { return $this->belongsTo(StoreOrder::class); }
-    public function user()        { return $this->belongsTo(User::class); }
+    // Relationships
+    public function chat()
+    {
+        return $this->belongsTo(Chat::class);
+    }
+
+    public function disputeChat()
+    {
+        return $this->belongsTo(DisputeChat::class);
+    }
+
+    public function storeOrder()
+    {
+        return $this->belongsTo(StoreOrder::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

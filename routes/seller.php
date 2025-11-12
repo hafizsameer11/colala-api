@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\Seller\SellerInventoryController;
 use App\Http\Controllers\Api\Seller\SellerKnowledgeBaseController;
 use App\Http\Controllers\Api\Seller\SellerReviewReplyController;
+use App\Http\Controllers\Api\Seller\SellerDisputeController;
 
 Route::prefix('seller')->group(function () {
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
@@ -173,6 +174,12 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     
     // Seller Analytics
     Route::get('analytics', [SellerAnalyticsController::class, 'index']);
+    
+    // Dispute Management
+    Route::get('disputes', [SellerDisputeController::class, 'myDisputes']);                    // list all disputes for seller's store
+    Route::get('disputes/{id}', [SellerDisputeController::class, 'show']);                      // view single dispute with chat
+    Route::post('disputes/{id}/message', [SellerDisputeController::class, 'sendMessage']);      // send message in dispute chat
+    Route::post('disputes/{id}/mark-read', [SellerDisputeController::class, 'markAsRead']);     // mark messages as read
     
     // Service Management - Specific routes first
     Route::get('services/my-services', [ServiceController::class, 'myservices']);

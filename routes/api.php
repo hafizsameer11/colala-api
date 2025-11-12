@@ -296,9 +296,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('escrow/history', [EscrowController::class, 'history']); // optional paginated history
 
 
-        Route::post('dispute', [DisputeController::class, 'store']);      // create dispute
-        Route::get('dispute', [DisputeController::class, 'myDisputes']); // list my disputes
-        Route::get('dispute/{id}', [DisputeController::class, 'show']);   // view single dispute with chat
+        // Dispute Management
+        Route::post('dispute', [DisputeController::class, 'store']);              // create dispute
+        Route::get('dispute', [DisputeController::class, 'myDisputes']);         // list my disputes
+        Route::get('dispute/{id}', [DisputeController::class, 'show']);           // view single dispute with chat
+        Route::post('dispute/{id}/message', [DisputeController::class, 'sendMessage']);  // send message in dispute chat
+        Route::post('dispute/{id}/mark-read', [DisputeController::class, 'markAsRead']); // mark messages as read
     });
 
     // ---------- NOTIFICATIONS ----------

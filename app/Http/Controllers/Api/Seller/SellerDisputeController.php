@@ -1,92 +1,32 @@
-<?php 
+<?php
 
-namespace App\Http\Controllers\Buyer;
+namespace App\Http\Controllers\Api\Seller;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateDisputeRequest;
-use App\Models\{Dispute, DisputeChat, DisputeChatMessage, StoreOrder, Store};
+use App\Models\{Dispute, DisputeChat, DisputeChatMessage, Store, StoreOrder};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Exception;
 
-class DisputeController extends Controller
+class SellerDisputeController extends Controller
 {
     /**
-     * Create a new dispute with dispute chat
-     */
-    public function store(CreateDisputeRequest $request)
-    {
-        try {
-            $data = $request->validated();
-            $buyer = $request->user();
-
-            // Get store order to find seller and store
-            $storeOrder = StoreOrder::with('store.user')->findOrFail($data['store_order_id']);
-            $store = $storeOrder->store;
-            $seller = $store->user;
-
-            if (!$seller) {
-                return ResponseHelper::error('Seller not found for this store order.', 404);
-            }
-
-            // Handle image uploads
-            $imagePaths = [];
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $img) {
-                    $imagePaths[] = $img->store('disputes', 'public');
-                }
-            }
-
-            // Create dispute chat first
-            $disputeChat = DisputeChat::create([
-                'buyer_id' => $buyer->id,
-                'seller_id' => $seller->id,
-                'store_id' => $store->id,
-            ]);
-
-            // Create dispute
-            $dispute = Dispute::create([
-                'chat_id' => $data['chat_id'] ?? null, // Keep for backward compatibility
-                'dispute_chat_id' => $disputeChat->id,
-                'store_order_id' => $data['store_order_id'],
-                'user_id' => $buyer->id,
-                'category' => $data['category'],
-                'details' => $data['details'] ?? null,
-                'images' => $imagePaths,
-                'status' => 'open',
-            ]);
-
-            // Update dispute_id in dispute_chat
-            $disputeChat->update(['dispute_id' => $dispute->id]);
-
-            // Create initial system message in dispute chat
-            DisputeChatMessage::create([
-                'dispute_chat_id' => $disputeChat->id,
-                'sender_id' => $buyer->id,
-                'sender_type' => 'buyer',
-                'message' => "📌 Dispute created: {$data['category']}" . ($data['details'] ? "\n\n{$data['details']}" : ''),
-                'is_read' => false,
-            ]);
-
-            return ResponseHelper::success([
-                'dispute' => $dispute->load('disputeChat.buyer', 'disputeChat.seller', 'disputeChat.store', 'storeOrder'),
-                'dispute_chat' => $disputeChat
-            ], 'Dispute created successfully.');
-
-        } catch (Exception $e) {
-            Log::error('Error creating dispute: ' . $e->getMessage());
-            return ResponseHelper::error($e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * List all disputes for logged-in buyer
+     * List all disputes for logged-in seller's store
      */
     public function myDisputes(Request $request)
     {
         try {
+            $seller = $request->user();
+            
+            // Get seller's store
+            $store = Store::where('user_id', $seller->id)->first();
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found for this seller.', 404);
+            }
+
             $disputes = Dispute::with([
                 'disputeChat.buyer',
                 'disputeChat.seller',
@@ -94,7 +34,9 @@ class DisputeController extends Controller
                 'disputeChat.lastMessage',
                 'storeOrder.store'
             ])
-                ->where('user_id', $request->user()->id)
+                ->whereHas('disputeChat', function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                })
                 ->latest()
                 ->get();
 
@@ -108,13 +50,14 @@ class DisputeController extends Controller
                     'won_by' => $dispute->won_by,
                     'resolution_notes' => $dispute->resolution_notes,
                     'created_at' => $dispute->created_at,
+                    'buyer' => $dispute->disputeChat && $dispute->disputeChat->buyer ? [
+                        'id' => $dispute->disputeChat->buyer->id,
+                        'name' => $dispute->disputeChat->buyer->full_name ?? $dispute->disputeChat->buyer->first_name . ' ' . $dispute->disputeChat->buyer->last_name,
+                        'email' => $dispute->disputeChat->buyer->email,
+                    ] : null,
                     'store_order' => $dispute->storeOrder ? [
                         'id' => $dispute->storeOrder->id,
                         'status' => $dispute->storeOrder->status,
-                    ] : null,
-                    'store' => $dispute->disputeChat && $dispute->disputeChat->store ? [
-                        'id' => $dispute->disputeChat->store->id,
-                        'name' => $dispute->disputeChat->store->store_name,
                     ] : null,
                     'last_message' => $dispute->disputeChat && $dispute->disputeChat->lastMessage ? [
                         'message' => $dispute->disputeChat->lastMessage->message,
@@ -127,19 +70,26 @@ class DisputeController extends Controller
             return ResponseHelper::success($formattedDisputes);
 
         } catch (Exception $e) {
-            Log::error('Error fetching disputes: ' . $e->getMessage());
+            Log::error('Error fetching seller disputes: ' . $e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
 
     /**
-     * View a single dispute with full chat messages
+     * View a single dispute with full chat messages (Seller)
      */
     public function show($id)
     {
         try {
-            $buyer = request()->user();
+            $seller = request()->user();
             
+            // Get seller's store
+            $store = Store::where('user_id', $seller->id)->first();
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found for this seller.', 404);
+            }
+
             $dispute = Dispute::with([
                 'disputeChat.buyer',
                 'disputeChat.seller',
@@ -148,7 +98,9 @@ class DisputeController extends Controller
                 'storeOrder.store',
                 'storeOrder.items'
             ])
-                ->where('user_id', $buyer->id)
+                ->whereHas('disputeChat', function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                })
                 ->findOrFail($id);
 
             return ResponseHelper::success([
@@ -197,13 +149,13 @@ class DisputeController extends Controller
             ]);
 
         } catch (Exception $e) {
-            Log::error('Error fetching dispute: ' . $e->getMessage());
+            Log::error('Error fetching seller dispute: ' . $e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
 
     /**
-     * Send message in dispute chat (Buyer)
+     * Send message in dispute chat (Seller)
      */
     public function sendMessage(Request $request, $disputeId)
     {
@@ -213,11 +165,20 @@ class DisputeController extends Controller
                 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
             ]);
 
-            $buyer = $request->user();
+            $seller = $request->user();
+            
+            // Get seller's store
+            $store = Store::where('user_id', $seller->id)->first();
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found for this seller.', 404);
+            }
 
-            // Verify dispute belongs to buyer
+            // Verify dispute belongs to seller's store
             $dispute = Dispute::with('disputeChat')
-                ->where('user_id', $buyer->id)
+                ->whereHas('disputeChat', function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                })
                 ->findOrFail($disputeId);
 
             if (!$dispute->disputeChat) {
@@ -235,16 +196,16 @@ class DisputeController extends Controller
 
             $message = DisputeChatMessage::create([
                 'dispute_chat_id' => $dispute->disputeChat->id,
-                'sender_id' => $buyer->id,
-                'sender_type' => 'buyer',
+                'sender_id' => $seller->id,
+                'sender_type' => 'seller',
                 'message' => $request->message,
                 'image' => $imagePath,
                 'is_read' => false,
             ]);
 
-            // Mark seller and admin messages as read for this buyer
+            // Mark buyer and admin messages as read for this seller
             $dispute->disputeChat->messages()
-                ->where('sender_type', '!=', 'buyer')
+                ->where('sender_type', '!=', 'seller')
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
 
@@ -253,37 +214,46 @@ class DisputeController extends Controller
             ], 'Message sent successfully.');
 
         } catch (Exception $e) {
-            Log::error('Error sending message: ' . $e->getMessage());
+            Log::error('Error sending seller message: ' . $e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
 
     /**
-     * Mark messages as read (Buyer)
+     * Mark messages as read (Seller)
      */
     public function markAsRead(Request $request, $disputeId)
     {
         try {
-            $buyer = $request->user();
+            $seller = $request->user();
+            
+            // Get seller's store
+            $store = Store::where('user_id', $seller->id)->first();
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found for this seller.', 404);
+            }
 
             $dispute = Dispute::with('disputeChat')
-                ->where('user_id', $buyer->id)
+                ->whereHas('disputeChat', function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                })
                 ->findOrFail($disputeId);
 
             if (!$dispute->disputeChat) {
                 return ResponseHelper::error('Dispute chat not found.', 404);
             }
 
-            // Mark all non-buyer messages as read
+            // Mark all non-seller messages as read
             $dispute->disputeChat->messages()
-                ->where('sender_type', '!=', 'buyer')
+                ->where('sender_type', '!=', 'seller')
                 ->where('is_read', false)
                 ->update(['is_read' => true]);
 
             return ResponseHelper::success([], 'Messages marked as read.');
 
         } catch (Exception $e) {
-            Log::error('Error marking messages as read: ' . $e->getMessage());
+            Log::error('Error marking seller messages as read: ' . $e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }

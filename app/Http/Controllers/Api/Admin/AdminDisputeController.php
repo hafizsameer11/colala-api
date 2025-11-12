@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
+use App\Models\DisputeChat;
+use App\Models\DisputeChatMessage;
 use App\Models\Chat;
 use App\Models\StoreOrder;
 use App\Models\User;
@@ -12,6 +14,7 @@ use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AdminDisputeController extends Controller
 {
@@ -22,6 +25,9 @@ class AdminDisputeController extends Controller
     {
         try {
             $query = Dispute::with([
+                'disputeChat' => function ($q) {
+                    $q->with(['store', 'buyer', 'seller']);
+                },
                 'chat' => function ($q) {
                     $q->with(['store', 'user']);
                 },
@@ -52,6 +58,9 @@ class AdminDisputeController extends Controller
                           $userQuery->where('first_name', 'like', "%{$search}%")
                                    ->orWhere('last_name', 'like', "%{$search}%")
                                    ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('disputeChat.store', function ($storeQuery) use ($search) {
+                          $storeQuery->where('store_name', 'like', "%{$search}%");
                       })
                       ->orWhereHas('chat.store', function ($storeQuery) use ($search) {
                           $storeQuery->where('store_name', 'like', "%{$search}%");
@@ -135,6 +144,16 @@ class AdminDisputeController extends Controller
     {
         try {
             $dispute = Dispute::with([
+                'disputeChat' => function ($q) {
+                    $q->with([
+                        'store',
+                        'buyer',
+                        'seller',
+                        'messages' => function ($msgQuery) {
+                            $msgQuery->with('sender')->orderBy('created_at', 'desc');
+                        }
+                    ]);
+                },
                 'chat' => function ($q) {
                     $q->with(['store', 'user', 'messages' => function ($msgQuery) {
                         $msgQuery->orderBy('created_at', 'desc')->limit(10);
@@ -468,6 +487,151 @@ class AdminDisputeController extends Controller
             }
         }
 
+        // Add dispute chat information (new system)
+        if ($dispute->disputeChat) {
+            $data['dispute_chat'] = [
+                'id' => $dispute->disputeChat->id,
+                'buyer' => $dispute->disputeChat->buyer ? [
+                    'id' => $dispute->disputeChat->buyer->id,
+                    'name' => $dispute->disputeChat->buyer->full_name ?? $dispute->disputeChat->buyer->first_name . ' ' . $dispute->disputeChat->buyer->last_name,
+                    'email' => $dispute->disputeChat->buyer->email,
+                ] : null,
+                'seller' => $dispute->disputeChat->seller ? [
+                    'id' => $dispute->disputeChat->seller->id,
+                    'name' => $dispute->disputeChat->seller->full_name ?? $dispute->disputeChat->seller->first_name . ' ' . $dispute->disputeChat->seller->last_name,
+                    'email' => $dispute->disputeChat->seller->email,
+                ] : null,
+                'store' => $dispute->disputeChat->store ? [
+                    'id' => $dispute->disputeChat->store->id,
+                    'name' => $dispute->disputeChat->store->store_name,
+                ] : null,
+            ];
+
+            if ($detailed && $dispute->disputeChat->messages) {
+                $data['dispute_chat']['messages'] = $dispute->disputeChat->messages->map(function ($message) {
+                    return [
+                        'id' => $message->id,
+                        'sender_id' => $message->sender_id,
+                        'sender_type' => $message->sender_type,
+                        'sender_name' => $message->sender ? ($message->sender->full_name ?? $message->sender->first_name . ' ' . $message->sender->last_name) : 'Unknown',
+                        'message' => $message->message,
+                        'image' => $message->image ? asset('storage/' . $message->image) : null,
+                        'is_read' => $message->is_read,
+                        'created_at' => $message->created_at,
+                    ];
+                });
+            }
+        }
+
         return $data;
+    }
+
+    /**
+     * Send message in dispute chat (Admin)
+     */
+    public function sendMessage(Request $request, $disputeId)
+    {
+        try {
+            $request->validate([
+                'message' => 'nullable|string|max:5000',
+                'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            ]);
+
+            $admin = $request->user();
+
+            $dispute = Dispute::with('disputeChat')
+                ->findOrFail($disputeId);
+
+            if (!$dispute->disputeChat) {
+                return ResponseHelper::error('Dispute chat not found.', 404);
+            }
+
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('dispute_chat_images', 'public');
+            }
+
+            if (!$request->message && !$imagePath) {
+                return ResponseHelper::error('Message or image is required.', 422);
+            }
+
+            $message = DisputeChatMessage::create([
+                'dispute_chat_id' => $dispute->disputeChat->id,
+                'sender_id' => $admin->id,
+                'sender_type' => 'admin',
+                'message' => $request->message,
+                'image' => $imagePath,
+                'is_read' => false,
+            ]);
+
+            // Mark all messages as read when admin sends a message
+            $dispute->disputeChat->messages()
+                ->where('is_read', false)
+                ->update(['is_read' => true]);
+
+            return ResponseHelper::success([
+                'message' => $message->load('sender')
+            ], 'Message sent successfully.');
+
+        } catch (\Exception $e) {
+            Log::error("Error sending admin message: " . $e->getMessage());
+            return ResponseHelper::error('Failed to send message.', 500);
+        }
+    }
+
+    /**
+     * Get dispute chat messages (Admin)
+     */
+    public function getDisputeChatMessages($disputeId)
+    {
+        try {
+            $dispute = Dispute::with([
+                'disputeChat.messages.sender',
+                'disputeChat.buyer',
+                'disputeChat.seller',
+                'disputeChat.store'
+            ])
+                ->findOrFail($disputeId);
+
+            if (!$dispute->disputeChat) {
+                return ResponseHelper::error('Dispute chat not found.', 404);
+            }
+
+            return ResponseHelper::success([
+                'dispute_chat' => [
+                    'id' => $dispute->disputeChat->id,
+                    'buyer' => $dispute->disputeChat->buyer ? [
+                        'id' => $dispute->disputeChat->buyer->id,
+                        'name' => $dispute->disputeChat->buyer->full_name ?? $dispute->disputeChat->buyer->first_name . ' ' . $dispute->disputeChat->buyer->last_name,
+                        'email' => $dispute->disputeChat->buyer->email,
+                    ] : null,
+                    'seller' => $dispute->disputeChat->seller ? [
+                        'id' => $dispute->disputeChat->seller->id,
+                        'name' => $dispute->disputeChat->seller->full_name ?? $dispute->disputeChat->seller->first_name . ' ' . $dispute->disputeChat->seller->last_name,
+                        'email' => $dispute->disputeChat->seller->email,
+                    ] : null,
+                    'store' => $dispute->disputeChat->store ? [
+                        'id' => $dispute->disputeChat->store->id,
+                        'name' => $dispute->disputeChat->store->store_name,
+                    ] : null,
+                    'messages' => $dispute->disputeChat->messages->map(function ($message) {
+                        return [
+                            'id' => $message->id,
+                            'sender_id' => $message->sender_id,
+                            'sender_type' => $message->sender_type,
+                            'sender_name' => $message->sender ? ($message->sender->full_name ?? $message->sender->first_name . ' ' . $message->sender->last_name) : 'Unknown',
+                            'message' => $message->message,
+                            'image' => $message->image ? asset('storage/' . $message->image) : null,
+                            'is_read' => $message->is_read,
+                            'created_at' => $message->created_at,
+                        ];
+                    }),
+                ]
+            ], 'Dispute chat messages retrieved successfully.');
+
+        } catch (\Exception $e) {
+            Log::error("Error fetching dispute chat messages: " . $e->getMessage());
+            return ResponseHelper::error('Failed to fetch messages.', 500);
+        }
     }
 }
