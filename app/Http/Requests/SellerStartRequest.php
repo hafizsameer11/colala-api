@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Traits\ReturnsJsonOnFail;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class SellerStartRequest extends FormRequest
 {
@@ -20,7 +21,7 @@ class SellerStartRequest extends FormRequest
             'store_name'     => 'required|string|max:255',
         'full_name'      => 'required|string|max:255',
             'store_email'    => 'required|email|unique:users,email|unique:stores,store_email',
-            'store_phone'    => 'required|string|max:20',
+            'store_phone'    => 'required|string|max:20|unique:users,phone',
             'password'       => 'required|string|min:6',
             'store_location' => 'nullable|string',
             'referral_code'  => 'nullable|string|max:50',
@@ -35,5 +36,14 @@ class SellerStartRequest extends FormRequest
             'social_links.*.type'  => 'in:whatsapp,instagram,facebook,twitter,tiktok,linkedin',
             'social_links.*.url'   => 'url',
         ];
+    }
+    public function failedValidation(\Illuminate\Contracts\Validation\Validator $validator){
+          throw new HttpResponseException(
+            response()->json([
+                'status' => 'error',
+                'data' => $validator->errors(),
+                'message' => $validator->errors()->first()
+            ], 422)
+        );
     }
 }
