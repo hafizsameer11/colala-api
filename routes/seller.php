@@ -168,6 +168,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('add-on-services/{serviceId}/chat/mark-read', [AddOnServiceChatController::class, 'markAsRead']);
     
     // Seller Loyalty Management
+    
     Route::get('loyalty/customers', [SellerLoyaltyController::class, 'getCustomerPoints']);
     Route::get('loyalty/settings', [SellerLoyaltyController::class, 'getLoyaltySettings']);
     Route::post('loyalty/settings', [SellerLoyaltyController::class, 'updateLoyaltySettings']);

@@ -43,17 +43,74 @@ class ProductStatController extends Controller
         return ResponseHelper::success(array_values($result), "Stats retrieved");
     }
 
-    public function totals($productId)
+    public function totals(Request $request, $productId)
     {
-        $totals = ProductStat::where('product_id',$productId)
-            ->selectRaw('event_type, COUNT(*) as count')
-            ->groupBy('event_type')
-            ->pluck('count','event_type');
-
         $default = [
-            'impression'=>0,'view'=>0,'click'=>0,'add_to_cart'=>0,'order'=>0,'chat'=>0,
+            'impression' => 0,
+            'view' => 0,
+            'click' => 0,
+            'add_to_cart' => 0,
+            'order' => 0,
+            'chat' => 0,
         ];
 
-        return ResponseHelper::success(array_merge($default,$totals->toArray()), "Total stats");
+        // Define all filter periods
+        $filters = [
+            'today' => [
+                'label' => 'Today',
+                'start_date' => Carbon::today()->startOfDay(),
+            ],
+            '7_days' => [
+                'label' => 'Last 7 Days',
+                'start_date' => Carbon::now()->subDays(7)->startOfDay(),
+            ],
+            '14_days' => [
+                'label' => 'Last 14 Days',
+                'start_date' => Carbon::now()->subDays(14)->startOfDay(),
+            ],
+            '30_days' => [
+                'label' => 'Last 30 Days',
+                'start_date' => Carbon::now()->subDays(30)->startOfDay(),
+            ],
+            '90_days' => [
+                'label' => 'Last 90 Days',
+                'start_date' => Carbon::now()->subDays(90)->startOfDay(),
+            ],
+            'all_time' => [
+                'label' => 'All Time',
+                'start_date' => null,
+            ],
+        ];
+
+        $result = [];
+        $endDate = Carbon::now();
+
+        // Get stats for each filter period
+        foreach ($filters as $filterKey => $filterConfig) {
+            $query = ProductStat::where('product_id', $productId);
+            
+            // Apply date filter if specified
+            if ($filterConfig['start_date']) {
+                $query->where('created_at', '>=', $filterConfig['start_date']);
+            }
+            
+            $totals = $query
+                ->selectRaw('event_type, COUNT(*) as count')
+                ->groupBy('event_type')
+                ->pluck('count', 'event_type');
+
+            $stats = array_merge($default, $totals->toArray());
+            
+            $result[$filterKey] = [
+                'label' => $filterConfig['label'],
+                'stats' => $stats,
+                'period' => [
+                    'start_date' => $filterConfig['start_date'] ? $filterConfig['start_date']->format('Y-m-d H:i:s') : null,
+                    'end_date' => $endDate->format('Y-m-d H:i:s'),
+                ],
+            ];
+        }
+
+        return ResponseHelper::success($result, "Total stats");
     }
 }
