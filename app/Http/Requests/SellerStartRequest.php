@@ -21,7 +21,7 @@ class SellerStartRequest extends FormRequest
             'store_name'     => 'required|string|max:255',
         'full_name'      => 'required|string|max:255',
             'store_email'    => 'required|email|unique:users,email|unique:stores,store_email',
-            'store_phone'    => 'required|string|max:20|unique:users,phone',
+            'store_phone'    => 'required|string|max:20|unique:users,phone|max:11',
             'password'       => 'required|string|min:6',
             'store_location' => 'nullable|string',
             'referral_code'  => 'nullable|string|max:50',
