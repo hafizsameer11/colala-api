@@ -810,20 +810,20 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Get dispute statistics and metrics
     Route::get('/disputes/statistics', [AdminDisputeController::class, 'getDisputeStatistics']);
     // Get detailed dispute information including chat and order details
-    Route::get('/disputes/{disputeId}/details', [AdminDisputeController::class, 'getDisputeDetails']);
+    Route::get('/disputes/{disputeId}/details', [AdminDisputeController::class, 'getDisputeDetails'])->where('disputeId', '[0-9]+');
     // Update dispute status (pending, on_hold, resolved, closed)
-    Route::put('/disputes/{disputeId}/status', [AdminDisputeController::class, 'updateDisputeStatus']);
+    Route::put('/disputes/{disputeId}/status', [AdminDisputeController::class, 'updateDisputeStatus'])->where('disputeId', '[0-9]+');
     // Resolve dispute with resolution notes and winner
-    Route::post('/disputes/{disputeId}/resolve', [AdminDisputeController::class, 'resolveDispute']);
+    Route::post('/disputes/{disputeId}/resolve', [AdminDisputeController::class, 'resolveDispute'])->where('disputeId', '[0-9]+');
     // Close dispute
-    Route::post('/disputes/{disputeId}/close', [AdminDisputeController::class, 'closeDispute']);
+    Route::post('/disputes/{disputeId}/close', [AdminDisputeController::class, 'closeDispute'])->where('disputeId', '[0-9]+');
     // Bulk actions on disputes (update_status, resolve, close)
     Route::post('/disputes/bulk-action', [AdminDisputeController::class, 'bulkAction']);
     // Get dispute analytics and trends
     Route::get('/disputes/analytics', [AdminDisputeController::class, 'getDisputeAnalytics']);
     // Dispute chat management
-    Route::get('/disputes/{disputeId}/chat', [AdminDisputeController::class, 'getDisputeChatMessages']); // get dispute chat messages
-    Route::post('/disputes/{disputeId}/message', [AdminDisputeController::class, 'sendMessage']); // send message in dispute chat
+    Route::get('/disputes/{disputeId}/chat', [AdminDisputeController::class, 'getDisputeChatMessages'])->where('disputeId', '[0-9]+'); // get dispute chat messages
+    Route::post('/disputes/{disputeId}/message', [AdminDisputeController::class, 'sendMessage'])->where('disputeId', '[0-9]+'); // send message in dispute chat
 
     // ========================================
     // ADMIN USER MANAGEMENT MODULE

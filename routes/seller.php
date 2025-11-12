@@ -177,9 +177,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     
     // Dispute Management
     Route::get('disputes', [SellerDisputeController::class, 'myDisputes']);                    // list all disputes for seller's store
-    Route::get('disputes/{id}', [SellerDisputeController::class, 'show']);                      // view single dispute with chat
-    Route::post('disputes/{id}/message', [SellerDisputeController::class, 'sendMessage']);      // send message in dispute chat
-    Route::post('disputes/{id}/mark-read', [SellerDisputeController::class, 'markAsRead']);     // mark messages as read
+    Route::get('disputes/{id}', [SellerDisputeController::class, 'show'])->where('id', '[0-9]+');                      // view single dispute with chat
+    Route::post('disputes/{id}/message', [SellerDisputeController::class, 'sendMessage'])->where('id', '[0-9]+');      // send message in dispute chat
+    Route::post('disputes/{id}/mark-read', [SellerDisputeController::class, 'markAsRead'])->where('id', '[0-9]+');     // mark messages as read
     
     // Service Management - Specific routes first
     Route::get('services/my-services', [ServiceController::class, 'myservices']);

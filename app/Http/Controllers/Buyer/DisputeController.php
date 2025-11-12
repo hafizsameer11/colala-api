@@ -138,6 +138,11 @@ class DisputeController extends Controller
     public function show($id)
     {
         try {
+            // Validate that id is numeric
+            if (!is_numeric($id)) {
+                return ResponseHelper::error('Invalid dispute ID. ID must be a number.', 422);
+            }
+
             $buyer = request()->user();
             
             $dispute = Dispute::with([
@@ -208,6 +213,11 @@ class DisputeController extends Controller
     public function sendMessage(Request $request, $disputeId)
     {
         try {
+            // Validate that disputeId is numeric
+            if (!is_numeric($disputeId)) {
+                return ResponseHelper::error('Invalid dispute ID. ID must be a number.', 422);
+            }
+
             $request->validate([
                 'message' => 'nullable|string|max:5000',
                 'image' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
@@ -264,6 +274,11 @@ class DisputeController extends Controller
     public function markAsRead(Request $request, $disputeId)
     {
         try {
+            // Validate that disputeId is numeric
+            if (!is_numeric($disputeId)) {
+                return ResponseHelper::error('Invalid dispute ID. ID must be a number.', 422);
+            }
+
             $buyer = $request->user();
 
             $dispute = Dispute::with('disputeChat')

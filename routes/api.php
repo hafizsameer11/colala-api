@@ -297,12 +297,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         // Dispute Management
-        Route::post('dispute', [DisputeController::class, 'store']);              // create dispute
-        Route::get('dispute', [DisputeController::class, 'myDisputes']);         // list my disputes
-        Route::get('dispute/{id}', [DisputeController::class, 'show']);           // view single dispute with chat
-        Route::post('dispute/{id}/message', [DisputeController::class, 'sendMessage']);  // send message in dispute chat
-        Route::post('dispute/{id}/mark-read', [DisputeController::class, 'markAsRead']); // mark messages as read
     });
+    Route::post('dispute', [DisputeController::class, 'store']);              // create dispute
+    Route::get('dispute', [DisputeController::class, 'myDisputes']);         // list my disputes
+    Route::get('dispute/{id}', [DisputeController::class, 'show'])->where('id', '[0-9]+');           // view single dispute with chat
+    Route::post('dispute/{id}/message', [DisputeController::class, 'sendMessage'])->where('id', '[0-9]+');  // send message in dispute chat
+    Route::post('dispute/{id}/mark-read', [DisputeController::class, 'markAsRead'])->where('id', '[0-9]+'); // mark messages as read
 
     // ---------- NOTIFICATIONS ----------
     Route::get('notifications', [NotificationController::class, 'getForUser']);
