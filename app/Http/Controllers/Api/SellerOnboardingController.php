@@ -62,7 +62,7 @@ class SellerOnboardingController extends Controller
     {
 
         $user = User::create([
-            'full_name' => $request->store_name,
+            'full_name' => $request->full_name,
             'email'     => $request->store_email,
             'phone'     => $request->store_phone,
             'password'  => Hash::make($request->password),

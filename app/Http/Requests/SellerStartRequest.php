@@ -18,6 +18,7 @@ class SellerStartRequest extends FormRequest
     {
         return [
             'store_name'     => 'required|string|max:255',
+        'full_name'      => 'required|string|max:255',
             'store_email'    => 'required|email|unique:users,email|unique:stores,store_email',
             'store_phone'    => 'required|string|max:20',
             'password'       => 'required|string|min:6',
