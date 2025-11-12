@@ -39,6 +39,9 @@ class ProductCreateUpdateRequest extends FormRequest
             'quantity'                 => 'nullable|integer|min:0',
             'referral_fee'             => 'nullable|numeric|min:0',
             'referral_person_limit'   => 'nullable|integer|min:1',
+            'tag1'                     => 'nullable|string',
+            'tag2'                     => 'nullable|string',
+            'tag3'                     => 'nullable|string',
 
             /* ---------- 🖼️ PRODUCT IMAGES ---------- */
             'images'                   => 'array',
