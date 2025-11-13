@@ -28,7 +28,7 @@ class ProductCreateUpdateRequest extends FormRequest
             'category_id'              => 'nullable|exists:categories,id',
             'brand'                    => 'nullable|string|max:255',
             'description'              => 'nullable|string',
-            'price'                    => 'nullable|numeric|min:0',
+            'price'                    => 'required|numeric|min:0',
             'discount_price'           => 'nullable|numeric|min:0',
             'has_variants'             => 'required|boolean',
             'status'                   => 'nullable|in:draft,active,inactive',
