@@ -187,6 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('orders', [OrderController::class, 'list']);
         Route::get('orders/{orderId}', [OrderController::class, 'detail']);
         Route::post('orders/{storeOrderId}/confirm-delivered', [OrderController::class, 'confirmDelivered']);
+        Route::get('stores/{storeId}/has-ordered', [OrderController::class, 'hasOrderedFromStore'])->where('storeId', '[0-9]+');
         
         // Order Payment (Post-Acceptance)
         Route::get('orders/{orderId}/payment-info', [BuyerOrderPaymentController::class, 'getPaymentInfo']);
