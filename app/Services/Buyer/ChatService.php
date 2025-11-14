@@ -69,8 +69,8 @@ class ChatService {
         // Check if a general chat already exists between the user and store
         $existingChat = Chat::where('user_id', $userId)
             ->where('store_id', $storeId)
-            ->whereNull('store_order_id')
-            ->where('type', 'general')
+            // ->whereNull('store_order_id')
+            // ->where('type', 'general')
             ->first();
 
         if ($existingChat) {
@@ -90,7 +90,7 @@ class ChatService {
         // Check if a service chat already exists between the user and store for the given service
         $existingChat = Chat::where('user_id', $userId)
             ->where('store_id', $storeId)
-            ->where('service_id', $serviceId)
+            // ->where('service_id', $serviceId)
             // ->where('type', 'service')
             ->first();
 
