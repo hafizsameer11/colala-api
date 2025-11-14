@@ -45,7 +45,7 @@ class ProductCreateUpdateRequest extends FormRequest
 
             /* ---------- 🖼️ PRODUCT IMAGES ---------- */
             'images'                   => 'array',
-            'images.*'                 => 'nullable|file|mimes:jpg,jpeg,png,webp|max:4096',
+            'images.*'                 => 'nullable|file|mimes:jpg,jpeg,png,webp',
 
             /* ---------- 🧬 VARIANTS (nested array) ---------- */
             'variants'                 => 'array',
