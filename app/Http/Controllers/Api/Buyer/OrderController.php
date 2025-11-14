@@ -42,7 +42,11 @@ class OrderController extends Controller {
                     $query->where('user_id', $userId);
                 })
                 ->exists();
-            return ResponseHelper::success($hasOrdered);
+            return ResponseHelper::success([
+                'has_ordered' => $hasOrdered,
+                'store' => $store,
+                'user' => $req->user()
+            ]);
         } catch (\Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
