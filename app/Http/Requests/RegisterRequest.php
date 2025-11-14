@@ -28,7 +28,7 @@ class RegisterRequest extends FormRequest
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'country' => 'required',
-            'state' => 'required',
+            'state' => 'nullable',
             'phone' => 'required',
             'user_name' => 'required',
             'referral_code' => 'nullable',
