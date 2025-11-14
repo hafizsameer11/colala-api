@@ -52,4 +52,56 @@ class SellerChatController extends Controller
             return ResponseHelper::error($e->getMessage(), 500);
         }
     }
+
+    /**
+     * Get unread message count for seller
+     */
+    public function unreadCount(Request $req)
+    {
+        try {
+            $sellerId = $req->user()->id;
+            
+            // Get seller's store
+            $store = \App\Models\Store::where('user_id', $sellerId)->first();
+            
+            if (!$store) {
+                // Check if user is a store user
+                $storeUser = \App\Models\StoreUser::where('user_id', $sellerId)->first();
+                if ($storeUser) {
+                    $store = $storeUser->store;
+                }
+            }
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found for this seller', 404);
+            }
+
+            // Count unread messages from buyers in regular chats
+            $regularChatUnread = \App\Models\ChatMessage::whereHas('chat', function ($query) use ($store) {
+                $query->where('store_id', $store->id);
+            })
+            ->where('sender_type', 'buyer')
+            ->where('is_read', false)
+            ->count();
+
+            // Count unread messages from buyers and admins in dispute chats
+            $disputeChatUnread = \App\Models\DisputeChatMessage::whereHas('disputeChat', function ($query) use ($store) {
+                $query->where('store_id', $store->id);
+            })
+            ->whereIn('sender_type', ['buyer', 'admin'])
+            ->where('is_read', false)
+            ->count();
+
+            $totalUnread = $regularChatUnread + $disputeChatUnread;
+
+            return ResponseHelper::success([
+                'total_unread' => $totalUnread,
+                'regular_chat_unread' => $regularChatUnread,
+                'dispute_chat_unread' => $disputeChatUnread,
+            ], 'Unread message count retrieved successfully');
+
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
 }

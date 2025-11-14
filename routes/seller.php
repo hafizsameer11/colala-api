@@ -129,6 +129,7 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('chat/', [SellerChatController::class, 'list']);
     Route::get('chat/{chatId}/messages', action: [SellerChatController::class, 'messages']);
     Route::post('chat/{chatId}/send', [SellerChatController::class, 'send']);
+    Route::get('chat/unread-count', [SellerChatController::class, 'unreadCount']);
     Route::get('/products/{id}/stats', [ProductStatController::class, 'getStats']);  // chart data (daily)
     Route::get('/products/{id}/stats/totals', [ProductStatController::class, 'totals']); // overall totals
     Route::get('/services/{id}/stats', [ServiceStatController::class, 'getStats']);      // daily chart data

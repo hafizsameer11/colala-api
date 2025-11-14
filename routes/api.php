@@ -232,6 +232,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('chats/{id}/send', [ChatController::class, 'send']);
         Route::post('chats/start/{store_id}', [ChatController::class, 'startChatWithStore']);
         Route::post('chats/start-service/{store_id}', [ChatController::class, 'startChatWithStoreForService']);
+        Route::get('chat/unread-count', [ChatController::class, 'unreadCount']);
 
         // Phone Number Requests
         Route::post('phone-request', [PhoneRequestController::class, 'requestPhoneNumber']);

@@ -79,4 +79,41 @@ class ChatController extends Controller
             return ResponseHelper::error($e->getMessage(),500);
         }
     }
+
+    /**
+     * Get unread message count for buyer
+     */
+    public function unreadCount(Request $req)
+    {
+        try {
+            $userId = $req->user()->id;
+            
+            // Count unread messages from stores in regular chats
+            $regularChatUnread = \App\Models\ChatMessage::whereHas('chat', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->where('sender_type', 'store')
+            ->where('is_read', false)
+            ->count();
+
+            // Count unread messages from sellers and admins in dispute chats
+            $disputeChatUnread = \App\Models\DisputeChatMessage::whereHas('disputeChat', function ($query) use ($userId) {
+                $query->where('buyer_id', $userId);
+            })
+            ->whereIn('sender_type', ['seller', 'admin'])
+            ->where('is_read', false)
+            ->count();
+
+            $totalUnread = $regularChatUnread + $disputeChatUnread;
+
+            return ResponseHelper::success([
+                'total_unread' => $totalUnread,
+                'regular_chat_unread' => $regularChatUnread,
+                'dispute_chat_unread' => $disputeChatUnread,
+            ], 'Unread message count retrieved successfully');
+
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
 }
