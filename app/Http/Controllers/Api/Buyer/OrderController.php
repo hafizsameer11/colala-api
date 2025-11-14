@@ -41,31 +41,33 @@ class OrderController extends Controller {
 
             $userId = $req->user()->id;
             
-            // Check if user has any orders from this store
-            $hasOrdered = StoreOrder::where('store_id', $storeId)
-                ->whereHas('order', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
+            // Use a direct join query to check if user has ordered from this store
+            // This is more reliable than whereHas
+            $hasOrdered = StoreOrder::join('orders', 'store_orders.order_id', '=', 'orders.id')
+                ->where('orders.user_id', $userId)
+                ->where('store_orders.store_id', $storeId)
                 ->exists();
 
             // Get additional info if ordered
             $orderInfo = null;
             if ($hasOrdered) {
-                $firstOrder = StoreOrder::where('store_id', $storeId)
-                    ->whereHas('order', function ($query) use ($userId) {
-                        $query->where('user_id', $userId);
-                    })
-                    ->with('order')
-                    ->orderBy('created_at', 'asc')
+                // Get first store order from this store
+                $firstStoreOrder = StoreOrder::join('orders', 'store_orders.order_id', '=', 'orders.id')
+                    ->where('orders.user_id', $userId)
+                    ->where('store_orders.store_id', $storeId)
+                    ->select('store_orders.*')
+                    ->orderBy('store_orders.created_at', 'asc')
                     ->first();
 
+                // Count total store orders from this store
+                $totalOrders = StoreOrder::join('orders', 'store_orders.order_id', '=', 'orders.id')
+                    ->where('orders.user_id', $userId)
+                    ->where('store_orders.store_id', $storeId)
+                    ->count();
+
                 $orderInfo = [
-                    'first_order_date' => $firstOrder->created_at->format('Y-m-d H:i:s'),
-                    'total_orders' => StoreOrder::where('store_id', $storeId)
-                        ->whereHas('order', function ($query) use ($userId) {
-                            $query->where('user_id', $userId);
-                        })
-                        ->count(),
+                    'first_order_date' => $firstStoreOrder ? $firstStoreOrder->created_at->format('Y-m-d H:i:s') : null,
+                    'total_orders' => $totalOrders,
                 ];
             }
 
