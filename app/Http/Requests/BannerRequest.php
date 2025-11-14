@@ -14,7 +14,7 @@ class BannerRequest extends FormRequest
    public function authorize(): bool { return true; }
     public function rules(): array {
         return [
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp',
             'link'  => 'nullable',
         ];
     }
