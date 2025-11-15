@@ -7,6 +7,7 @@ use App\Models\Store;
 use App\Models\StoreAddress;
 use App\Models\Category; // assumed Category model exists
 use App\Models\StoreUser;
+use App\Models\StoreOnboardingStep;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -203,6 +204,11 @@ class StoreManagementController extends Controller
                 $store = Store::create($storeData);
             }
 
+            // Mark profile media step as done if profile image was uploaded
+            if ($profilePath) {
+                $this->markOnboardingStepDone($store, 1, 'level1.profile_media');
+            }
+
             // Sync categories (pivot)
             if (isset($validated['category_ids'])) {
                 $store->categories()->sync($validated['category_ids']);
@@ -314,5 +320,25 @@ class StoreManagementController extends Controller
                 }),
             ],
         ], 201);
+    }
+
+    /**
+     * Mark onboarding step as done (similar to SellerOnboardingController)
+     */
+    private function markOnboardingStepDone(Store $store, int $level, string $key): void
+    {
+        StoreOnboardingStep::updateOrCreate(
+            ['store_id' => $store->id, 'key' => $key],
+            ['level' => $level, 'status' => 'done', 'completed_at' => now()]
+        );
+
+        $total = StoreOnboardingStep::where('store_id', $store->id)->count();
+        $done  = StoreOnboardingStep::where('store_id', $store->id)->where('status', 'done')->count();
+        $percent = $total ? (int) floor($done * 100 / $total) : $store->onboarding_percent;
+
+        $store->update([
+            'onboarding_level'   => max($store->onboarding_level, $level),
+            'onboarding_percent' => $percent,
+        ]);
     }
 }
