@@ -241,6 +241,9 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('knowledge-base', [SellerKnowledgeBaseController::class, 'index']);
     Route::get('knowledge-base/{id}', [SellerKnowledgeBaseController::class, 'show']);
 
+    // Reviews
+    Route::get('reviews', [SellerReviewReplyController::class, 'list']); // List all reviews (store and product reviews)
+    
     // Review Replies
     // Store Review Replies
     Route::post('reviews/store/{reviewId}/reply', [SellerReviewReplyController::class, 'replyToStoreReview']);

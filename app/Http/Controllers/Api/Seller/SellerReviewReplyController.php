@@ -14,6 +14,142 @@ use Illuminate\Support\Facades\Validator;
 class SellerReviewReplyController extends Controller
 {
     /**
+     * List all reviews for seller's store (store reviews and product reviews)
+     * GET /api/seller/reviews
+     */
+    public function list(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            // Get user's store
+            $store = Store::where('user_id', $user->id)->first();
+            
+            if (!$store) {
+                return ResponseHelper::error('Store not found. You must be a store owner to view reviews.', 403);
+            }
+
+            // Get store reviews
+            $storeReviewsQuery = StoreReview::with(['user'])
+                ->where('store_id', $store->id);
+
+            // Apply filters for store reviews
+            if ($request->filled('rating')) {
+                $storeReviewsQuery->where('rating', (int) $request->rating);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $storeReviewsQuery->where(function ($q) use ($search) {
+                    $q->where('comment', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('full_name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            $storeReviews = $storeReviewsQuery->latest()->paginate($request->get('per_page', 20));
+
+            // Get product reviews
+            $productReviewsQuery = ProductReview::with(['user', 'orderItem.product'])
+                ->whereHas('orderItem.product', function ($query) use ($store) {
+                    $query->where('store_id', $store->id);
+                });
+
+            // Apply filters for product reviews
+            if ($request->filled('rating')) {
+                $productReviewsQuery->where('rating', (int) $request->rating);
+            }
+
+            if ($request->filled('product_id')) {
+                $productReviewsQuery->whereHas('orderItem.product', function ($q) use ($request) {
+                    $q->where('id', (int) $request->product_id);
+                });
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $productReviewsQuery->where(function ($q) use ($search) {
+                    $q->where('comment', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('full_name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('orderItem.product', function ($pq) use ($search) {
+                          $pq->where('name', 'like', "%{$search}%");
+                      });
+                });
+            }
+
+            $productReviews = $productReviewsQuery->latest()->paginate($request->get('per_page', 20));
+
+            // Format store reviews
+            $formattedStoreReviews = $storeReviews->map(function ($review) {
+                return [
+                    'id' => $review->id,
+                    'type' => 'store',
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'images' => $review->images,
+                    'seller_reply' => $review->seller_reply,
+                    'seller_replied_at' => $review->seller_replied_at?->toIso8601String(),
+                    'user' => [
+                        'id' => $review->user->id,
+                        'full_name' => $review->user->full_name,
+                        'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null,
+                    ],
+                    'created_at' => $review->created_at->toIso8601String(),
+                    'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
+                ];
+            });
+
+            // Format product reviews
+            $formattedProductReviews = $productReviews->map(function ($review) {
+                return [
+                    'id' => $review->id,
+                    'type' => 'product',
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'images' => $review->images,
+                    'seller_reply' => $review->seller_reply,
+                    'seller_replied_at' => $review->seller_replied_at?->toIso8601String(),
+                    'user' => [
+                        'id' => $review->user->id,
+                        'full_name' => $review->user->full_name,
+                        'profile_picture' => $review->user->profile_picture ? asset('storage/' . $review->user->profile_picture) : null,
+                    ],
+                    'product' => $review->orderItem->product ? [
+                        'id' => $review->orderItem->product->id,
+                        'name' => $review->orderItem->product->name,
+                    ] : null,
+                    'created_at' => $review->created_at->toIso8601String(),
+                    'formatted_date' => $review->created_at->format('d-m-Y H:i A'),
+                ];
+            });
+
+            return ResponseHelper::success([
+                'store_reviews' => [
+                    'data' => $formattedStoreReviews,
+                    'current_page' => $storeReviews->currentPage(),
+                    'last_page' => $storeReviews->lastPage(),
+                    'per_page' => $storeReviews->perPage(),
+                    'total' => $storeReviews->total(),
+                ],
+                'product_reviews' => [
+                    'data' => $formattedProductReviews,
+                    'current_page' => $productReviews->currentPage(),
+                    'last_page' => $productReviews->lastPage(),
+                    'per_page' => $productReviews->perPage(),
+                    'total' => $productReviews->total(),
+                ],
+            ], 'Reviews retrieved successfully');
+        } catch (\Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Reply to a store review
      * POST /api/seller/reviews/store/{reviewId}/reply
      */
