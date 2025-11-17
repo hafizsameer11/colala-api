@@ -17,6 +17,7 @@ class StoreController extends Controller
     public function getAll(Request $req) {
         try{
             $stores = Store::withCount('followers')
+            ->with('categories')
                 ->withSum(['soldItems as total_sold' => function ($q) { $q; }], 'qty')
                 ->latest()
                 ->get();
