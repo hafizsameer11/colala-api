@@ -26,7 +26,7 @@ class ServiceCreateUpdateRequest extends FormRequest
             'price_from' => 'nullable|numeric',
             'price_to' => 'nullable|numeric',
             'discount_price' => 'nullable|numeric',
-            'media.*' => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov|max:5120',
+            'media.*' => 'nullable|file|max:5120',
             'sub_services' => 'nullable|array',
             'sub_services.*.name' => 'required_with:sub_services|string',
             'sub_services.*.price_from' => 'nullable|numeric',
