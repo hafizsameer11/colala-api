@@ -1,0 +1,740 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Category;
+use App\Models\Brand;
+
+class BrandSeeder extends Seeder
+{
+    public function run()
+    {
+        $brands = [
+
+            // ========================= VEHICLES =========================
+            ['Vehicles','Cars','', 'Toyota'],
+            ['Vehicles','Cars','', 'Honda'],
+            ['Vehicles','Cars','', 'Mercedes-Benz'],
+            ['Vehicles','Cars','', 'BMW'],
+            ['Vehicles','Cars','', 'Lexus'],
+            ['Vehicles','Cars','', 'Hyundai'],
+            ['Vehicles','Cars','', 'Kia'],
+            ['Vehicles','Cars','', 'Ford'],
+            ['Vehicles','Cars','', 'Volkswagen'],
+            ['Vehicles','Cars','', 'Nissan'],
+            ['Vehicles','Cars','', 'Peugeot'],
+            ['Vehicles','Cars','', 'Audi'],
+            ['Vehicles','Cars','', 'Land Rover'],
+            ['Vehicles','Cars','', 'Range Rover'],
+            ['Vehicles','Cars','', 'Porsche'],
+            ['Vehicles','Cars','', 'Jaguar'],
+            ['Vehicles','Cars','', 'Volvo'],
+            ['Vehicles','Cars','', 'Mazda'],
+            ['Vehicles','Cars','', 'Subaru'],
+            ['Vehicles','Cars','', 'Mitsubishi'],
+            ['Vehicles','Cars','', 'Jeep'],
+            ['Vehicles','Cars','', 'Chevrolet'],
+            ['Vehicles','Cars','', 'Acura'],
+            ['Vehicles','Cars','', 'Infiniti'],
+            ['Vehicles','Cars','', 'Cadillac'],
+            ['Vehicles','Cars','', 'Tesla'],
+            ['Vehicles','Cars','', 'Innoson'],
+            ['Vehicles','Cars','', 'GAC Motor'],
+            ['Vehicles','Cars','', 'Chery'],
+            ['Vehicles','Cars','', 'Geely'],
+            ['Vehicles','Cars','', 'Changan'],
+            ['Vehicles','Cars','', 'BAIC'],
+
+            ['Vehicles','Motorcycles & Scooters','', 'Honda'],
+            ['Vehicles','Motorcycles & Scooters','', 'Yamaha'],
+            ['Vehicles','Motorcycles & Scooters','', 'Suzuki'],
+            ['Vehicles','Motorcycles & Scooters','', 'Kawasaki'],
+            ['Vehicles','Motorcycles & Scooters','', 'TVS'],
+            ['Vehicles','Motorcycles & Scooters','', 'Bajaj'],
+            ['Vehicles','Motorcycles & Scooters','', 'Haojue'],
+            ['Vehicles','Motorcycles & Scooters','', 'Dayang'],
+            ['Vehicles','Motorcycles & Scooters','', 'Jincheng'],
+            ['Vehicles','Motorcycles & Scooters','', 'Qlink'],
+            ['Vehicles','Motorcycles & Scooters','', 'Luojia'],
+            ['Vehicles','Motorcycles & Scooters','', 'CFMoto'],
+            ['Vehicles','Motorcycles & Scooters','', 'KTM'],
+
+            ['Vehicles','Vehicle Parts & Accessories','', 'Bosch'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Michelin'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Bridgestone'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Dunlop'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Goodyear'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Continental'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Pirelli'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Denso'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'NGK'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Exide'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Tokunbo (General)'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Mann-Filter'],
+            ['Vehicles','Vehicle Parts & Accessories','', 'Valeo'],
+
+            // ========================= MOBILE =========================
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Samsung'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Apple'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Tecno'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Infinix'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Xiaomi'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Itel'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Oppo'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Vivo'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Realme'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Nokia'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Huawei'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'OnePlus'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Google Pixel'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Sony Xperia'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Asus ROG'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Motorola'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Nothing Phone'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Gionee'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Blackview'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Ulefone'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Cubot'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Doogee'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Leagoo'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Honor'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Poco'],
+            ['Mobile Phones & Tablets','Mobile Phones','', 'Redmi'],
+
+            ['Mobile Phones & Tablets','Tablets','', 'Apple iPad'],
+            ['Mobile Phones & Tablets','Tablets','', 'Samsung Galaxy Tab'],
+            ['Mobile Phones & Tablets','Tablets','', 'Lenovo Tab'],
+            ['Mobile Phones & Tablets','Tablets','', 'Huawei MatePad'],
+            ['Mobile Phones & Tablets','Tablets','', 'Xiaomi Pad'],
+            ['Mobile Phones & Tablets','Tablets','', 'Amazon Fire'],
+            ['Mobile Phones & Tablets','Tablets','', 'Microsoft Surface'],
+
+            ['Mobile Phones & Tablets','Smart Watches','', 'Apple Watch'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Samsung Galaxy Watch'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Huawei Watch'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Garmin'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Fitbit'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Amazfit'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Oraimo'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'Fossil'],
+            ['Mobile Phones & Tablets','Smart Watches','', 'TicWatch'],
+
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Oraimo'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Anker'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Spigen'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Ugreen'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Baseus'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'New Age'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'LDNIO'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Belkin'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'OtterBox'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Ringke'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'SBS'],
+            ['Mobile Phones & Tablets','Accessories for Phones & Tablets','', 'Joyroom'],
+
+            // ========================= ELECTRONICS =========================
+            ['Electronics','Laptops & Computers','', 'HP'],
+            ['Electronics','Laptops & Computers','', 'Dell'],
+            ['Electronics','Laptops & Computers','', 'Lenovo'],
+            ['Electronics','Laptops & Computers','', 'Asus'],
+            ['Electronics','Laptops & Computers','', 'Acer'],
+            ['Electronics','Laptops & Computers','', 'Apple MacBook'],
+            ['Electronics','Laptops & Computers','', 'Microsoft Surface'],
+            ['Electronics','Laptops & Computers','', 'MSI'],
+            ['Electronics','Laptops & Computers','', 'Razer'],
+            ['Electronics','Laptops & Computers','', 'Alienware'],
+            ['Electronics','Laptops & Computers','', 'Gigabyte'],
+            ['Electronics','Laptops & Computers','', 'Huawei MateBook'],
+            ['Electronics','Laptops & Computers','', 'LG Gram'],
+
+            ['Electronics','TV & DVD Equipment','', 'LG'],
+            ['Electronics','TV & DVD Equipment','', 'Samsung'],
+            ['Electronics','TV & DVD Equipment','', 'Sony'],
+            ['Electronics','TV & DVD Equipment','', 'Hisense'],
+            ['Electronics','TV & DVD Equipment','', 'TCL'],
+            ['Electronics','TV & DVD Equipment','', 'Panasonic'],
+            ['Electronics','TV & DVD Equipment','', 'Sharp'],
+            ['Electronics','TV & DVD Equipment','', 'Philips'],
+            ['Electronics','TV & DVD Equipment','', 'Polystar'],
+            ['Electronics','TV & DVD Equipment','', 'Konka'],
+
+            ['Electronics','Audio & Music Equipment','', 'JBL'],
+            ['Electronics','Audio & Music Equipment','', 'Sony'],
+            ['Electronics','Audio & Music Equipment','', 'Bose'],
+            ['Electronics','Audio & Music Equipment','', 'Beats by Dre'],
+            ['Electronics','Audio & Music Equipment','', 'Sennheiser'],
+            ['Electronics','Audio & Music Equipment','', 'Harman Kardon'],
+            ['Electronics','Audio & Music Equipment','', 'Logitech'],
+            ['Electronics','Audio & Music Equipment','', 'Marshall'],
+            ['Electronics','Audio & Music Equipment','', 'Anker Soundcore'],
+            ['Electronics','Audio & Music Equipment','', 'B&O Play'],
+
+            ['Electronics','Video Game Consoles','', 'Sony PlayStation'],
+            ['Electronics','Video Game Consoles','', 'Microsoft Xbox'],
+            ['Electronics','Video Game Consoles','', 'Nintendo'],
+
+            // ========================= HOME =========================
+            ['Home, Furniture & Appliances','Home Appliances','', 'LG'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Samsung'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Haier Thermocool'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Scanfrost'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Hisense'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Beko'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Whirlpool'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Midea'],
+            ['Home, Furniture & Appliances','Home Appliances','', 'Ariston'],
+
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Philips'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Binatone'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Nexus'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Kenwood'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Moulinex'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Bosch'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Tefal'],
+            ['Home, Furniture & Appliances','Kitchen Appliances','', 'Russell Hobbs'],
+
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Honda'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Thermocool'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Sumec Firman'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Elepaq'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Lutian'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Perkins'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Cummins'],
+            ['Home, Furniture & Appliances','Generators & Solar','', 'Mikano'],
+
+            ['Home, Furniture & Appliances','Furniture','', 'IKEA'],
+            ['Home, Furniture & Appliances','Furniture','', 'Ashley Furniture'],
+            ['Home, Furniture & Appliances','Furniture','', 'Local Woodwork'],
+            ['Home, Furniture & Appliances','Furniture','', 'La-Z-Boy'],
+            ['Home, Furniture & Appliances','Furniture','', 'Wayfair'],
+            ['Home, Furniture & Appliances','Furniture','', 'Vitafoam'],
+            ['Home, Furniture & Appliances','Furniture','', 'Mouka Foam'],
+
+            ['Home, Furniture & Appliances','Lighting','', 'Philips Hue'],
+            ['Home, Furniture & Appliances','Lighting','', 'Osram'],
+            ['Home, Furniture & Appliances','Lighting','', 'Sylvania'],
+
+            ['Home, Furniture & Appliances','Storage & Organization','', 'Rubbermaid'],
+            ['Home, Furniture & Appliances','Storage & Organization','', 'Sterilite'],
+
+            ['Home, Furniture & Appliances','Home Accessories','', 'Yankee Candle'],
+            ['Home, Furniture & Appliances','Home Accessories','', 'Jo Malone'],
+
+            ['Home, Furniture & Appliances','Garden Supplies','', 'Scotts'],
+            ['Home, Furniture & Appliances','Garden Supplies','', 'Miracle-Gro'],
+
+            ['Home, Furniture & Appliances','Household Chemicals','', 'Harpic'],
+            ['Home, Furniture & Appliances','Household Chemicals','', 'Dettol'],
+            ['Home, Furniture & Appliances','Household Chemicals','', 'Jik'],
+            ['Home, Furniture & Appliances','Household Chemicals','', 'Omo'],
+
+            // ========================= SOLAR =========================
+            ['Solar & Power Solutions','Solar Panels','', 'Canadian Solar'],
+            ['Solar & Power Solutions','Solar Panels','', 'Jinko Solar'],
+            ['Solar & Power Solutions','Solar Panels','', 'Trina Solar'],
+            ['Solar & Power Solutions','Solar Panels','', 'Longi'],
+            ['Solar & Power Solutions','Solar Panels','', 'JA Solar'],
+            ['Solar & Power Solutions','Solar Panels','', 'Felicity Solar'],
+            ['Solar & Power Solutions','Solar Panels','', 'QCells'],
+
+            ['Solar & Power Solutions','Inverters','', 'Luminous'],
+            ['Solar & Power Solutions','Inverters','', 'Mercury'],
+            ['Solar & Power Solutions','Inverters','', 'Must'],
+            ['Solar & Power Solutions','Inverters','', 'Genus'],
+            ['Solar & Power Solutions','Inverters','', 'Schneider Electric'],
+            ['Solar & Power Solutions','Inverters','', 'Victron Energy'],
+            ['Solar & Power Solutions','Inverters','', 'Outback Power'],
+
+            // ========================= FASHION =========================
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Zara'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'H&M'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Shein'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Mango'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Forever 21'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'ASOS'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Boohoo'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'PrettyLittleThing'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Fashion Nova'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Bershka'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Defacto'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Next'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Topshop'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Stradivarius'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Pull&Bear'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Missguided'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Nasty Gal'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Revolve'],
+            ['Fashion',"Women's Fashion","Women's Clothing", 'Lulus'],
+
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Nike'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Adidas'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Puma'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Gucci'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Christian Louboutin'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Jimmy Choo'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Steve Madden'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Aldo'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'New Look'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Vans'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Converse'],
+            ['Fashion',"Women's Fashion","Women's Shoes", 'Skechers'],
+
+            ['Fashion',"Women's Fashion","Women's Bags", 'Louis Vuitton'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Gucci'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Chanel'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Prada'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Michael Kors'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Coach'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Kate Spade'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Tory Burch'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Fendi'],
+            ['Fashion',"Women's Fashion","Women's Bags", 'Balenciaga'],
+
+            ['Fashion',"Women's Fashion","Women's Jewelry", 'Pandora'],
+            ['Fashion',"Women's Fashion","Women's Jewelry", 'Swarovski'],
+            ['Fashion',"Women's Fashion","Women's Jewelry", 'Tiffany & Co'],
+            ['Fashion',"Women's Fashion","Women's Jewelry", 'Cartier'],
+
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Tommy Hilfiger'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Ralph Lauren'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Levi\'s'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Lacoste'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Hugo Boss'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Calvin Klein'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Defacto'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Superdry'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Jack & Jones'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Selected Homme'],
+            ['Fashion',"Men's Fashion","Men's Clothing", 'Zara Man'],
+
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Nike'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Adidas'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Clarks'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Timberland'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Ecco'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Dr. Martens'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Red Wing'],
+            ['Fashion',"Men's Fashion","Men's Shoes", 'Cole Haan'],
+
+            ['Fashion',"Kids' Fashion","Children's Clothing", 'Carters'],
+            ['Fashion',"Kids' Fashion","Children's Clothing", 'H&M Kids'],
+            ['Fashion',"Kids' Fashion","Children's Clothing", 'Next Kids'],
+            ['Fashion',"Kids' Fashion","Children's Clothing", 'Gap Kids'],
+
+            ['Fashion',"Kids' Fashion","Children's Shoes", 'Nike Kids'],
+            ['Fashion',"Kids' Fashion","Children's Shoes", 'Adidas Kids'],
+            ['Fashion',"Kids' Fashion","Children's Shoes", 'Crocs Kids'],
+
+            // ========================= JEWELRY =========================
+            ['Jewelry & Watches','Gold Jewelry','', 'Italian Gold'],
+            ['Jewelry & Watches','Gold Jewelry','', 'Dubai Gold'],
+
+            ['Jewelry & Watches','Silver Jewelry','', 'Pandora'],
+
+            ['Jewelry & Watches','Diamond & Gemstones','', 'Tiffany & Co'],
+
+            ['Jewelry & Watches','Luxury Watches','', 'Rolex'],
+            ['Jewelry & Watches','Luxury Watches','', 'Patek Philippe'],
+            ['Jewelry & Watches','Luxury Watches','', 'Audemars Piguet'],
+            ['Jewelry & Watches','Luxury Watches','', 'Omega'],
+            ['Jewelry & Watches','Luxury Watches','', 'Cartier'],
+            ['Jewelry & Watches','Luxury Watches','', 'Tag Heuer'],
+            ['Jewelry & Watches','Luxury Watches','', 'Breitling'],
+            ['Jewelry & Watches','Luxury Watches','', 'IWC'],
+
+            ['Jewelry & Watches','Fashion Watches','', 'Casio'],
+            ['Jewelry & Watches','Fashion Watches','', 'Seiko'],
+            ['Jewelry & Watches','Fashion Watches','', 'Citizen'],
+            ['Jewelry & Watches','Fashion Watches','', 'Tissot'],
+            ['Jewelry & Watches','Fashion Watches','', 'Orient'],
+            ['Jewelry & Watches','Fashion Watches','', 'Fossil'],
+
+            // ========================= LUGGAGE =========================
+            ['Luggage, Bags & Travel','Suitcases & Travel Bags','', 'Samsonite'],
+            ['Luggage, Bags & Travel','Suitcases & Travel Bags','', 'American Tourister'],
+            ['Luggage, Bags & Travel','Suitcases & Travel Bags','', 'Delsey'],
+            ['Luggage, Bags & Travel','Suitcases & Travel Bags','', 'VIP'],
+
+            ['Luggage, Bags & Travel','Backpacks','', 'JanSport'],
+            ['Luggage, Bags & Travel','Backpacks','', 'Herschel'],
+            ['Luggage, Bags & Travel','Backpacks','', 'North Face'],
+
+            // ========================= HEALTH =========================
+            ['Health & Beauty','Hair Beauty','', 'Dark and Lovely'],
+            ['Health & Beauty','Hair Beauty','', 'ORS Olive Oil'],
+            ['Health & Beauty','Hair Beauty','', 'Cantu'],
+            ['Health & Beauty','Hair Beauty','', 'Shea Moisture'],
+            ['Health & Beauty','Hair Beauty','', 'Mielle Organics'],
+            ['Health & Beauty','Hair Beauty','', 'Aunt Jackie\'s'],
+
+            ['Health & Beauty','Face Care','', 'Nivea'],
+            ['Health & Beauty','Face Care','', 'CeraVe'],
+            ['Health & Beauty','Face Care','', 'The Ordinary'],
+            ['Health & Beauty','Face Care','', 'La Roche-Posay'],
+
+            ['Health & Beauty','Body Care','', 'Dove'],
+            ['Health & Beauty','Body Care','', 'Vaseline'],
+            ['Health & Beauty','Body Care','', 'Nivea'],
+
+            ['Health & Beauty','Fragrance','', 'Creed'],
+            ['Health & Beauty','Fragrance','', 'Tom Ford'],
+            ['Health & Beauty','Fragrance','', 'Dior'],
+            ['Health & Beauty','Fragrance','', 'Chanel'],
+            ['Health & Beauty','Fragrance','', 'YSL'],
+            ['Health & Beauty','Fragrance','', 'Carolina Herrera'],
+
+            ['Health & Beauty','Makeup','', 'MAC'],
+            ['Health & Beauty','Makeup','', 'Fenty Beauty'],
+            ['Health & Beauty','Makeup','', 'Huda Beauty'],
+            ['Health & Beauty','Makeup','', 'Maybelline'],
+            ['Health & Beauty','Makeup','', 'L\'Oréal'],
+
+            ['Health & Beauty','Sexual Wellness','', 'Durex'],
+            ['Health & Beauty','Sexual Wellness','', 'Trojan'],
+
+            ['Health & Beauty','Vitamins & Supplements','', 'Nature\'s Bounty'],
+            ['Health & Beauty','Vitamins & Supplements','', 'Centrum'],
+            ['Health & Beauty','Vitamins & Supplements','', 'Holland & Barrett'],
+
+            ['Health & Beauty','Medical Supplies','', 'Omron'],
+            ['Health & Beauty','Medical Supplies','', 'Beurer'],
+
+            ['Health & Beauty','Blood Pressure Monitors','', 'Omron'],
+            ['Health & Beauty','Blood Pressure Monitors','', 'Beurer'],
+
+            // ========================= BABIES =========================
+            ['Babies & Kids','Toys Games & Bikes','', 'Lego'],
+            ['Babies & Kids','Toys Games & Bikes','', 'Mattel'],
+            ['Babies & Kids','Toys Games & Bikes','', 'Hasbro'],
+            ['Babies & Kids','Toys Games & Bikes','', 'Fisher-Price'],
+            ['Babies & Kids','Toys Games & Bikes','', 'Hot Wheels'],
+
+            ['Babies & Kids','Action Figures & Dolls','', 'Marvel'],
+            ['Babies & Kids','Action Figures & Dolls','', 'DC Comics'],
+            ['Babies & Kids','Action Figures & Dolls','', 'Star Wars'],
+
+            ['Babies & Kids','Board Games & Puzzles','', 'Monopoly'],
+            ['Babies & Kids','Board Games & Puzzles','', 'Scrabble'],
+
+            ['Babies & Kids','Drones & RC Toys','', 'DJI'],
+            ['Babies & Kids','Drones & RC Toys','', 'Syma'],
+
+            // ========================= SUPERMARKET =========================
+            ['Supermarket & Groceries','Food Cupboard','', 'Indomie'],
+            ['Supermarket & Groceries','Food Cupboard','', 'Dangote'],
+            ['Supermarket & Groceries','Food Cupboard','', 'Golden Penny'],
+            ['Supermarket & Groceries','Food Cupboard','', 'Honeywell'],
+
+            ['Supermarket & Groceries','Beverages','', 'Coca-Cola'],
+            ['Supermarket & Groceries','Beverages','', 'Pepsi'],
+            ['Supermarket & Groceries','Beverages','', 'Nestlé Milo'],
+
+            ['Supermarket & Groceries','Wine Spirits & Tobacco','', 'Hennessy'],
+            ['Supermarket & Groceries','Wine Spirits & Tobacco','', 'Jack Daniel\'s'],
+            ['Supermarket & Groceries','Wine Spirits & Tobacco','', 'Martell'],
+
+            ['Supermarket & Groceries','Household Cleaning','', 'Harpic'],
+            ['Supermarket & Groceries','Household Cleaning','', 'Jik'],
+            ['Supermarket & Groceries','Household Cleaning','', 'Morning Fresh'],
+            ['Supermarket & Groceries','Household Cleaning','', 'Klin'],
+
+            ['Supermarket & Groceries','Laundry & Cleaning','', 'Ariel'],
+            ['Supermarket & Groceries','Laundry & Cleaning','', 'Omo'],
+            ['Supermarket & Groceries','Laundry & Cleaning','', 'Sunlight'],
+
+            ['Supermarket & Groceries','Baby Products','', 'Pampers'],
+            ['Supermarket & Groceries','Baby Products','', 'Huggies'],
+            ['Supermarket & Groceries','Baby Products','', 'Johnson\'s Baby'],
+
+            // ========================= PROPERTY =========================
+            ['Property','Real Estate Agents & Services','', 'Nigeria Property Centre'],
+            ['Property','Real Estate Agents & Services','', 'PropertyPro'],
+            ['Property','Real Estate Agents & Services','', 'Jiji Property'],
+
+            ['Property','New Builds','', 'Chinese Contractors'],
+            ['Property','New Builds','', 'Local Builders'],
+
+            // ========================= SERVICES =========================
+            ['Services','Building & Trades Services','', 'Local Artisans (Generic)'],
+            ['Services','Car Services','', 'Local Mechanics'],
+            ['Services','Computer & IT Services','', 'Local Repair Shops'],
+            ['Services','Travel Agents & Tours','', 'Wakanow'],
+            ['Services','Travel Agents & Tours','', 'Travelstart'],
+            ['Services','Travel Agents & Tours','', 'Jumia Travel'],
+            ['Services','Party Catering & Event Services','', 'Local Caterers'],
+            ['Services','Wedding Venues & Services','', 'Local Planners'],
+            ['Services','Photography & Video Services','', 'Canon'],
+            ['Services','Photography & Video Services','', 'Sony'],
+
+            // ========================= ANIMALS =========================
+            ['Animals & Pets','Dogs & Puppies','', 'Caucasian'],
+            ['Animals & Pets','Dogs & Puppies','', 'Rottweiler'],
+            ['Animals & Pets','Dogs & Puppies','', 'German Shepherd'],
+            ['Animals & Pets','Dogs & Puppies','', 'Boerboel'],
+            ['Animals & Pets','Dogs & Puppies','', 'Pitbull'],
+
+            ['Animals & Pets','Cats & Kittens','', 'Persian'],
+            ['Animals & Pets','Cats & Kittens','', 'Ragdoll'],
+
+            ['Animals & Pets','Pet\'s Accessories','', 'Pedigree'],
+            ['Animals & Pets','Pet\'s Accessories','', 'Royal Canin'],
+            ['Animals & Pets','Pet\'s Accessories','', 'Whiskas'],
+            ['Animals & Pets','Pet\'s Accessories','', 'Vitakraft'],
+            ['Animals & Pets','Pet\'s Accessories','', 'Kong Toys'],
+
+            // ========================= AGRICULTURE =========================
+            ['Food, Agriculture & Farming','Farm Machinery & Equipment','', 'John Deere'],
+            ['Food, Agriculture & Farming','Farm Machinery & Equipment','', 'Massey Ferguson'],
+            ['Food, Agriculture & Farming','Farm Machinery & Equipment','', 'New Holland'],
+            ['Food, Agriculture & Farming','Farm Machinery & Equipment','', 'Mahindra'],
+
+            ['Food, Agriculture & Farming','Feeds Supplements & Seeds','', 'Premier Feed'],
+            ['Food, Agriculture & Farming','Feeds Supplements & Seeds','', 'Top Feeds'],
+            ['Food, Agriculture & Farming','Feeds Supplements & Seeds','', 'Chikun Feeds'],
+
+            ['Food, Agriculture & Farming','Food & Beverages','', 'Indomie'],
+            ['Food, Agriculture & Farming','Food & Beverages','', 'Dangote Pasta'],
+            ['Food, Agriculture & Farming','Food & Beverages','', 'Golden Penny'],
+            ['Food, Agriculture & Farming','Food & Beverages','', 'Local Breeds'],
+
+            // ========================= GAMING =========================
+            ['Gaming','Consoles & Accessories','', 'Sony PlayStation'],
+            ['Gaming','Consoles & Accessories','', 'Microsoft Xbox'],
+            ['Gaming','Consoles & Accessories','', 'Nintendo Switch'],
+            ['Gaming','Consoles & Accessories','', 'Razer'],
+            ['Gaming','Consoles & Accessories','', 'Logitech G'],
+
+            ['Gaming','Video Games','', 'EA Sports'],
+            ['Gaming','Video Games','', 'EA Sports FIFA'],
+            ['Gaming','Video Games','', 'Call of Duty'],
+            ['Gaming','Video Games','', 'Grand Theft Auto'],
+            ['Gaming','Video Games','', 'God of War'],
+            ['Gaming','Video Games','', 'The Last of Us'],
+            ['Gaming','Video Games','', 'Fortnite'],
+            ['Gaming','Video Games','', 'Minecraft'],
+
+            // ========================= BOOKS =========================
+            ['Books, Movies & Music','Books','', 'Penguin Random House'],
+            ['Books, Movies & Music','Books','', 'HarperCollins'],
+            ['Books, Movies & Music','Books','', 'Macmillan'],
+            ['Books, Movies & Music','Books','', 'Pan Macmillan'],
+            ['Books, Movies & Music','Books','', 'Scholastic'],
+            ['Books, Movies & Music','Books','', 'Nigerian Authors (Chimamanda, etc.)'],
+
+            ['Books, Movies & Music','Movies & TV Shows','', 'Disney'],
+            ['Books, Movies & Music','Movies & TV Shows','', 'Warner Bros'],
+            ['Books, Movies & Music','Movies & TV Shows','', 'Universal Pictures'],
+            ['Books, Movies & Music','Movies & TV Shows','', 'Netflix Originals'],
+
+            ['Books, Movies & Music','Musical Instruments','', 'Yamaha'],
+            ['Books, Movies & Music','Musical Instruments','', 'Fender'],
+            ['Books, Movies & Music','Musical Instruments','', 'Gibson'],
+            ['Books, Movies & Music','Musical Instruments','', 'Roland'],
+            ['Books, Movies & Music','Musical Instruments','', 'Ibanez'],
+            ['Books, Movies & Music','Musical Instruments','', 'Pearl Drums'],
+
+            // ========================= SPORTS =========================
+            ['Sporting Goods & Fitness','Exercise & Fitness Equipment','', 'Technogym'],
+            ['Sporting Goods & Fitness','Exercise & Fitness Equipment','', 'Life Fitness'],
+
+            ['Sporting Goods & Fitness','Sports Clothing','', 'Nike'],
+            ['Sporting Goods & Fitness','Sports Clothing','', 'Adidas'],
+            ['Sporting Goods & Fitness','Sports Clothing','', 'Puma'],
+            ['Sporting Goods & Fitness','Sports Clothing','', 'Under Armour'],
+
+            ['Sporting Goods & Fitness','Outdoor & Adventure','', 'The North Face'],
+            ['Sporting Goods & Fitness','Outdoor & Adventure','', 'Columbia'],
+            ['Sporting Goods & Fitness','Outdoor & Adventure','', 'Patagonia'],
+            ['Sporting Goods & Fitness','Outdoor & Adventure','', 'Salomon'],
+
+            ['Sporting Goods & Fitness','Team Sports','', 'Adidas'],
+            ['Sporting Goods & Fitness','Team Sports','', 'Nike'],
+            ['Sporting Goods & Fitness','Team Sports','', 'Puma'],
+
+            // ========================= ART & ENTERTAINMENT =========================
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Yamaha'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Fender'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Gibson'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Roland'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Korg'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Pearl Drums'],
+            ['Leisure, Arts & Entertainment','Musical Instruments & Gear','', 'Ibanez'],
+
+            ['Leisure, Arts & Entertainment','Arts Crafts & Awards','', 'Faber-Castell'],
+            ['Leisure, Arts & Entertainment','Arts Crafts & Awards','', 'Staedtler'],
+            ['Leisure, Arts & Entertainment','Arts Crafts & Awards','', 'Copic'],
+
+            ['Leisure, Arts & Entertainment','Books & Table Games','', 'Hasbro Games'],
+            ['Leisure, Arts & Entertainment','Books & Table Games','', 'Mattel Games'],
+
+            ['Leisure, Arts & Entertainment','Outdoor Gear','', 'Coleman'],
+            ['Leisure, Arts & Entertainment','Outdoor Gear','', 'Ozark Trail'],
+            ['Leisure, Arts & Entertainment','Outdoor Gear','', 'Decathlon'],
+
+            ['Leisure, Arts & Entertainment','Smoking Accessories','', 'RAW'],
+            ['Leisure, Arts & Entertainment','Smoking Accessories','', 'Zippo'],
+
+            ['Leisure, Arts & Entertainment','Sports Equipment','', 'Wilson'],
+            ['Leisure, Arts & Entertainment','Sports Equipment','', 'Spalding'],
+            ['Leisure, Arts & Entertainment','Sports Equipment','', 'Molten'],
+            ['Leisure, Arts & Entertainment','Sports Equipment','', 'Mikasa'],
+
+            // ========================= CONSTRUCTION =========================
+            ['Repair & Construction','Building Materials & Supplies','', 'Dangote Cement'],
+            ['Repair & Construction','Building Materials & Supplies','', 'Lafarge'],
+            ['Repair & Construction','Building Materials & Supplies','', 'BUA Cement'],
+            ['Repair & Construction','Building Materials & Supplies','', 'Ibeto Cement'],
+            ['Repair & Construction','Building Materials & Supplies','', 'Berger Paints'],
+            ['Repair & Construction','Building Materials & Supplies','', 'Dulux'],
+
+            ['Repair & Construction','Plumbing & Water Systems','', 'Grohe'],
+            ['Repair & Construction','Plumbing & Water Systems','', 'Kohler'],
+            ['Repair & Construction','Plumbing & Water Systems','', 'American Standard'],
+
+            ['Repair & Construction','Doors & Security','', 'Kara'],
+            ['Repair & Construction','Doors & Security','', 'Tower Aluminium'],
+            ['Repair & Construction','Doors & Security','', 'Yale Locks'],
+
+            ['Repair & Construction','Automotive Tools & Garage Equipment','', 'Snap-on'],
+            ['Repair & Construction','Automotive Tools & Garage Equipment','', 'Bosch Tools'],
+            ['Repair & Construction','Automotive Tools & Garage Equipment','', 'Makita'],
+
+            ['Repair & Construction','Electrical Equipment','', 'Schneider Electric'],
+            ['Repair & Construction','Electrical Equipment','', 'Siemens'],
+            ['Repair & Construction','Electrical Equipment','', 'ABB'],
+
+            ['Repair & Construction','Hand Tools','', 'Stanley'],
+            ['Repair & Construction','Hand Tools','', 'Bosch Power Tools'],
+            ['Repair & Construction','Hand Tools','', 'Makita'],
+            ['Repair & Construction','Hand Tools','', 'DeWalt'],
+
+            // ========================= COMMERCIAL =========================
+            ['Commercial Equipment & Tools','Medical Equipment & Supplies','', 'Mindray'],
+            ['Commercial Equipment & Tools','Medical Equipment & Supplies','', 'GE Healthcare'],
+            ['Commercial Equipment & Tools','Medical Equipment & Supplies','', 'Philips Healthcare'],
+
+            ['Commercial Equipment & Tools','Restaurant & Catering Equipment','', 'Hobart'],
+            ['Commercial Equipment & Tools','Restaurant & Catering Equipment','', 'True Refrigeration'],
+
+            ['Commercial Equipment & Tools','Salon & Beauty Equipment','', 'Takara Belmont'],
+            ['Commercial Equipment & Tools','Salon & Beauty Equipment','', 'Remington'],
+
+            ['Commercial Equipment & Tools','Retail & Store Equipment','', 'Casio Cash Registers'],
+            ['Commercial Equipment & Tools','Retail & Store Equipment','', 'Honeywell Scanners'],
+
+            ['Commercial Equipment & Tools','Stationery & Office Equipment','', 'Xerox'],
+
+            ['Commercial Equipment & Tools','Printing & Graphics Equipment','', 'Roland'],
+            ['Commercial Equipment & Tools','Printing & Graphics Equipment','', 'Mimaki'],
+
+            // ========================= INDUSTRIAL =========================
+            ['Industrial Machinery','Industrial Generators','', 'Caterpillar'],
+            ['Industrial Machinery','Industrial Generators','', 'Perkins'],
+            ['Industrial Machinery','Industrial Generators','', 'Cummins'],
+
+            ['Industrial Machinery','Welding Machines','', 'Lincoln Electric'],
+            ['Industrial Machinery','Welding Machines','', 'Miller'],
+            ['Industrial Machinery','Welding Machines','', 'ESAB'],
+
+            ['Industrial Machinery','Borehole Drilling Equipment','', 'Ingersoll Rand'],
+            ['Industrial Machinery','Borehole Drilling Equipment','', 'Atlas Copco'],
+
+            // ========================= OFFICE =========================
+            ['Office & Stationery','Office Furniture','', 'Herman Miller'],
+            ['Office & Stationery','Office Furniture','', 'Steelcase'],
+            ['Office & Stationery','Office Furniture','', 'Godrej'],
+
+            ['Office & Stationery','Stationery & Supplies','', 'Bic'],
+            ['Office & Stationery','Stationery & Supplies','', 'Parker'],
+            ['Office & Stationery','Stationery & Supplies','', 'Pilot'],
+
+            ['Office & Stationery','Printer Ink & Toner','', 'HP'],
+            ['Office & Stationery','Printer Ink & Toner','', 'Canon'],
+            ['Office & Stationery','Printer Ink & Toner','', 'Epson'],
+
+            // ========================= WEDDING =========================
+            ['Wedding & Events','Wedding Gowns & Suits','', 'Vera Wang'],
+            ['Wedding & Events','Wedding Gowns & Suits','', 'David\'s Bridal'],
+            ['Wedding & Events','Wedding Gowns & Suits','', 'Pronovias'],
+
+            ['Wedding & Events','Wedding Accessories','', 'Tiffany & Co'],
+            ['Wedding & Events','Event Decorations','', 'Party City'],
+
+            // ========================= GIFTS =========================
+            ['Gifts & Hampers','Gift Sets & Boxes','', 'Yankee Candle'],
+            ['Gifts & Hampers','Gift Sets & Boxes','', 'Bath & Body Works'],
+            ['Gifts & Hampers','Gift Sets & Boxes','', 'Lush'],
+
+            ['Gifts & Hampers','Corporate Gifts','', 'Montblanc'],
+            ['Gifts & Hampers','Corporate Gifts','', 'Cross Pens'],
+
+            // ========================= DIGITAL =========================
+            ['Virtual & Digital Products','Airtime & Mobile Data','', 'MTN'],
+            ['Virtual & Digital Products','Airtime & Mobile Data','', 'Airtel'],
+            ['Virtual & Digital Products','Airtime & Mobile Data','', 'Glo'],
+            ['Virtual & Digital Products','Airtime & Mobile Data','', '9mobile'],
+
+            ['Virtual & Digital Products','Gift Cards & Vouchers','', 'Amazon'],
+            ['Virtual & Digital Products','Gift Cards & Vouchers','', 'iTunes'],
+            ['Virtual & Digital Products','Gift Cards & Vouchers','', 'Google Play'],
+            ['Virtual & Digital Products','Gift Cards & Vouchers','', 'Steam'],
+
+            ['Virtual & Digital Products','Software Licenses','', 'Microsoft Office'],
+            ['Virtual & Digital Products','Software Licenses','', 'Adobe Creative Cloud'],
+            ['Virtual & Digital Products','Software Licenses','', 'Antivirus (Kaspersky, Norton)'],
+
+            ['Virtual & Digital Products','Online Courses & eBooks','', 'Udemy'],
+            ['Virtual & Digital Products','Online Courses & eBooks','', 'Coursera'],
+
+            ['Virtual & Digital Products','Streaming Subscriptions','', 'Netflix'],
+            ['Virtual & Digital Products','Streaming Subscriptions','', 'Spotify'],
+            // ['Virtual & Digital Products','Streaming Subscriptions','', 'Disney+ '],
+            ['Virtual & Digital Products','Streaming Subscriptions','', 'Showmax'],
+            ['Virtual & Digital Products','Streaming Subscriptions','', 'Apple Music'],
+
+            // ========================= AUTOMOTIVE =========================
+            ['Automotive','Car Accessories','', '3M'],
+            ['Automotive','Car Accessories','', 'Pioneer'],
+            ['Automotive','Car Accessories','', 'Sony Car Audio'],
+            ['Automotive','Car Accessories','', 'Sony Xplod'],
+            ['Automotive','Car Accessories','', 'Alpine'],
+
+            ['Automotive','Motorcycle Parts & Accessories','', 'NGK'],
+            ['Automotive','Motorcycle Parts & Accessories','', 'NGK Spark Plugs'],
+            ['Automotive','Motorcycle Parts & Accessories','', 'Yuasa Batteries'],
+            ['Automotive','Motorcycle Parts & Accessories','', 'Michelin Motorcycle Tyres'],
+        ];
+
+        foreach ($brands as $item) {
+
+            [$l1, $l2, $l3, $brandName] = $item;
+
+            // Level 1
+            $cat1 = Category::firstOrCreate([
+                'title' => $l1,
+                'parent_id' => null
+            ]);
+
+            // Level 2
+            $cat2 = $l2 ? Category::firstOrCreate([
+                'title' => $l2,
+                'parent_id' => $cat1->id
+            ]) : $cat1;
+
+            // Level 3
+            $cat3 = $l3 ? Category::firstOrCreate([
+                'title' => $l3,
+                'parent_id' => $cat2->id
+            ]) : $cat2;
+
+            // Create brand
+            Brand::firstOrCreate(['name' => $brandName]);
+        }
+
+        // ALWAYS include "Others"
+        Brand::firstOrCreate(['name' => 'Others']);
+
+        echo "✔ Brand seeding complete!\n";
+    }
+}
