@@ -22,7 +22,7 @@ class CategoryService{
      */
     public function update($id, $data){
         $category=Category::find($id);
-        if($data['image']){
+        if(isset($data['image']) && $data['image']){
             $path = $data['image']->store('category', 'public');
             $data['image'] = $path;
         }
