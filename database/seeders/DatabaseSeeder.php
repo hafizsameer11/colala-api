@@ -21,8 +21,8 @@ class DatabaseSeeder extends Seeder
         // ]);
         $this->call([
             CategorySeeder::class,
-            BrandSeeder::class,
-            MissingCategorySeeder::class,
+            // BrandSeeder::class,
+            // MissingCategorySeeder::class,
         ]);
     }
 }
