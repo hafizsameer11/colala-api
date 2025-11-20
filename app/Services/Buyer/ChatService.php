@@ -118,8 +118,8 @@ class ChatService {
        $storeId=$store->id;
        $existingChat = Chat::where('user_id', $userId)
             ->where('store_id', $storeId)
-            ->where('store_order_id', null)
-            ->where('type', 'general')
+            // ->where('store_order_id', null)
+            // ->where('type', 'general')
             ->first();
         if ($existingChat) {
             return $existingChat;
