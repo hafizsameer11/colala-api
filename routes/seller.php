@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Seller\SellerOrderAcceptanceController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\Seller\SellerInventoryController;
 use App\Http\Controllers\Api\Seller\SellerKnowledgeBaseController;
+use App\Http\Controllers\Api\Seller\SellerTermsController;
 use App\Http\Controllers\Api\Seller\SellerReviewReplyController;
 use App\Http\Controllers\Api\Seller\SellerDisputeController;
 
@@ -240,6 +241,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Knowledge Base
     Route::get('knowledge-base', [SellerKnowledgeBaseController::class, 'index']);
     Route::get('knowledge-base/{id}', [SellerKnowledgeBaseController::class, 'show']);
+
+    // Terms & Policies
+    Route::get('terms', [SellerTermsController::class, 'index']);
+    Route::get('terms/{type}', [SellerTermsController::class, 'show']);
 
     // Reviews
     Route::get('reviews', [SellerReviewReplyController::class, 'list']); // List all reviews (store and product reviews)

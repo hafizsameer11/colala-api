@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\UserNotificationController;
 use App\Http\Controllers\Buyer\PhoneRequestController;
 use App\Http\Controllers\Api\Buyer\BuyerOrderPaymentController;
 use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
+use App\Http\Controllers\Api\Buyer\BuyerTermsController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\UserActivityController;
 
@@ -246,6 +247,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Knowledge Base
         Route::get('knowledge-base', [BuyerKnowledgeBaseController::class, 'index']);
         Route::get('knowledge-base/{id}', [BuyerKnowledgeBaseController::class, 'show']);
+
+        // Terms & Policies
+        Route::get('terms', [BuyerTermsController::class, 'index']);
+        Route::get('terms/{type}', [BuyerTermsController::class, 'show']);
 
         // User Activity (Heartbeat & Online Status)
         Route::post('activity/heartbeat', [UserActivityController::class, 'heartbeat']);

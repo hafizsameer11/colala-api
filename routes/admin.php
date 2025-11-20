@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\Admin\AdminDisputeController;
 use App\Http\Controllers\Api\Admin\AdminUserManagementController;
 use App\Http\Controllers\Api\Admin\AdminFaqController;
 use App\Http\Controllers\Api\Admin\AdminKnowledgeBaseController;
+use App\Http\Controllers\Api\Admin\AdminTermsController;
 use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
 use App\Http\Controllers\Api\Admin\AdminWithdrawalRequestController;
 use App\Http\Controllers\Api\Admin\AdminPostReportController;
@@ -886,6 +887,14 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::delete('/knowledge-base/{id}', [AdminKnowledgeBaseController::class, 'destroy']);
     // Toggle active status
     Route::post('/knowledge-base/{id}/toggle-status', [AdminKnowledgeBaseController::class, 'toggleStatus']);
+
+    // ========================================
+    // TERMS & POLICIES MANAGEMENT MODULE
+    // ========================================
+    // Get all terms and policies
+    Route::get('/terms', [AdminTermsController::class, 'index']);
+    // Update terms and policies
+    Route::put('/terms', [AdminTermsController::class, 'update']);
 
     // ========================================
     // SELLER HELP REQUESTS (LISTING)
