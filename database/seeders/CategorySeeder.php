@@ -11,6 +11,19 @@ class CategorySeeder extends Seeder
     public function run()
     {
         $rows = [
+
+            // ========================= VEHICLES =========================
+            ['Vehicles', '', ''],
+            ['Vehicles', 'Cars', ''],
+            ['Vehicles', 'Motorcycles & Scooters', ''],
+            ['Vehicles', 'Buses & Microbuses', ''],
+            ['Vehicles', 'Trucks & Trailers', ''],
+            ['Vehicles', 'Vehicle Parts & Accessories', ''],
+            ['Vehicles', 'Construction & Heavy Machinery', ''],
+            ['Vehicles', 'Watercraft & Boats', ''],
+            ['Vehicles', 'Car Services', ''],
+
+            // ========================= PROPERTY =========================
             ['Property', '', ''],
             ['Property', 'New Builds', ''],
             ['Property', 'Houses & Apartments For Rent', ''],
@@ -24,6 +37,7 @@ class CategorySeeder extends Seeder
             ['Property', 'Real Estate Agents & Services', ''],
             ['Property', 'Property Valuation & Surveying', ''],
 
+            // ================= MOBILE PHONES & TABLETS =================
             ['Mobile Phones & Tablets', '', ''],
             ['Mobile Phones & Tablets', 'Mobile Phones', ''],
             ['Mobile Phones & Tablets', 'Tablets', ''],
@@ -31,6 +45,7 @@ class CategorySeeder extends Seeder
             ['Mobile Phones & Tablets', 'Smart Watches', ''],
             ['Mobile Phones & Tablets', 'Headphones', ''],
 
+            // ======================== ELECTRONICS =======================
             ['Electronics', '', ''],
             ['Electronics', 'Laptops & Computers', ''],
             ['Electronics', 'TV & DVD Equipment', ''],
@@ -49,6 +64,7 @@ class CategorySeeder extends Seeder
             ['Electronics', 'Accessories & Supplies for Electronics', ''],
             ['Electronics', 'Software', ''],
 
+            // ============ HOME, FURNITURE & APPLIANCES =================
             ['Home, Furniture & Appliances', '', ''],
             ['Home, Furniture & Appliances', 'Furniture', ''],
             ['Home, Furniture & Appliances', 'Lighting', ''],
@@ -61,6 +77,7 @@ class CategorySeeder extends Seeder
             ['Home, Furniture & Appliances', 'Garden Supplies', ''],
             ['Home, Furniture & Appliances', 'Generators & Solar', ''],
 
+            // ================= SOLAR & POWER SOLUTIONS =================
             ['Solar & Power Solutions', '', ''],
             ['Solar & Power Solutions', 'Solar Panels', ''],
             ['Solar & Power Solutions', 'Inverters', ''],
@@ -69,7 +86,9 @@ class CategorySeeder extends Seeder
             ['Solar & Power Solutions', 'Solar Lights & Kits', ''],
             ['Solar & Power Solutions', 'UPS & Stabilizers', ''],
 
+            // =========================== FASHION ========================
             ['Fashion', '', ''],
+
             ['Fashion', "Women's Fashion", ''],
             ['Fashion', "Women's Fashion", "Women's Clothing"],
             ['Fashion', "Women's Fashion", "Women's Shoes"],
@@ -93,6 +112,7 @@ class CategorySeeder extends Seeder
             ['Fashion', "Kids' Fashion", "Children's Shoes"],
             ['Fashion', "Kids' Fashion", "Babies & Kids Accessories"],
 
+            // ================== JEWELRY & WATCHES ======================
             ['Jewelry & Watches', '', ''],
             ['Jewelry & Watches', 'Gold Jewelry', ''],
             ['Jewelry & Watches', 'Silver Jewelry', ''],
@@ -101,6 +121,7 @@ class CategorySeeder extends Seeder
             ['Jewelry & Watches', 'Fashion Watches', ''],
             ['Jewelry & Watches', 'Wedding Rings & Bands', ''],
 
+            // ============== LUGGAGE, BAGS & TRAVEL =====================
             ['Luggage, Bags & Travel', '', ''],
             ['Luggage, Bags & Travel', 'Suitcases & Travel Bags', ''],
             ['Luggage, Bags & Travel', 'Backpacks', ''],
@@ -108,6 +129,7 @@ class CategorySeeder extends Seeder
             ['Luggage, Bags & Travel', 'Travel Accessories', ''],
             ['Luggage, Bags & Travel', 'Umbrellas', ''],
 
+            // ===================== HEALTH & BEAUTY =====================
             ['Health & Beauty', '', ''],
             ['Health & Beauty', 'Hair Beauty', ''],
             ['Health & Beauty', 'Face Care', ''],
@@ -125,7 +147,7 @@ class CategorySeeder extends Seeder
             ['Health & Beauty', 'Glucometers & Test Strips', ''],
             ['Health & Beauty', 'First Aid & PPE', ''],
 
-            // ⭐⭐⭐ SERVICE CATEGORIES — WILL BE MOVED TO ServiceCategory MODEL ⭐⭐⭐
+            // ===================== SERVICES (SPECIAL) ==================
             ['Services', 'Building & Trades Services', ''],
             ['Services', 'Car Services', ''],
             ['Services', 'Computer & IT Services', ''],
@@ -152,6 +174,7 @@ class CategorySeeder extends Seeder
             ['Services', 'Pet Services', ''],
             ['Services', 'Other Services', ''],
 
+            // ===================== WEDDING & EVENTS ====================
             ['Wedding & Events', '', ''],
             ['Wedding & Events', 'Wedding Gowns & Suits', ''],
             ['Wedding & Events', 'Wedding Accessories', ''],
@@ -159,6 +182,7 @@ class CategorySeeder extends Seeder
             ['Wedding & Events', 'Catering Equipment', ''],
             ['Wedding & Events', 'Event Planning Services', ''],
 
+            // ================= REPAIR & CONSTRUCTION ===================
             ['Repair & Construction', '', ''],
             ['Repair & Construction', 'Electrical Equipment', ''],
             ['Repair & Construction', 'Building Materials & Supplies', ''],
@@ -172,6 +196,7 @@ class CategorySeeder extends Seeder
             ['Repair & Construction', 'Other Repair & Construction Items', ''],
             ['Repair & Construction', 'Automotive Tools & Garage Equipment', ''],
 
+            // ============ COMMERCIAL EQUIPMENT & TOOLS =================
             ['Commercial Equipment & Tools', '', ''],
             ['Commercial Equipment & Tools', 'Medical Equipment & Supplies', ''],
             ['Commercial Equipment & Tools', 'Safety Equipment & Protective Gear', ''],
@@ -184,6 +209,7 @@ class CategorySeeder extends Seeder
             ['Commercial Equipment & Tools', 'Printing & Graphics Equipment', ''],
             ['Commercial Equipment & Tools', 'Stage & Event Equipment', ''],
 
+            // ================== INDUSTRIAL MACHINERY ===================
             ['Industrial Machinery', '', ''],
             ['Industrial Machinery', 'Industrial Generators', ''],
             ['Industrial Machinery', 'Welding Machines', ''],
@@ -191,18 +217,21 @@ class CategorySeeder extends Seeder
             ['Industrial Machinery', 'Factory Machines', ''],
             ['Industrial Machinery', 'Packaging Machines', ''],
 
+            // ==================== OFFICE & STATIONERY ==================
             ['Office & Stationery', '', ''],
             ['Office & Stationery', 'Office Furniture', ''],
             ['Office & Stationery', 'Stationery & Supplies', ''],
             ['Office & Stationery', 'Printer Ink & Toner', ''],
             ['Office & Stationery', 'Office Electronics', ''],
 
+            // ============ SCHOOL SUPPLIES & UNIFORMS ===================
             ['School Supplies & Uniforms', '', ''],
             ['School Supplies & Uniforms', 'School Uniforms', ''],
             ['School Supplies & Uniforms', 'School Bags', ''],
             ['School Supplies & Uniforms', 'Textbooks & Educational Materials', ''],
             ['School Supplies & Uniforms', 'Stationery', ''],
 
+            // ========== LEISURE, ARTS & ENTERTAINMENT ==================
             ['Leisure, Arts & Entertainment', '', ''],
             ['Leisure, Arts & Entertainment', 'Sports Equipment', ''],
             ['Leisure, Arts & Entertainment', 'Massagers', ''],
@@ -214,6 +243,7 @@ class CategorySeeder extends Seeder
             ['Leisure, Arts & Entertainment', 'Music & Video', ''],
             ['Leisure, Arts & Entertainment', 'Fitness & Personal Training Services', ''],
 
+            // ======================= BABIES & KIDS =====================
             ['Babies & Kids', '', ''],
             ['Babies & Kids', 'Toys, Games & Bikes', ''],
             ['Babies & Kids', 'Action Figures & Dolls', ''],
@@ -229,12 +259,14 @@ class CategorySeeder extends Seeder
             ['Babies & Kids', 'Transport & Safety', ''],
             ['Babies & Kids', 'Playground Equipment', ''],
 
+            // ================= FOOD, AGRICULTURE & FARMING =============
             ['Food, Agriculture & Farming', '', ''],
             ['Food, Agriculture & Farming', 'Food & Beverages', ''],
             ['Food, Agriculture & Farming', 'Farm Animals', ''],
             ['Food, Agriculture & Farming', 'Feeds, Supplements & Seeds', ''],
             ['Food, Agriculture & Farming', 'Farm Machinery & Equipment', ''],
 
+            // ======================= ANIMALS & PETS ====================
             ['Animals & Pets', '', ''],
             ['Animals & Pets', "Pet's Accessories", ''],
             ['Animals & Pets', 'Cats & Kittens', ''],
@@ -244,6 +276,7 @@ class CategorySeeder extends Seeder
             ['Animals & Pets', 'Other Animals', ''],
             ['Animals & Pets', 'Pet Services', ''],
 
+            // ================== SUPERMARKET & GROCERIES =================
             ['Supermarket & Groceries', '', ''],
             ['Supermarket & Groceries', 'Food Cupboard', ''],
             ['Supermarket & Groceries', 'Beverages', ''],
@@ -252,27 +285,32 @@ class CategorySeeder extends Seeder
             ['Supermarket & Groceries', 'Baby Products', ''],
             ['Supermarket & Groceries', 'Wine, Spirits & Tobacco', ''],
 
+            // ================= SPORTING GOODS & FITNESS =================
             ['Sporting Goods & Fitness', '', ''],
             ['Sporting Goods & Fitness', 'Exercise & Fitness Equipment', ''],
             ['Sporting Goods & Fitness', 'Sports Clothing', ''],
             ['Sporting Goods & Fitness', 'Outdoor & Adventure', ''],
             ['Sporting Goods & Fitness', 'Team Sports', ''],
 
+            // ======================== GIFTS & HAMPERS ===================
             ['Gifts & Hampers', '', ''],
             ['Gifts & Hampers', 'Gift Sets & Boxes', ''],
             ['Gifts & Hampers', 'Corporate Gifts', ''],
             ['Gifts & Hampers', 'Birthday & Anniversary Gifts', ''],
             ['Gifts & Hampers', 'Christmas & Festive Hampers', ''],
 
+            // =========================== GAMING =========================
             ['Gaming', '', ''],
             ['Gaming', 'Consoles & Accessories', ''],
             ['Gaming', 'Video Games', ''],
 
+            // ================== BOOKS, MOVIES & MUSIC ===================
             ['Books, Movies & Music', '', ''],
             ['Books, Movies & Music', 'Books', ''],
             ['Books, Movies & Music', 'Musical Instruments', ''],
             ['Books, Movies & Music', 'Movies & TV Shows', ''],
 
+            // ================= VIRTUAL & DIGITAL PRODUCTS ===============
             ['Virtual & Digital Products', '', ''],
             ['Virtual & Digital Products', 'Airtime & Mobile Data', ''],
             ['Virtual & Digital Products', 'Gift Cards & Vouchers', ''],
@@ -280,6 +318,7 @@ class CategorySeeder extends Seeder
             ['Virtual & Digital Products', 'Online Courses & eBooks', ''],
             ['Virtual & Digital Products', 'Streaming Subscriptions', ''],
 
+            // ========================== AUTOMOTIVE ======================
             ['Automotive', '', ''],
             ['Automotive', 'Car Accessories', ''],
             ['Automotive', 'Motorcycle Parts & Accessories', ''],
@@ -290,7 +329,7 @@ class CategorySeeder extends Seeder
             $level2 = trim($row[1]);
             $level3 = trim($row[2]);
 
-            // ⭐⭐⭐ SEPARATE SERVICE CATEGORIES ⭐⭐⭐
+            // SERVICES GO TO ServiceCategory TABLE
             if ($level1 === "Services") {
                 if ($level2) {
                     ServiceCategory::firstOrCreate(
@@ -301,22 +340,25 @@ class CategorySeeder extends Seeder
                 continue;
             }
 
-            // 1️⃣ CREATE LEVEL 1 CATEGORY
+            // Level 1
             $parent1 = Category::firstOrCreate(
                 ['title' => $level1, 'parent_id' => null]
             );
 
-            // No Level 2 — done
-            if (!$level2) continue;
+            if (!$level2) {
+                continue;
+            }
 
-            // 2️⃣ LEVEL 2
+            // Level 2
             $parent2 = Category::firstOrCreate(
                 ['title' => $level2, 'parent_id' => $parent1->id]
             );
 
-            if (!$level3) continue;
+            if (!$level3) {
+                continue;
+            }
 
-            // 3️⃣ LEVEL 3
+            // Level 3
             Category::firstOrCreate(
                 ['title' => $level3, 'parent_id' => $parent2->id]
             );
