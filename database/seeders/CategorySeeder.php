@@ -10,8 +10,93 @@ class CategorySeeder extends Seeder
 {
     public function run()
     {
-        $rows = [
+        // Read from categories.txt file directly
+        $txtFile = base_path('categories.txt');
+        
+        if (!file_exists($txtFile)) {
+            $this->command->error("categories.txt file not found at: {$txtFile}");
+            $this->command->info("Falling back to hardcoded categories...");
+            $this->runHardcoded();
+            return;
+        }
 
+        $handle = fopen($txtFile, 'r');
+        if (!$handle) {
+            $this->command->error("Could not open categories.txt file");
+            $this->command->info("Falling back to hardcoded categories...");
+            $this->runHardcoded();
+            return;
+        }
+
+        // Skip header row
+        $header = fgetcsv($handle);
+        
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if (count($data) < 3) {
+                continue;
+            }
+            
+            $level1 = trim($data[0] ?? '');
+            $level2 = trim($data[1] ?? '');
+            $level3 = trim($data[2] ?? '');
+            
+            if ($level1) {
+                $rows[] = [$level1, $level2, $level3];
+            }
+        }
+        fclose($handle);
+
+        $this->processRows($rows);
+    }
+
+    private function processRows(array $rows)
+    {
+        foreach ($rows as $row) {
+            $level1 = trim($row[0]);
+            $level2 = trim($row[1]);
+            $level3 = trim($row[2]);
+
+            // SERVICES GO TO ServiceCategory TABLE ONLY (not Category table)
+            if ($level1 === "Services") {
+                // Add service subcategories to ServiceCategory table
+                if ($level2) {
+                    ServiceCategory::firstOrCreate(
+                        ['title' => $level2],
+                        ['image' => null, 'is_active' => 1]
+                    );
+                }
+                continue;
+            }
+
+            // Level 1 - Always create, even if no Level 2
+            $parent1 = Category::firstOrCreate(
+                ['title' => $level1, 'parent_id' => null]
+            );
+
+            if (!$level2) {
+                continue; // No Level 2, so we're done with this row
+            }
+
+            // Level 2
+            $parent2 = Category::firstOrCreate(
+                ['title' => $level2, 'parent_id' => $parent1->id]
+            );
+
+            if (!$level3) {
+                continue; // No Level 3, so we're done with this row
+            }
+
+            // Level 3
+            Category::firstOrCreate(
+                ['title' => $level3, 'parent_id' => $parent2->id]
+            );
+        }
+    }
+
+    private function runHardcoded()
+    {
+        $rows = [
             // ========================= VEHICLES =========================
             ['Vehicles', '', ''],
             ['Vehicles', 'Cars', ''],
@@ -88,7 +173,6 @@ class CategorySeeder extends Seeder
 
             // =========================== FASHION ========================
             ['Fashion', '', ''],
-
             ['Fashion', "Women's Fashion", ''],
             ['Fashion', "Women's Fashion", "Women's Clothing"],
             ['Fashion', "Women's Fashion", "Women's Shoes"],
@@ -97,7 +181,6 @@ class CategorySeeder extends Seeder
             ['Fashion', "Women's Fashion", "Women's Watches"],
             ['Fashion', "Women's Fashion", "Women's Clothing Accessories"],
             ['Fashion', "Women's Fashion", "Women's Wedding Wear & Accessories"],
-
             ['Fashion', "Men's Fashion", ''],
             ['Fashion', "Men's Fashion", "Men's Clothing"],
             ['Fashion', "Men's Fashion", "Men's Shoes"],
@@ -106,7 +189,6 @@ class CategorySeeder extends Seeder
             ['Fashion', "Men's Fashion", "Men's Watches"],
             ['Fashion', "Men's Fashion", "Men's Clothing Accessories"],
             ['Fashion', "Men's Fashion", "Men's Wedding Wear & Accessories"],
-
             ['Fashion', "Kids' Fashion", ''],
             ['Fashion', "Kids' Fashion", "Children's Clothing"],
             ['Fashion', "Kids' Fashion", "Children's Shoes"],
@@ -324,44 +406,6 @@ class CategorySeeder extends Seeder
             ['Automotive', 'Motorcycle Parts & Accessories', ''],
         ];
 
-        foreach ($rows as $row) {
-            $level1 = trim($row[0]);
-            $level2 = trim($row[1]);
-            $level3 = trim($row[2]);
-
-            // SERVICES GO TO ServiceCategory TABLE
-            if ($level1 === "Services") {
-                if ($level2) {
-                    ServiceCategory::firstOrCreate(
-                        ['title' => $level2],
-                        ['image' => null, 'is_active' => 1]
-                    );
-                }
-                continue;
-            }
-
-            // Level 1
-            $parent1 = Category::firstOrCreate(
-                ['title' => $level1, 'parent_id' => null]
-            );
-
-            if (!$level2) {
-                continue;
-            }
-
-            // Level 2
-            $parent2 = Category::firstOrCreate(
-                ['title' => $level2, 'parent_id' => $parent1->id]
-            );
-
-            if (!$level3) {
-                continue;
-            }
-
-            // Level 3
-            Category::firstOrCreate(
-                ['title' => $level3, 'parent_id' => $parent2->id]
-            );
-        }
+        $this->processRows($rows);
     }
 }
