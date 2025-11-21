@@ -183,7 +183,7 @@ class WalletWithdrawalController extends Controller
     public function validateAccount(Request $request, FlutterwaveService $fw)
     {
         $data = $request->validate([
-            "bank_code" => "required|string|regex:/^[0-9]+$/", // Must be numeric string like "044", "057"
+            "bank_code" => "required", // Must be numeric string like "044", "057"
             "account_number" => "required|string|regex:/^[0-9]+$/|min:10|max:12",
         ]);
 
