@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\{WithdrawalRequest, Wallet, Transaction};
+use App\Services\FlutterwaveService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Exception;
 
@@ -149,6 +151,113 @@ class WalletWithdrawalController extends Controller
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Get list of banks from Flutterwave
+     */
+    public function getBanks(Request $request, FlutterwaveService $fw)
+    {
+        try {
+            $country = $request->get('country', 'NG');
+            $banks = $fw->getBanks($country);
+            
+            if (($banks['status'] ?? '') === 'success') {
+                return ResponseHelper::success($banks['data'] ?? []);
+            }
+            
+            return ResponseHelper::error('Failed to fetch banks', 500);
+        } catch (Exception $e) {
+            Log::error('GetBanks Error: ' . $e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Automatic withdrawal using Flutterwave
+     */
+    public function automaticWithdraw(Request $request, FlutterwaveService $fw)
+    {
+        $data = $request->validate([
+            "bank_code" => "required|string",
+            "bank_name" => "required|string",
+            "account_number" => "required|string|min:10|max:12",
+            "amount" => "required|numeric|min:100"
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $user = $request->user();
+            $wallet = $user->wallet()->lockForUpdate()->first();
+
+            if (!$wallet || $wallet->shopping_balance < $data['amount']) {
+                return ResponseHelper::error('Insufficient wallet balance.', 422);
+            }
+
+            // STEP 1 — RESOLVE ACCOUNT NAME
+            $resolve = $fw->resolveAccount($data["account_number"], $data["bank_code"]);
+
+            if (($resolve["status"] ?? "") !== "success") {
+                DB::rollBack();
+                return ResponseHelper::error(
+                    $resolve["message"] ?? "Invalid bank account details",
+                    422
+                );
+            }
+
+            $accountName = $resolve["data"]["account_name"] ?? $data["account_name"];
+
+            // STEP 2 — GENERATE UNIQUE REFERENCE
+            $reference = "payout-" . Str::uuid();
+
+            // STEP 3 — DEDUCT FROM WALLET
+            $wallet->decrement('shopping_balance', $data['amount']);
+
+            // STEP 4 — CREATE TRANSACTION
+            $txId = 'WD-FW-' . now()->format('YmdHis') . '-' . random_int(100000, 999999);
+            Transaction::create([
+                'tx_id'   => $txId,
+                'amount'  => $data['amount'],
+                'status'  => 'pending',
+                'type'    => 'withdrawl',
+                'order_id'=> null,
+                'user_id' => $user->id,
+            ]);
+
+            // STEP 5 — INITIATE TRANSFER
+            $transfer = $fw->makeTransfer(
+                $data["bank_code"],
+                $data["account_number"],
+                $data["amount"],
+                $reference
+            );
+
+            // STEP 6 — SAVE PAYOUT
+            $withdrawal = WithdrawalRequest::create([
+                "user_id" => $user->id,
+                "bank_code" => $data["bank_code"],
+                "bank_name" => $data["bank_name"],
+                "account_number" => $data["account_number"],
+                "account_name" => $accountName,
+                "amount" => $data["amount"],
+                "reference" => $reference,
+                "flutterwave_transfer_id" => $transfer["data"]["id"] ?? null,
+                "status" => ($transfer["status"] ?? "") === "success" ? "pending" : "pending",
+                "remarks" => $transfer["message"] ?? null
+            ]);
+
+            DB::commit();
+
+            return ResponseHelper::success([
+                "withdrawal" => $withdrawal,
+                "reference" => $reference,
+                "flutterwave_response" => $transfer
+            ], "Withdrawal initiated successfully");
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('AutomaticWithdraw Error: ' . $e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
         }
     }
 }

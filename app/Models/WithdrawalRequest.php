@@ -9,7 +9,16 @@ class WithdrawalRequest extends Model
     //
 
     protected $fillable = [
-        'user_id','amount','bank_name','account_number','account_name','status'
+        'user_id',
+        'amount',
+        'bank_code',
+        'bank_name',
+        'account_number',
+        'account_name',
+        'reference',
+        'flutterwave_transfer_id',
+        'status',
+        'remarks'
     ];
 
     public function user()

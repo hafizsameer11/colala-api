@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
 use App\Http\Controllers\Api\Buyer\BuyerTermsController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\UserActivityController;
+use App\Http\Controllers\WebhookController;
 
 require __DIR__ . '/seller.php';
 require __DIR__ . '/admin.php';
@@ -264,11 +265,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ---------- WALLET ----------
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
+    Route::post('wallet/withdraw/auto', [WalletWithdrawalController::class, 'automaticWithdraw']);
+    Route::get('wallet/withdraw/banks', [WalletWithdrawalController::class, 'getBanks']);
     Route::post('wallet/withdraw/referral', [WalletWithdrawalController::class, 'requestReferralWithdraw']);
     Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);
     Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
+
+    // ---------- FLUTTERWAVE WEBHOOK (PUBLIC) ----------
+    Route::post('flutterwave/webhook', [WebhookController::class, 'flutterwave']);
 
     // ---------- USER DATA ----------
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
