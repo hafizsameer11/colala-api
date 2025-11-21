@@ -10,6 +10,116 @@ class BrandSeeder extends Seeder
 {
     public function run()
     {
+        // Read from brands.txt file directly
+        $txtFile = base_path('brands.txt');
+        
+        if (!file_exists($txtFile)) {
+            $this->command->error("brands.txt file not found at: {$txtFile}");
+            $this->command->info("Falling back to hardcoded brands...");
+            $this->runHardcoded();
+            return;
+        }
+
+        $handle = fopen($txtFile, 'r');
+        if (!$handle) {
+            $this->command->error("Could not open brands.txt file");
+            $this->command->info("Falling back to hardcoded brands...");
+            $this->runHardcoded();
+            return;
+        }
+
+        // Skip header row
+        $header = fgetcsv($handle);
+        
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if (count($data) < 4) {
+                continue;
+            }
+            
+            $level1 = trim($data[0] ?? '');
+            $level2 = trim($data[1] ?? '');
+            $level3 = trim($data[2] ?? '');
+            $brandName = trim($data[3] ?? '');
+            
+            if ($level1 && $brandName) {
+                $rows[] = [$level1, $level2, $level3, $brandName];
+            }
+        }
+        fclose($handle);
+
+        $this->processRows($rows);
+        
+        // ALWAYS include "Others"
+        Brand::firstOrCreate(['name' => 'Others']);
+
+        $this->command->info("✔ Brand seeding complete!");
+    }
+
+    private function processRows(array $rows)
+    {
+        foreach ($rows as $row) {
+            $level1 = trim($row[0]);
+            $level2 = trim($row[1]);
+            $level3 = trim($row[2]);
+            $brandName = trim($row[3]);
+
+            if (!$level1 || !$brandName) {
+                continue;
+            }
+
+            // Find the category based on hierarchy
+            // Priority: Level 3 > Level 2 > Level 1
+            $category = null;
+
+            if ($level3) {
+                // Find Level 3 category
+                // First find Level 1
+                $parent1 = Category::where('title', $level1)
+                    ->whereNull('parent_id')
+                    ->first();
+                
+                if ($parent1) {
+                    // Then find Level 2
+                    $parent2 = Category::where('title', $level2)
+                        ->where('parent_id', $parent1->id)
+                        ->first();
+                    
+                    if ($parent2) {
+                        // Finally find Level 3
+                        $category = Category::where('title', $level3)
+                            ->where('parent_id', $parent2->id)
+                            ->first();
+                    }
+                }
+            } elseif ($level2) {
+                // Find Level 2 category
+                $parent1 = Category::where('title', $level1)
+                    ->whereNull('parent_id')
+                    ->first();
+                
+                if ($parent1) {
+                    $category = Category::where('title', $level2)
+                        ->where('parent_id', $parent1->id)
+                        ->first();
+                }
+            } else {
+                // Find Level 1 category
+                $category = Category::where('title', $level1)
+                    ->whereNull('parent_id')
+                    ->first();
+            }
+
+            // Create or update brand with category_id
+            Brand::updateOrCreate(
+                ['name' => $brandName],
+                ['category_id' => $category?->id]
+            );
+        }
+    }
+
+    private function runHardcoded()
+    {
         $brands = [
 
             // ========================= VEHICLES =========================
@@ -706,35 +816,11 @@ class BrandSeeder extends Seeder
             ['Automotive','Motorcycle Parts & Accessories','', 'Michelin Motorcycle Tyres'],
         ];
 
-        foreach ($brands as $item) {
-
-            [$l1, $l2, $l3, $brandName] = $item;
-
-            // Level 1
-            $cat1 = Category::firstOrCreate([
-                'title' => $l1,
-                'parent_id' => null
-            ]);
-
-            // Level 2
-            $cat2 = $l2 ? Category::firstOrCreate([
-                'title' => $l2,
-                'parent_id' => $cat1->id
-            ]) : $cat1;
-
-            // Level 3
-            $cat3 = $l3 ? Category::firstOrCreate([
-                'title' => $l3,
-                'parent_id' => $cat2->id
-            ]) : $cat2;
-
-            // Create brand
-            Brand::firstOrCreate(['name' => $brandName]);
-        }
-
+        $this->processRows($brands);
+        
         // ALWAYS include "Others"
         Brand::firstOrCreate(['name' => 'Others']);
 
-        echo "✔ Brand seeding complete!\n";
+        $this->command->info("✔ Brand seeding complete!");
     }
 }
