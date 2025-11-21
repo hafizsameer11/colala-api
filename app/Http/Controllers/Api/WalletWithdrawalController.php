@@ -184,7 +184,7 @@ class WalletWithdrawalController extends Controller
     {
         $data = $request->validate([
             "bank_code" => "required|string",
-            "account_number" => "required|string|min:10|max:12",
+            "account_number" => "required",
         ]);
 
         try {
