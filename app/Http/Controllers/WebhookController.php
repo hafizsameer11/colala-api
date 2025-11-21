@@ -30,6 +30,8 @@ class WebhookController extends Controller
                 $payout->status = $data["status"] === "SUCCESSFUL" ? "approved" : "rejected";
                 $payout->flutterwave_transfer_id = $data["id"] ?? $payout->flutterwave_transfer_id;
                 $payout->remarks = $data["complete_message"] ?? $data["message"] ?? "";
+                // Save complete webhook payload as JSON
+                $payout->webhook_data = $request->all();
                 $payout->save();
 
                 Log::info('Flutterwave webhook: Payout updated', [
@@ -38,9 +40,16 @@ class WebhookController extends Controller
                 ]);
             } else {
                 Log::warning('Flutterwave webhook: Payout not found', [
-                    'reference' => $data["reference"] ?? 'unknown'
+                    'reference' => $data["reference"] ?? 'unknown',
+                    'webhook_payload' => $request->all()
                 ]);
             }
+        } else {
+            // Log other webhook events for debugging
+            Log::info('Flutterwave webhook: Other event received', [
+                'event' => $request->event,
+                'webhook_payload' => $request->all()
+            ]);
         }
 
         return response("OK", 200);

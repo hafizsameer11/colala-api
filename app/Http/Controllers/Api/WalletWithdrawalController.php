@@ -156,6 +156,7 @@ class WalletWithdrawalController extends Controller
 
     /**
      * Get list of banks from Flutterwave
+     * STEP 1: Frontend calls this to get bank list for dropdown
      */
     public function getBanks(Request $request, FlutterwaveService $fw)
     {
@@ -175,7 +176,42 @@ class WalletWithdrawalController extends Controller
     }
 
     /**
+     * Validate bank account number
+     * STEP 2: Frontend sends bank_code and account_number for validation
+     * Returns account name if valid
+     */
+    public function validateAccount(Request $request, FlutterwaveService $fw)
+    {
+        $data = $request->validate([
+            "bank_code" => "required|string",
+            "account_number" => "required|string|min:10|max:12",
+        ]);
+
+        try {
+            $resolve = $fw->resolveAccount($data["account_number"], $data["bank_code"]);
+
+            if (($resolve["status"] ?? "") !== "success") {
+                return ResponseHelper::error(
+                    $resolve["message"] ?? "Invalid bank account details",
+                    422
+                );
+            }
+
+            return ResponseHelper::success([
+                "account_name" => $resolve["data"]["account_name"] ?? "",
+                "account_number" => $data["account_number"],
+                "bank_code" => $data["bank_code"],
+                "valid" => true
+            ], "Account validated successfully");
+        } catch (Exception $e) {
+            Log::error('ValidateAccount Error: ' . $e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Automatic withdrawal using Flutterwave
+     * STEP 3: After validation, user submits amount and initiates withdrawal
      */
     public function automaticWithdraw(Request $request, FlutterwaveService $fw)
     {
@@ -183,6 +219,7 @@ class WalletWithdrawalController extends Controller
             "bank_code" => "required|string",
             "bank_name" => "required|string",
             "account_number" => "required|string|min:10|max:12",
+            "account_name" => "required|string", // Should come from validation step
             "amount" => "required|numeric|min:100"
         ]);
 
@@ -192,12 +229,13 @@ class WalletWithdrawalController extends Controller
             $wallet = $user->wallet()->lockForUpdate()->first();
 
             if (!$wallet || $wallet->shopping_balance < $data['amount']) {
+                DB::rollBack();
                 return ResponseHelper::error('Insufficient wallet balance.', 422);
             }
 
-            // STEP 1 — RESOLVE ACCOUNT NAME
+            // Optional: Re-validate account (for security)
             $resolve = $fw->resolveAccount($data["account_number"], $data["bank_code"]);
-
+            
             if (($resolve["status"] ?? "") !== "success") {
                 DB::rollBack();
                 return ResponseHelper::error(

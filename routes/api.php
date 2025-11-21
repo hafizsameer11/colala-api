@@ -267,6 +267,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
     Route::post('wallet/withdraw/auto', [WalletWithdrawalController::class, 'automaticWithdraw']);
     Route::get('wallet/withdraw/banks', [WalletWithdrawalController::class, 'getBanks']);
+    Route::post('wallet/withdraw/validate-account', [WalletWithdrawalController::class, 'validateAccount']);
     Route::post('wallet/withdraw/referral', [WalletWithdrawalController::class, 'requestReferralWithdraw']);
     Route::get('wallet/withdrawals', [WalletWithdrawalController::class, 'myWithdrawals']);
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);

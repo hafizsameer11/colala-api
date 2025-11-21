@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('reference')->unique()->nullable()->after('account_name');
             $table->string('flutterwave_transfer_id')->nullable()->after('reference');
             $table->text('remarks')->nullable()->after('flutterwave_transfer_id');
+            $table->json('webhook_data')->nullable()->after('remarks');
         });
     }
 
@@ -26,7 +27,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('withdrawal_requests', function (Blueprint $table) {
-            $table->dropColumn(['bank_code', 'reference', 'flutterwave_transfer_id', 'remarks']);
+            $table->dropColumn(['bank_code', 'reference', 'flutterwave_transfer_id', 'remarks', 'webhook_data']);
         });
     }
 };

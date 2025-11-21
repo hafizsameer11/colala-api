@@ -18,7 +18,12 @@ class WithdrawalRequest extends Model
         'reference',
         'flutterwave_transfer_id',
         'status',
-        'remarks'
+        'remarks',
+        'webhook_data'
+    ];
+
+    protected $casts = [
+        'webhook_data' => 'array',
     ];
 
     public function user()
