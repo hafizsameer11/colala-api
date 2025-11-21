@@ -142,6 +142,9 @@ Route::prefix('faqs')->group(function () {
 // Banners
 Route::get('/banners/active', [AdminBannerController::class, 'getActiveBanners']);
 
+// Flutterwave Webhook (PUBLIC - No authentication required)
+Route::post('flutterwave/webhook', [WebhookController::class, 'flutterwave']);
+
 
 // ==================== PROTECTED ROUTES (AUTH REQUIRED) ====================
 Route::middleware('auth:sanctum')->group(function () {
@@ -273,9 +276,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('wallet/top-up', [WalletController::class, 'topUp']);
     Route::get('wallet/refferal-balance', [WalletController::class, 'refferalBalance']);
     Route::post('wallet/transfer', [WalletController::class, 'transfer']);
-
-    // ---------- FLUTTERWAVE WEBHOOK (PUBLIC) ----------
-    Route::post('flutterwave/webhook', [WebhookController::class, 'flutterwave']);
 
     // ---------- USER DATA ----------
     Route::get('user/transactions', [TransactionController::class, 'getForAuthUser']);
