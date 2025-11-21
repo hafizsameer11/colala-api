@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Models\Brand;
 
@@ -110,11 +111,27 @@ class BrandSeeder extends Seeder
                     ->first();
             }
 
-            // Create or update brand with category_id
-            Brand::updateOrCreate(
-                ['name' => $brandName],
-                ['category_id' => $category?->id]
-            );
+            // Generate slug first to check for duplicates
+            $slug = Str::slug($brandName);
+            
+            // Check if a brand with this slug already exists
+            $existingBrand = Brand::where('slug', $slug)->first();
+            
+            if ($existingBrand) {
+                // Update existing brand (might have different name but same slug)
+                $existingBrand->update([
+                    'name' => $brandName,
+                    'category_id' => $category?->id
+                ]);
+            } else {
+                // Create new brand
+                Brand::create([
+                    'name' => $brandName,
+                    'slug' => $slug,
+                    'category_id' => $category?->id,
+                    'status' => 'active'
+                ]);
+            }
         }
     }
 
