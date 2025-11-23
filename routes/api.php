@@ -268,7 +268,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/plan', [AuthController::class, 'getPlan']);
 
     // ---------- WALLET ----------
-    Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'requestWithdraw']);
+    Route::post('wallet/withdraw', [WalletWithdrawalController::class, 'automaticWithdraw']); //requestwithdrawal
     Route::post('wallet/withdraw/auto', [WalletWithdrawalController::class, 'automaticWithdraw']);
     Route::get('wallet/withdraw/banks', [WalletWithdrawalController::class, 'getBanks']);
     Route::post('wallet/withdraw/validate-account', [WalletWithdrawalController::class, 'validateAccount']);
