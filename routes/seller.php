@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\ServiceStatController;
 use App\Http\Controllers\Api\StoreManagementController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Buyer\ChatController;
+use App\Http\Controllers\PushNotificationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Seller\LoyaltyController as SellerLoyalty;
 use App\Http\Controllers\Api\SellerPhoneRequestController;
@@ -259,6 +260,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::post('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'replyToProductReview']);
     Route::put('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'updateProductReviewReply']);
     Route::delete('reviews/product/{reviewId}/reply', [SellerReviewReplyController::class, 'deleteProductReviewReply']);
+
+    Route::post('save-expo-push-token',[PushNotificationController::class, 'saveExpoPushToken']);
 
 });
 
