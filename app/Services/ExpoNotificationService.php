@@ -18,13 +18,23 @@ class ExpoNotificationService
      */
     public function sendNotification(string $expoToken, string $title, string $body, array $data = []): array
     {
-        $payload = [
+        // Expo Push API expects an array of notification objects
+        // Also, 'data' must be an object (associative array), not an indexed array
+        $notification = [
             'to' => $expoToken,
             'sound' => 'default',
             'title' => $title,
             'body' => $body,
-            'data' => $data,
         ];
+
+        // Only include 'data' if it's not empty
+        // Laravel will convert associative array to JSON object automatically
+        if (!empty($data)) {
+            $notification['data'] = $data;
+        }
+
+        // Wrap in array as Expo API expects array of notifications
+        $payload = [$notification];
 
         try {
             $response = Http::post('https://exp.host/--/api/v2/push/send', $payload);
