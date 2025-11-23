@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\Buyer\BuyerKnowledgeBaseController;
 use App\Http\Controllers\Api\Buyer\BuyerTermsController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\UserActivityController;
+use App\Http\Controllers\PushNotificationController;
 use App\Http\Controllers\WebhookController;
 
 require __DIR__ . '/seller.php';
@@ -330,6 +331,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---------- BANNERS TRACKING ----------
     Route::post('/banners/{id}/view', [AdminBannerController::class, 'trackBannerView']);
     Route::post('/banners/{id}/click', [AdminBannerController::class, 'trackBannerClick']);
+    Route::post('/buyer/save-expo-token',[PushNotificationController::class, 'saveExpoPushToken']);
+    Route::post('test-expo-notification/{userId}',[PushNotificationController::class, 'testExpoNotification']);
 });
 
 /*
