@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\{WithdrawalRequest, Wallet, Transaction};
 use App\Services\FlutterwaveService;
@@ -62,7 +63,7 @@ class WalletWithdrawalController extends Controller
             ]);
 
             // Create withdrawal request record
-            WithdrawalRequest::create([
+            $withdrawal = WithdrawalRequest::create([
                 'user_id'       => $user->id,
                 'amount'        => $data['amount'],
                 'bank_name'     => $data['bank_name'],
@@ -70,6 +71,19 @@ class WalletWithdrawalController extends Controller
                 'account_name'  => $data['account_name'],
                 'status'        => 'pending'
             ]);
+
+            // Send notification
+            UserNotificationHelper::notify(
+                $user->id,
+                'Withdrawal Request Submitted',
+                "Your withdrawal request of ₦" . number_format($data['amount'], 2) . " has been submitted and is pending approval.",
+                [
+                    'type' => 'withdrawal_requested',
+                    'withdrawal_id' => $withdrawal->id,
+                    'amount' => $data['amount'],
+                    'status' => 'pending'
+                ]
+            );
 
             DB::commit();
             return ResponseHelper::success(null, 'Withdrawal request submitted successfully.');
@@ -292,6 +306,20 @@ class WalletWithdrawalController extends Controller
                 "status" => ($transfer["status"] ?? "") === "success" ? "pending" : "pending",
                 "remarks" => $transfer["message"] ?? null
             ]);
+
+            // Send notification
+            UserNotificationHelper::notify(
+                $user->id,
+                'Withdrawal Initiated',
+                "Your withdrawal of ₦" . number_format($data["amount"], 2) . " has been initiated. Reference: {$reference}",
+                [
+                    'type' => 'withdrawal_initiated',
+                    'withdrawal_id' => $withdrawal->id,
+                    'amount' => $data["amount"],
+                    'reference' => $reference,
+                    'status' => 'pending'
+                ]
+            );
 
             DB::commit();
 

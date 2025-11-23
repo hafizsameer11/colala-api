@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Buyer;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateDisputeRequest;
 use App\Models\{Dispute, DisputeChat, DisputeChatMessage, StoreOrder, Store};
@@ -23,7 +24,7 @@ class DisputeController extends Controller
             $buyer = $request->user();
 
             // Get store order to find seller and store
-            $storeOrder = StoreOrder::with('store.user')->findOrFail($data['store_order_id']);
+            $storeOrder = StoreOrder::with(['store.user', 'order'])->findOrFail($data['store_order_id']);
             $store = $storeOrder->store;
             $seller = $store->user;
 
@@ -69,6 +70,36 @@ class DisputeController extends Controller
                 'message' => "📌 Dispute created: {$data['category']}" . ($data['details'] ? "\n\n{$data['details']}" : ''),
                 'is_read' => false,
             ]);
+
+            // Notify seller about new dispute
+            $orderNo = $storeOrder->order ? $storeOrder->order->order_no : 'N/A';
+            if ($seller) {
+                UserNotificationHelper::notify(
+                    $seller->id,
+                    'New Dispute Created',
+                    "A dispute has been created for order #{$orderNo}. Category: {$data['category']}",
+                    [
+                        'type' => 'dispute_created',
+                        'dispute_id' => $dispute->id,
+                        'store_order_id' => $storeOrder->id,
+                        'category' => $data['category'],
+                        'buyer_id' => $buyer->id
+                    ]
+                );
+            }
+
+            // Notify buyer
+            UserNotificationHelper::notify(
+                $buyer->id,
+                'Dispute Created',
+                "Your dispute for order #{$orderNo} has been created and is under review.",
+                [
+                    'type' => 'dispute_created',
+                    'dispute_id' => $dispute->id,
+                    'store_order_id' => $storeOrder->id,
+                    'category' => $data['category']
+                ]
+            );
 
             return ResponseHelper::success([
                 'dispute' => $dispute->load('disputeChat.buyer', 'disputeChat.seller', 'disputeChat.store', 'storeOrder'),

@@ -147,7 +147,15 @@ class ChatService {
                 UserNotificationHelper::notify(
                     $store->user->id,
                     'New Message from Customer',
-                    "You have a new message: {$messagePreview}"
+                    "You have a new message: {$messagePreview}",
+                    [
+                        'type' => 'chat_message',
+                        'chat_id' => $chat->id,
+                        'store_id' => $chat->store_id,
+                        'sender_type' => 'buyer',
+                        'sender_id' => $chat->user_id,
+                        'order_id' => $chat->store_order_id
+                    ]
                 );
             }
         } elseif ($senderType === 'store') {
@@ -158,7 +166,14 @@ class ChatService {
                 UserNotificationHelper::notify(
                     $user->id,
                     'New Message from Store',
-                    "You have a new message: {$messagePreview}"
+                    "You have a new message: {$messagePreview}",
+                    [
+                        'type' => 'chat_message',
+                        'chat_id' => $chat->id,
+                        'store_id' => $chat->store_id,
+                        'sender_type' => 'store',
+                        'order_id' => $chat->store_order_id
+                    ]
                 );
             }
         }

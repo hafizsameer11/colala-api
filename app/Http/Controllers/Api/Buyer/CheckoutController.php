@@ -130,7 +130,13 @@ class CheckoutController extends Controller
         UserNotificationHelper::notify(
             $order->user_id,
             'Payment Confirmed',
-            "Payment for order #{$order->order_no} has been confirmed. Amount: ₦" . number_format($order->grand_total, 2)
+            "Payment for order #{$order->order_no} has been confirmed. Amount: ₦" . number_format($order->grand_total, 2),
+            [
+                'type' => 'payment_confirmed',
+                'order_id' => $order->id,
+                'order_no' => $order->order_no,
+                'amount' => $order->grand_total
+            ]
         );
 
         // Notify each store owner
@@ -140,7 +146,14 @@ class CheckoutController extends Controller
                 UserNotificationHelper::notify(
                     $store->user->id,
                     'Payment Received',
-                    "Payment confirmed for order #{$order->order_no}. Amount: ₦" . number_format($storeOrder->subtotal_with_shipping, 2)
+                    "Payment confirmed for order #{$order->order_no}. Amount: ₦" . number_format($storeOrder->subtotal_with_shipping, 2),
+                    [
+                        'type' => 'payment_received',
+                        'order_id' => $order->id,
+                        'order_no' => $order->order_no,
+                        'store_order_id' => $storeOrder->id,
+                        'amount' => $storeOrder->subtotal_with_shipping
+                    ]
                 );
             }
         }

@@ -158,7 +158,14 @@ class CheckoutService
                     UserNotificationHelper::notify(
                         $store->user->id,
                         'New Order Received',
-                        "You have received a new order #{$order->order_no}. Items total: ₦" . number_format($storeItemsTotal, 2) . " (Shipping fee to be set upon acceptance)"
+                        "You have received a new order #{$order->order_no}. Items total: ₦" . number_format($storeItemsTotal, 2) . " (Shipping fee to be set upon acceptance)",
+                        [
+                            'type' => 'new_order',
+                            'order_id' => $order->id,
+                            'order_no' => $order->order_no,
+                            'store_order_id' => $so->id,
+                            'amount' => $storeItemsTotal
+                        ]
                     );
                 }
 
@@ -175,7 +182,12 @@ class CheckoutService
             UserNotificationHelper::notify(
                 $cart->user_id,
                 'Orders Placed Successfully',
-                "Your " . count($orders) . " order(s) have been placed successfully. Items total: ₦" . number_format($preview['items_total'], 2) . ". Shipping fees will be set by sellers upon order acceptance."
+                "Your " . count($orders) . " order(s) have been placed successfully. Items total: ₦" . number_format($preview['items_total'], 2) . ". Shipping fees will be set by sellers upon order acceptance.",
+                [
+                    'type' => 'order_placed',
+                    'order_count' => count($orders),
+                    'total_amount' => $preview['items_total']
+                ]
             );
 
             return $orders;

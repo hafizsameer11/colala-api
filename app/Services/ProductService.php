@@ -241,6 +241,21 @@ class ProductService
             // Update product quantity
             $product->update(['quantity' => $initialQuantity]);
 
+            // Send notification to seller about product creation
+            if ($user) {
+                \App\Helpers\UserNotificationHelper::notify(
+                    $user->id,
+                    'Product Created Successfully',
+                    "Your product '{$product->name}' has been created and is now live.",
+                    [
+                        'type' => 'product_created',
+                        'product_id' => $product->id,
+                        'product_name' => $product->name,
+                        'store_id' => $store->id
+                    ]
+                );
+            }
+
             return $product->load(['images', 'variants.images']);
         });
     }

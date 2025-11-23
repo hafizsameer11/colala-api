@@ -202,6 +202,49 @@ class AdminDisputeController extends Controller
 
             $dispute->save();
 
+            // Notify buyer and seller about status update
+            $dispute->load('user', 'storeOrder.store.user');
+            $buyer = $dispute->user;
+            $seller = $dispute->storeOrder->store->user ?? null;
+
+            $statusMessages = [
+                'pending' => 'Your dispute is pending review',
+                'on_hold' => 'Your dispute is on hold',
+                'resolved' => 'Your dispute has been resolved',
+                'closed' => 'Your dispute has been closed'
+            ];
+
+            $statusMessage = $statusMessages[$request->status] ?? 'Your dispute status has been updated';
+            $notesText = $request->resolution_notes ? " Notes: {$request->resolution_notes}" : '';
+
+            if ($buyer) {
+                \App\Helpers\UserNotificationHelper::notify(
+                    $buyer->id,
+                    'Dispute Status Updated',
+                    "{$statusMessage}.{$notesText}",
+                    [
+                        'type' => 'dispute_status_update',
+                        'dispute_id' => $dispute->id,
+                        'status' => $request->status,
+                        'won_by' => $request->won_by ?? null
+                    ]
+                );
+            }
+
+            if ($seller) {
+                \App\Helpers\UserNotificationHelper::notify(
+                    $seller->id,
+                    'Dispute Status Updated',
+                    "{$statusMessage}.{$notesText}",
+                    [
+                        'type' => 'dispute_status_update',
+                        'dispute_id' => $dispute->id,
+                        'status' => $request->status,
+                        'won_by' => $request->won_by ?? null
+                    ]
+                );
+            }
+
             // Log the status change
             Log::info("Dispute #{$disputeId} status changed from {$oldStatus} to {$dispute->status}");
 

@@ -70,7 +70,16 @@ class OrderAcceptanceService
             UserNotificationHelper::notify(
                 $storeOrder->order->user_id,
                 'Order Accepted - Payment Required',
-                "{$storeName} has accepted your order #{$storeOrder->order->order_no}.{$deliveryInfo} Please proceed to payment."
+                "{$storeName} has accepted your order #{$storeOrder->order->order_no}.{$deliveryInfo} Please proceed to payment.",
+                [
+                    'type' => 'order_accepted',
+                    'order_id' => $storeOrder->order->id,
+                    'order_no' => $storeOrder->order->order_no,
+                    'store_order_id' => $storeOrder->id,
+                    'store_id' => $storeOrder->store_id,
+                    'delivery_fee' => $deliveryFee,
+                    'total_amount' => $storeOrder->subtotal_with_shipping
+                ]
             );
 
             Log::info("Store order {$storeOrder->id} accepted by store {$storeOrder->store_id} with delivery fee: {$deliveryFee}");
@@ -115,7 +124,15 @@ class OrderAcceptanceService
             UserNotificationHelper::notify(
                 $storeOrder->order->user_id,
                 'Order Rejected',
-                "{$storeName} has rejected your order #{$storeOrder->order->order_no}. Reason: {$reason}"
+                "{$storeName} has rejected your order #{$storeOrder->order->order_no}. Reason: {$reason}",
+                [
+                    'type' => 'order_rejected',
+                    'order_id' => $storeOrder->order->id,
+                    'order_no' => $storeOrder->order->order_no,
+                    'store_order_id' => $storeOrder->id,
+                    'store_id' => $storeOrder->store_id,
+                    'reason' => $reason
+                ]
             );
 
             Log::info("Store order {$storeOrder->id} rejected by store {$storeOrder->store_id}");

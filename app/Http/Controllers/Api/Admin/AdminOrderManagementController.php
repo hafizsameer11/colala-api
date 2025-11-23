@@ -458,7 +458,15 @@ class AdminOrderManagementController extends Controller
         UserNotificationHelper::notify(
             $order->user_id,
             'Order Status Update',
-            "Order #{$order->order_no} - {$statusMessage}.{$notesText}"
+            "Order #{$order->order_no} - {$statusMessage}.{$notesText}",
+            [
+                'type' => 'order_status_update',
+                'order_id' => $order->id,
+                'order_no' => $order->order_no,
+                'store_order_id' => $storeOrder->id,
+                'status' => $status,
+                'notes' => $notes
+            ]
         );
 
         // Notify the store owner
@@ -466,7 +474,15 @@ class AdminOrderManagementController extends Controller
             UserNotificationHelper::notify(
                 $store->user->id,
                 'Order Status Updated',
-                "Order #{$order->order_no} status updated to: " . ucfirst(str_replace('_', ' ', $status)) . ".{$notesText}"
+                "Order #{$order->order_no} status updated to: " . ucfirst(str_replace('_', ' ', $status)) . ".{$notesText}",
+                [
+                    'type' => 'order_status_update',
+                    'order_id' => $order->id,
+                    'order_no' => $order->order_no,
+                    'store_order_id' => $storeOrder->id,
+                    'status' => $status,
+                    'notes' => $notes
+                ]
             );
         }
     }
