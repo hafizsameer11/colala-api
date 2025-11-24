@@ -93,7 +93,7 @@ class SellerChatController extends Controller
             ->count();
 
             $totalUnread = $regularChatUnread + $disputeChatUnread;
-            $pendingOrders = \App\Models\Order::where('store_id', $store->id)->where('status', 'pending')->count();
+            $pendingOrders = \App\Models\StoreOrder::where('store_id', $store->id)->where('status', 'pending')->count();
             return ResponseHelper::success([
                 'total_unread' => $totalUnread,
                 'regular_chat_unread' => $regularChatUnread,
