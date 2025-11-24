@@ -93,11 +93,12 @@ class SellerChatController extends Controller
             ->count();
 
             $totalUnread = $regularChatUnread + $disputeChatUnread;
-
+            $pendingOrders = \App\Models\Order::where('store_id', $store->id)->where('status', 'pending')->count();
             return ResponseHelper::success([
                 'total_unread' => $totalUnread,
                 'regular_chat_unread' => $regularChatUnread,
                 'dispute_chat_unread' => $disputeChatUnread,
+                'pending_orders' => $pendingOrders,
             ], 'Unread message count retrieved successfully');
 
         } catch (Exception $e) {
