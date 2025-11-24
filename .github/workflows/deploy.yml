@@ -30,8 +30,7 @@ jobs:
           composer install --no-dev -q &&
           php artisan migrate --force &&
           php artisan optimize &&
-          npm install --silent &&
-          npm run build &&
+          nphp artisan config:clear && 
           systemctl restart php8.4-fpm
         "
 
