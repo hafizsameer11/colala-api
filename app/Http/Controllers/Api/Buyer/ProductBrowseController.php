@@ -51,6 +51,7 @@ public function productDetails($productId)
             },
             'store.soldItems',
             'store.socialLinks',
+            'store.categories',
             'category',
             'images',
             'variations',
