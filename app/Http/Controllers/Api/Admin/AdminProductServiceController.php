@@ -116,6 +116,18 @@ class AdminProductServiceController extends Controller
             $store = Store::findOrFail($storeId);
             $store->visibility = 0;
             $store->save();
+            //find all the products for that store and deactivate them
+            $products = Product::where('store_id', $storeId)->get();
+            foreach ($products as $product) {
+                $product->visibility = 0;
+                $product->save();
+            }
+            //find all the services for that store and deactivate them
+            $services = Service::where('store_id', $storeId)->get();
+            foreach ($services as $service) {
+                $service->visibility = 0;
+                $service->save();
+            }
             return ResponseHelper::success(null, 'Store deactivated successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);

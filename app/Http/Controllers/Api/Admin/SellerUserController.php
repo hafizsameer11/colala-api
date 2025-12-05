@@ -60,6 +60,7 @@ class SellerUserController extends Controller
                 $primaryStore = $user->store;
                 return [
                     'id' => $user->id,
+                    'store_id' => $primaryStore ? $primaryStore->id : null,
                     'store_name' => $primaryStore ? $primaryStore->store_name : 'No Store',
                     'email' => $user->email,
                     'phone' => $user->phone,
@@ -167,6 +168,7 @@ class SellerUserController extends Controller
                     $primaryStore = $user->store;
                     return [
                         'id' => $user->id,
+                        'store_id' => $primaryStore ? $primaryStore->id : null,
                         'store_name' => $primaryStore ? $primaryStore->store_name : 'No Store',
                         'full_name' => $user->full_name,
                         'email' => $user->email,
