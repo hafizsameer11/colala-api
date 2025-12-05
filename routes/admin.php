@@ -781,7 +781,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerDetails']);
     
     // Update banner
-    Route::put('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'updateBanner']);
+    Route::post('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'updateBanner']);
     
     // Delete banner
     Route::delete('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'deleteBanner']);
