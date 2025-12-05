@@ -86,7 +86,7 @@ class AdminBannerController extends Controller
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'image' => 'required|file|mimes:jpg,jpeg,png,gif|max:10240', // 10MB max
-                'link' => 'nullable|url',
+                'link' => 'nullable',
                 'audience_type' => 'required|in:all,buyers,sellers,specific',
                 'target_user_ids' => 'required_if:audience_type,specific|array',
                 'target_user_ids.*' => 'exists:users,id',
