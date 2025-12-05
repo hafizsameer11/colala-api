@@ -449,7 +449,11 @@ class AdminAllUsersController extends Controller
             $user = User::findOrFail($userId);
 
             // Check if user has any orders or transactions
-            $hasOrders = $user->orders()->exists() || $user->storeOrders()->exists();
+            $hasOrders = $user->orders()->exists();
+            // Check if user has store orders through their store
+            if ($user->store) {
+                $hasOrders = $hasOrders || $user->store->orders()->exists();
+            }
             $hasTransactions = $user->transactions()->exists();
 
             if ($hasOrders || $hasTransactions) {
@@ -465,6 +469,42 @@ class AdminAllUsersController extends Controller
             $user->delete();
 
             return ResponseHelper::success(null, 'User deleted successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Add user address (admin can add addresses for users)
+     */
+    public function addUserAddress(Request $request, $userId)
+    {
+        try {
+            $request->validate([
+                'label' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:20',
+                'line1' => 'required|string|max:255',
+                'line2' => 'nullable|string|max:255',
+                'city' => 'required|string|max:255',
+                'state' => 'nullable|string|max:255',
+                'country' => 'nullable|string|max:255|default:NG',
+                'zipcode' => 'nullable|string|max:20',
+                'is_default' => 'nullable|boolean',
+            ]);
+
+            $user = User::findOrFail($userId);
+
+            $data = $request->all();
+            $data['user_id'] = $user->id;
+
+            // If setting as default, unset other defaults
+            if (!empty($data['is_default']) && $data['is_default']) {
+                \App\Models\UserAddress::where('user_id', $user->id)->update(['is_default' => false]);
+            }
+
+            $address = \App\Models\UserAddress::create($data);
+
+            return ResponseHelper::success($address, 'Address added successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }

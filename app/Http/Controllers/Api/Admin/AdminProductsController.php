@@ -116,7 +116,8 @@ class AdminProductsController extends Controller
                 'variants',
                 'reviews.user',
                 'boost',
-                'productStats'
+                'productStats',
+                'category'
             ])->findOrFail($productId);
 
             $productData = [
@@ -130,16 +131,24 @@ class AdminProductsController extends Controller
                     'quantity' => $product->quantity,
                     'is_sold' => $product->is_sold,
                     'is_unavailable' => $product->is_unavailable,
+                    'brand' => $product->brand ?? null,
                     'created_at' => $product->created_at,
                     'updated_at' => $product->updated_at,
                     'video'=>$product->video,
                 ],
+                'category' => $product->category ? [
+                    'id' => $product->category->id,
+                    'name' => $product->category->title ?? $product->category->name ?? null,
+                    'title' => $product->category->title ?? null,
+                ] : null,
                 'store_info' => [
-                    'store_id' => $product->store->id,
-                    'store_name' => $product->store->store_name,
-                    'seller_name' => $product->store->store_name,
-                    'seller_email' => $product->store->user ? $product->store->user->email : null,
-                    'store_location' => $product->store->store_location,
+                    'store_id' => $product->store ? $product->store->id : null,
+                    'store_name' => $product->store ? $product->store->store_name : null,
+                    'seller_name' => $product->store ? $product->store->store_name : null,
+                    'seller_email' => $product->store && $product->store->user ? $product->store->user->email : null,
+                    'store_location' => $product->store ? $product->store->store_location : null,
+                    'profile_image' => $product->store && $product->store->profile_image ? asset('storage/' . $product->store->profile_image) : null,
+                    'banner_image' => $product->store && $product->store->banner_image ? asset('storage/' . $product->store->banner_image) : null,
                 ],
                 'images' => $product->images->map(function ($image) {
                     return [

@@ -385,17 +385,17 @@ class AdminSubscriptionController extends Controller
             
             return [
                 'id' => $subscription->id,
-                'store_name' => $subscription->store->store_name,
-                'owner_name' => $subscription->store->user->full_name,
-                'plan_name' => $subscription->plan->name,
-                'price' => $subscription->plan->price,
-                'currency' => $subscription->plan->currency,
+                'store_name' => $subscription->store ? $subscription->store->store_name : null,
+                'owner_name' => $subscription->store && $subscription->store->user ? $subscription->store->user->full_name : null,
+                'plan_name' => $subscription->plan ? $subscription->plan->name : null,
+                'price' => $subscription->plan ? $subscription->plan->price : null,
+                'currency' => $subscription->plan ? $subscription->plan->currency : null,
                 'status' => $subscription->status,
                 'start_date' => $subscription->start_date,
                 'end_date' => $subscription->end_date,
                 'days_left' => $daysLeft,
                 'created_at' => $subscription->created_at,
-                'formatted_date' => $subscription->created_at->format('d-m-Y H:i A'),
+                'formatted_date' => $subscription->created_at ? $subscription->created_at->format('d-m-Y H:i A') : null,
                 'status_color' => $this->getStatusColor($subscription->status),
             ];
         });

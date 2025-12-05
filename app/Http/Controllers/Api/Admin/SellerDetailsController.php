@@ -57,14 +57,16 @@ class SellerDetailsController extends Controller
                 'user_info' => [
                     'id' => $user->id,
                     'full_name' => $user->full_name,
-                    'username' => $user->user_code,
+                    'username' => $user->user_name ?? $user->user_code ?? 'N/A',
+                    'user_name' => $user->user_name ?? $user->user_code ?? 'N/A',
                     'email' => $user->email,
                     'phone' => $user->phone,
                     'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
                     'is_verified' => $user->is_active,
                     'is_active' => $user->is_active,
-                    'created_at' => $user->created_at->format('d/m/y - H:i A'),
-                    'last_login' => $user->updated_at->format('d/m/y - H:i A'),
+                    'account_creation' => $user->created_at ? $user->created_at->format('d/m/y - H:i A') : 'N/A',
+                    'created_at' => $user->created_at ? $user->created_at->format('d/m/y - H:i A') : 'N/A',
+                    'last_login' => $user->last_seen_at ? $user->last_seen_at->format('d/m/y - H:i A') : ($user->updated_at ? $user->updated_at->format('d/m/y - H:i A') : 'N/A'),
                     'location' => $primaryStore ? $primaryStore->store_location : null
                 ],
                 'store_info' => $primaryStore ? [

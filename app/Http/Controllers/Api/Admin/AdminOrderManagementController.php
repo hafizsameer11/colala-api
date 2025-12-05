@@ -419,12 +419,12 @@ class AdminOrderManagementController extends Controller
         return $orders->map(function ($order) {
             return [
                 'store_order_id' => $order->id,
-                'order_number' => $order->order->order_no,
-                'store_name' => $order->store->store_name,
-                'seller_name' => $order->store->store_name,
-                'customer_name' => $order->order->user ? $order->order->user->full_name : 'Unknown Customer',
+                'order_number' => $order->order ? $order->order->order_no : null,
+                'store_name' => $order->store ? $order->store->store_name : null,
+                'seller_name' => $order->store ? $order->store->store_name : null,
+                'customer_name' => $order->order && $order->order->user ? $order->order->user->full_name : 'Unknown Customer',
                 'status' => $order->status,
-                'items_count' => $order->items->count(),
+                'items_count' => $order->items ? $order->items->count() : 0,
                 'total_amount' => $order->subtotal_with_shipping,
                 'created_at' => $order->created_at,
                 'formatted_date' => $order->created_at ? $order->created_at->format('d-m-Y H:i A') : null,

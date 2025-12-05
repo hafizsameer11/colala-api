@@ -33,8 +33,11 @@ class AdminUserController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = User::with('wallet')
-                ->where('role', 'buyer'); // Only buyers
+            $query = User::with('wallet');
+            // Allow filtering by role if specified, otherwise show all
+            if ($request->has('role') && $request->role !== 'all') {
+                $query->where('role', $request->role);
+            }
 
             // Search functionality
             if ($request->has('search') && $request->search) {
@@ -1846,7 +1849,7 @@ class AdminUserController extends Controller
     public function getUserNotifications(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id);
+            $user = User::findOrFail($id);
             $perPage = $request->get('per_page', 20);
             $status = $request->get('status'); // 'read', 'unread', or null for all
 

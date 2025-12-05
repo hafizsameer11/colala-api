@@ -344,8 +344,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/seller-products/{userId}/{productId}/stats', [SellerProductController::class, 'getProductStats']);
     // Create new product for a seller (admin can add products for sellers)
     Route::post('/seller-products/{userId}', [SellerProductController::class, 'createProduct']);
-    // Update product information
-    Route::put('/seller-products/{userId}/{productId}', [SellerProductController::class, 'updateProduct']);
+    // Update product information - POST for file uploads
+    Route::post('/seller-products/{userId}/{productId}', [SellerProductController::class, 'updateProduct']);
     // Update product status (active, inactive, sold, unavailable)
     Route::put('/seller-products/{userId}/{productId}/status', [SellerProductController::class, 'updateProductStatus']);
     // Update product quantity
@@ -385,8 +385,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/seller-banners/{userId}/{bannerId}/details', [SellerAnnouncementBannerController::class, 'getBannerDetails']);
     // Create new banner for a seller
     Route::post('/seller-banners/{userId}', [SellerAnnouncementBannerController::class, 'createBanner']);
-    // Update banner (image and/or link)
-    Route::put('/seller-banners/{userId}/{bannerId}', [SellerAnnouncementBannerController::class, 'updateBanner']);
+    // Update banner (image and/or link) - POST for file uploads
+    Route::post('/seller-banners/{userId}/{bannerId}', [SellerAnnouncementBannerController::class, 'updateBanner']);
     // Delete banner
     Route::delete('/seller-banners/{userId}/{bannerId}', [SellerAnnouncementBannerController::class, 'deleteBanner']);
     // Bulk actions on banners (delete, activate, deactivate)
@@ -599,8 +599,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     
     // Create new user (admin can add users)
     Route::post('/all-users', [AdminAllUsersController::class, 'createUser']);
-    // Update user details (admin can edit user information)
-    Route::put('/all-users/{userId}', [AdminAllUsersController::class, 'updateUser']);
+    // Update user details (admin can edit user information) - POST for file uploads
+    Route::post('/all-users/{userId}', [AdminAllUsersController::class, 'updateUser']);
     // Delete user (admin can remove users)
     Route::delete('/all-users/{userId}', [AdminAllUsersController::class, 'deleteUser']);
 
@@ -925,4 +925,16 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/post-reports/{id}/status', [AdminPostReportController::class, 'updateStatus']);
     // Delete post report
     Route::delete('/post-reports/{id}', [AdminPostReportController::class, 'destroy']);
+
+    // ========================================
+    // ADMIN SOCIAL POST MANAGEMENT (ADDED AT END)
+    // ========================================
+    // Create social post for a store (admin can create posts for stores)
+    Route::post('/stores/{storeId}/posts', [AdminSocialFeedController::class, 'createPostForStore']);
+
+    // ========================================
+    // ADMIN USER ADDRESS MANAGEMENT (ADDED AT END)
+    // ========================================
+    // Add address for a user (admin can add addresses for users)
+    Route::post('/all-users/{userId}/addresses', [AdminAllUsersController::class, 'addUserAddress']);
 });

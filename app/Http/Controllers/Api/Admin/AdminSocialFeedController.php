@@ -405,4 +405,52 @@ class AdminSocialFeedController extends Controller
             ];
         });
     }
+
+    /**
+     * Create social post for a store (admin can create posts for stores)
+     */
+    public function createPostForStore(Request $request, $storeId)
+    {
+        try {
+            $request->validate([
+                'body' => 'nullable|string|max:5000',
+                'visibility' => 'nullable|in:public,followers',
+                'media' => 'nullable|array|max:10',
+                'media.*' => 'file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:20480',
+            ]);
+
+            $store = Store::findOrFail($storeId);
+            $user = $store->user;
+
+            if (!$user) {
+                return ResponseHelper::error('Store owner not found', 404);
+            }
+
+            $post = Post::create([
+                'user_id' => $user->id,
+                'body' => $request->body ?? null,
+                'visibility' => $request->visibility ?? 'public',
+            ]);
+
+            // Handle media uploads
+            if ($request->hasFile('media')) {
+                foreach ($request->file('media') as $index => $file) {
+                    $mime = $file->getClientMimeType();
+                    $type = str_starts_with($mime, 'video') ? 'video' : 'image';
+                    $path = $file->store("posts/{$post->id}", 'public');
+
+                    \App\Models\PostMedia::create([
+                        'post_id' => $post->id,
+                        'path' => $path,
+                        'type' => $type,
+                        'position' => $index,
+                    ]);
+                }
+            }
+
+            return ResponseHelper::success($post->load(['user', 'media']), 'Post created successfully for store');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
 }
