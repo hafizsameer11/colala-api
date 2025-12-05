@@ -38,6 +38,9 @@ use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
 use App\Http\Controllers\Api\Admin\AdminWithdrawalRequestController;
 use App\Http\Controllers\Api\Admin\AdminPostReportController;
 
+Route::get('admin/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getAllBanners']);
+
+
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // DASHBOARD & OVERVIEW MODULE
@@ -769,7 +772,6 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ==================== System Banners ====================
     
     // Get all banners
-    Route::get('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getAllBanners']);
     
     // Create banner
     Route::post('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'createBanner']);
