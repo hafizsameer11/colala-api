@@ -26,11 +26,19 @@ class Store extends Model
         'category_id',
         'theme_color',
         'referral_code',
-        'status'
+        'status',
+        'visibility'
     ];
     protected $appends = [
         'average_rating',
     ];
+
+    protected static function booted()
+{
+    static::addGlobalScope('visible', function ($query) {
+        $query->where('visibility', 1);
+    });
+}
 
     public function socialLinks()
     {

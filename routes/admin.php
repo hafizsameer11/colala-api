@@ -796,6 +796,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     
     // Get all stores (name, picture, id only)
     Route::get('/stores', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'getStores']);
+    Route::post('/stores-delete/{storeId}', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'deleteStore']);
     
     // Create product for any store (admin)
     Route::post('/products', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createProduct']);

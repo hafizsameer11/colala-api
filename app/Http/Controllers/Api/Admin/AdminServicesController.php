@@ -241,10 +241,12 @@ class AdminServicesController extends Controller
             $service = Service::findOrFail($serviceId);
             
             // Delete related data
-            $service->media()->delete();
-            $service->subServices()->delete();
-            $service->stats()->delete();
-            $service->delete();
+            // $service->media()->delete();
+            // $service->subServices()->delete();
+            // $service->stats()->delete();
+            // $service->delete();
+            $service->visibility = 0;
+            $service->save();
 
             return ResponseHelper::success(null, 'Service deleted successfully');
         } catch (Exception $e) {

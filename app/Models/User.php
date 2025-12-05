@@ -30,7 +30,8 @@ class User extends Authenticatable
         'store_id',
         'plan',
         'is_free_trial_claimed',
-        'expo_push_token'
+        'expo_push_token',
+        'visibility'
     ];
 
     protected $hidden = [
@@ -38,6 +39,13 @@ class User extends Authenticatable
         'remember_token',
         'otp',
     ];
+
+    protected static function booted()
+{
+    static::addGlobalScope('visible', function ($query) {
+        $query->where('visibility', 1);
+    });
+}
 
     protected function casts(): array
     {

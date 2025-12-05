@@ -35,11 +35,19 @@ class Product extends Model
         'vision_product_set',
         'vision_index_status',
         'vision_indexed_at',
-        'vision_last_error'
+        'vision_last_error',
+        'visibility'
     ];
     protected $appends = [
         'average_rating',
     ];
+
+    protected static function booted()
+{
+    static::addGlobalScope('visible', function ($query) {
+        $query->where('visibility', 1);
+    });
+}
 
     public function store()
     {

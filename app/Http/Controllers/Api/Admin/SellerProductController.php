@@ -456,41 +456,43 @@ class SellerProductController extends Controller
 
             $product = Product::where('store_id', $store->id)->findOrFail($productId);
 
+            $product->visibility = 0;
+            $product->save();
             // Delete associated images
-            foreach ($product->images as $image) {
-                if (Storage::disk('public')->exists($image->path)) {
-                    Storage::disk('public')->delete($image->path);
-                }
-                $image->delete();
-            }
+            // foreach ($product->images as $image) {
+            //     if (Storage::disk('public')->exists($image->path)) {
+            //         Storage::disk('public')->delete($image->path);
+            //     }
+            //     $image->delete();
+            // }
 
-            // Delete product video
-            if ($product->video && Storage::disk('public')->exists($product->video)) {
-                Storage::disk('public')->delete($product->video);
-            }
+            // // Delete product video
+            // if ($product->video && Storage::disk('public')->exists($product->video)) {
+            //     Storage::disk('public')->delete($product->video);
+            // }
 
-            // Delete associated variants and their images
-            foreach ($product->variants as $variant) {
-                foreach ($variant->images as $image) {
-                    if (Storage::disk('public')->exists($image->path)) {
-                        Storage::disk('public')->delete($image->path);
-                    }
-                    $image->delete();
-                }
-                $variant->delete();
-            }
+            // // Delete associated variants and their images
+            // foreach ($product->variants as $variant) {
+            //     foreach ($variant->images as $image) {
+            //         if (Storage::disk('public')->exists($image->path)) {
+            //             Storage::disk('public')->delete($image->path);
+            //         }
+            //         $image->delete();
+            //     }
+            //     $variant->delete();
+            // }
 
-            // Delete product stats
-            $product->productStats()->delete();
+            // // Delete product stats
+            // $product->productStats()->delete();
 
-            // Delete boost if exists
-            if ($product->boost) {
-                $product->boost->delete();
-            }
+            // // Delete boost if exists
+            // if ($product->boost) {
+            //     $product->boost->delete();
+            // }
 
-            $product->delete();
+            // $product->delete();
 
-            return ResponseHelper::success(null, 'Product deleted successfully');
+            return ResponseHelper::success(null, 'Product deactivated successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());

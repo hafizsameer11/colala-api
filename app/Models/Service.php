@@ -12,9 +12,17 @@ class Service extends Model
             'service_category_id', // ✅
             'video',
             'is_sold',
-            'is_unavailable'
+            'is_unavailable',
+            'visibility'
     ];
 
+
+    protected static function booted()
+{
+    static::addGlobalScope('visible', function ($query) {
+        $query->where('visibility', 1);
+    });
+}
 
     public function media()
     {

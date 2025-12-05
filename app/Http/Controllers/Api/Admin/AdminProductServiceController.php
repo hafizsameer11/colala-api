@@ -105,9 +105,24 @@ class AdminProductServiceController extends Controller
         }
     }
 
-    /**
-     * Create product for any store (admin)
+        /**
+     * Delete store
+
+     * Delete store
      */
+    public function deleteStore($storeId)
+    {
+        try {
+            $store = Store::findOrFail($storeId);
+            $store->visibility = 0;
+            $store->save();
+            return ResponseHelper::success(null, 'Store deactivated successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+   
     public function createProduct(Request $request)
     {
         try {
