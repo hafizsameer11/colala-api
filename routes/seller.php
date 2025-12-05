@@ -86,7 +86,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
 
     Route::get('products', [ProductController::class, 'getAll']);
     Route::post('products/create', [ProductController::class, 'create']);
-    Route::post('products/update/{id}', [ProductController::class, 'update']);
+    // Route::post('products/update/{id}', [ProductController::class, 'update']);
+    Route::post('products/update/full/{id}', [ProductController::class, 'updateFull']);
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
     
     // Inventory Management
