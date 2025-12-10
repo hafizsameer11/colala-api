@@ -161,20 +161,29 @@ class ProductService
             
             // Set initial quantity based on variants or use provided quantity
             $initialQuantity = $quantityFromRequest ?? 0;
-              if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
-            $videoPath = $data['video']->store('products/videos', 'public');
-            $product->update(['video' => $videoPath]);
-        }
+            
+            // Handle video upload - check if it's a valid uploaded file
+            if (isset($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile && $data['video']->isValid()) {
+                $videoPath = $data['video']->store('products/videos', 'public');
+                $product->update(['video' => $videoPath]);
+            }
 
             /** Upload product-level images */
-            if (!empty($data['images'])) {
+            if (!empty($data['images']) && is_array($data['images'])) {
+                $mainImageSet = false;
                 foreach ($data['images'] as $index => $file) {
+                    // Skip if file is null, empty, or not a valid UploadedFile
+                    if (empty($file) || !($file instanceof \Illuminate\Http\UploadedFile) || !$file->isValid()) {
+                        continue;
+                    }
+                    
                     $path = $file->store('products', 'public');
                     ProductImage::create([
                         'product_id' => $product->id,
                         'path'       => $path,
-                        'is_main'    => $index === 0,
+                        'is_main'    => !$mainImageSet, // Set first valid image as main
                     ]);
+                    $mainImageSet = true;
                 }
             }
 
@@ -198,8 +207,13 @@ class ProductService
                         $initialQuantity += $variantData['stock'] ?? 0;
 
                         // Upload variant images
-                        if (!empty($variantData['images'])) {
+                        if (!empty($variantData['images']) && is_array($variantData['images'])) {
                             foreach ($variantData['images'] as $file) {
+                                // Skip if file is null, empty, or not a valid UploadedFile
+                                if (empty($file) || !($file instanceof \Illuminate\Http\UploadedFile) || !$file->isValid()) {
+                                    continue;
+                                }
+                                
                                 $path = $file->store('products', 'public');
                                 ProductImage::create([
                                     'product_id' => $product->id,
@@ -224,8 +238,13 @@ class ProductService
                         ]);
 
                         // Upload variant images
-                        if (!empty($variantData['images'])) {
+                        if (!empty($variantData['images']) && is_array($variantData['images'])) {
                             foreach ($variantData['images'] as $file) {
+                                // Skip if file is null, empty, or not a valid UploadedFile
+                                if (empty($file) || !($file instanceof \Illuminate\Http\UploadedFile) || !$file->isValid()) {
+                                    continue;
+                                }
+                                
                                 $path = $file->store('products', 'public');
                                 ProductImage::create([
                                     'product_id' => $product->id,
