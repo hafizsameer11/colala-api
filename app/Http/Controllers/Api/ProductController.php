@@ -75,31 +75,15 @@ class ProductController extends Controller
     public function create(ProductCreateUpdateRequest $request)
     {
         try {
-            $data = $request->validated();
-    
-            // Fix: Extract file objects manually
-            $data['video']  = $request->file('video');
-            $data['images'] = $request->file('images');
-    
-            // Variants (nested files)
-            if ($request->has('variants')) {
-                foreach ($request->variants as $index => $variant) {
-                    if ($request->hasFile("variants.$index.images")) {
-                        $data['variants'][$index]['images'] = $request->file("variants.$index.images");
-                    }
-                }
-            }
-    
-            $product = $this->productService->create($data);
-    
+            $data=$request->validated();
+            $product=$this->productService->create($data);
             return ResponseHelper::success($product);
-    
         } catch (Exception $e) {
-            Log::error($e);
+            Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
         }
     }
-    
+
     public function update(ProductCreateUpdateRequest $request, $id)
     {
         try {
@@ -172,42 +156,6 @@ class ProductController extends Controller
 
             $product = $this->productService->updateQuantity($id, $request->quantity);
             return ResponseHelper::success($product, 'Product quantity updated successfully');
-        } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return ResponseHelper::error($e->getMessage());
-        }
-    }
-
-    /**
-     * Upload or update product video separately
-     */
-    public function uploadVideo(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'video' => 'required|file|mimes:mp4,mov,avi,webm|max:10240', // Max 10MB
-            ]);
-
-            if (!$request->hasFile('video')) {
-                return ResponseHelper::error('Video file is required', 422);
-            }
-
-            $product = $this->productService->uploadVideo($id, $request->file('video'));
-            return ResponseHelper::success($product, 'Product video uploaded successfully');
-        } catch (Exception $e) {
-            Log::error($e->getMessage());
-            return ResponseHelper::error($e->getMessage());
-        }
-    }
-
-    /**
-     * Delete product video
-     */
-    public function deleteVideo($id)
-    {
-        try {
-            $product = $this->productService->deleteVideo($id);
-            return ResponseHelper::success($product, 'Product video deleted successfully');
         } catch (Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
