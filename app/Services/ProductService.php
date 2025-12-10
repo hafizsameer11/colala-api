@@ -280,6 +280,107 @@ class ProductService
     }
 
     /**
+     * Upload or update product video separately
+     */
+    public function uploadVideo($productId, $videoFile)
+    {
+        return DB::transaction(function () use ($productId, $videoFile) {
+            $user = Auth::user();
+            
+            // Find product and verify ownership
+            $product = Product::findOrFail($productId);
+            $store = Store::where('id', $product->store_id)->first();
+            
+            // Verify user has access to this store (same logic as create method)
+            if (!$store) {
+                throw new Exception('Store not found');
+            }
+            
+            // Check if user owns the store
+            if ($store->user_id !== $user->id) {
+                // Check if user is a store user with access
+                $storeUser = StoreUser::where('user_id', $user->id)
+                    ->where('store_id', $store->id)
+                    ->where('is_active', true)
+                    ->first();
+                
+                if (!$storeUser) {
+                    throw new Exception('You do not have permission to update this product');
+                }
+            }
+
+            // Validate video file
+            if (empty($videoFile) || !($videoFile instanceof \Illuminate\Http\UploadedFile) || !$videoFile->isValid()) {
+                throw new Exception('Invalid video file provided');
+            }
+
+            // Delete old video if exists
+            if ($product->video) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->video);
+            }
+
+            // Upload new video
+            $videoPath = $videoFile->store('products/videos', 'public');
+            $product->update(['video' => $videoPath]);
+
+            // Send notification
+            \App\Helpers\UserNotificationHelper::notify(
+                $user->id,
+                'Product Video Updated',
+                "Video for product '{$product->name}' has been updated successfully.",
+                [
+                    'type' => 'product_video_updated',
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'store_id' => $store->id
+                ]
+            );
+
+            return $product->load(['images', 'variants.images']);
+        });
+    }
+
+    /**
+     * Delete product video
+     */
+    public function deleteVideo($productId)
+    {
+        return DB::transaction(function () use ($productId) {
+            $user = Auth::user();
+            
+            // Find product and verify ownership
+            $product = Product::findOrFail($productId);
+            $store = Store::where('id', $product->store_id)->first();
+            
+            // Verify user has access to this store (same logic as create method)
+            if (!$store) {
+                throw new Exception('Store not found');
+            }
+            
+            // Check if user owns the store
+            if ($store->user_id !== $user->id) {
+                // Check if user is a store user with access
+                $storeUser = StoreUser::where('user_id', $user->id)
+                    ->where('store_id', $store->id)
+                    ->where('is_active', true)
+                    ->first();
+                
+                if (!$storeUser) {
+                    throw new Exception('You do not have permission to update this product');
+                }
+            }
+
+            // Delete video file if exists
+            if ($product->video) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->video);
+                $product->update(['video' => null]);
+            }
+
+            return $product->load(['images', 'variants.images']);
+        });
+    }
+
+    /**
      * Update product and its variants
      */
     public function update($id, array $data)

@@ -90,6 +90,10 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     // Route::post('products/update/full/{id}', [ProductController::class, 'updateFull']);
     Route::delete('products/delete/{id}', [ProductController::class, 'delete']);
     
+    // Product video upload routes (separate from create/update)
+    Route::post('products/{id}/video', [ProductController::class, 'uploadVideo']);
+    Route::delete('products/{id}/video', [ProductController::class, 'deleteVideo']);
+    
     // Inventory Management
     Route::get('inventory', [SellerInventoryController::class, 'getInventory']);
   
