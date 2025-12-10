@@ -161,4 +161,36 @@ class ProductController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function uploadVideo(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'video' => 'required|file|mimes:mp4,mov,avi,webm|max:10240', // Max 10MB
+            ]);
+
+            if (!$request->hasFile('video')) {
+                return ResponseHelper::error('Video file is required', 422);
+            }
+
+            $product = $this->productService->uploadVideo($id, $request->file('video'));
+            return ResponseHelper::success($product, 'Product video uploaded successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete product video
+     */
+    public function deleteVideo($id)
+    {
+        try {
+            $product = $this->productService->deleteVideo($id);
+            return ResponseHelper::success($product, 'Product video deleted successfully');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }

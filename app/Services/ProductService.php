@@ -20,14 +20,14 @@ class ProductService
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-        if (!$storeId) {
+        if(!$storeId){
             $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
+            if($storeUser){
                 $storeId = $storeUser->store_id;
             }
         }
 
-        return Product::with(['variants.images', 'images', 'category'])
+        return Product::with(['variants.images', 'images','category'])
             ->withCount([
                 'productStats as views' => fn($q) => $q->where('event_type', 'view'),
                 'productStats as impressions' => fn($q) => $q->where('event_type', 'impression'),
@@ -41,16 +41,16 @@ class ProductService
     }
     public function myproducts()
     {
-
+        
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-        if (!$storeId) {
+        if(!$storeId){
             $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
+            if($storeUser){
                 $storeId = $storeUser->store_id;
             }
         }
-        if (!$storeId) {
+        if(!$storeId){
             throw new Exception('Store not found');
         }
         return Product::with(['variants.images', 'images', 'category'])
@@ -67,7 +67,7 @@ class ProductService
     }
 
     public function getAllforBuyer()
-
+    
     {
         $products = Product::with(['variants.images', 'images', 'store'])
             ->get();
@@ -108,15 +108,15 @@ class ProductService
     public function getVipProducts()
     {
         $products = Product::with([
-            'store.user',
-            'store.socialLinks',
-            'category',
-            'images',
-            'variants.images',
-            'deliveryOptions',
-            'reviews.user',
-            'boost',
-        ])
+                'store.user',
+                'store.socialLinks',
+                'category',
+                'images',
+                'variants.images',
+                'deliveryOptions',
+                'reviews.user',
+                'boost',
+            ])
             ->whereHas('store.user', function ($query) {
                 $query->where('plan', 'vip');
             })
@@ -139,13 +139,13 @@ class ProductService
             $user = Auth::user();
             $store = Store::where('user_id', $user->id)->first();
             //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-            if (!$store) {
+            if(!$store){
                 $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-                if ($storeUser) {
+                if($storeUser){
                     $store = $storeUser->store;
                 }
             }
-            if (!$store) {
+            if(!$store){
                 throw new Exception('Store not found');
             }
 
@@ -156,15 +156,15 @@ class ProductService
             // Handle quantity: if provided directly, use it; otherwise calculate from variants
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll set it after variant processing
-
+            
             $product = Product::create($data);
-
+            
             // Set initial quantity based on variants or use provided quantity
             $initialQuantity = $quantityFromRequest ?? 0;
-            if (!empty($data['video']) ) {
-                $videoPath = $data['video']->store('products/videos', 'public');
-                $product->update(['video' => $videoPath]);
-            }
+              if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
+            $videoPath = $data['video']->store('products/videos', 'public');
+            $product->update(['video' => $videoPath]);
+        }
 
             /** Upload product-level images */
             if (!empty($data['images'])) {
@@ -193,7 +193,7 @@ class ProductService
                             'discount_price'  => $variantData['discount_price'] ?? null,
                             'stock'           => $variantData['stock'] ?? 0,
                         ]);
-
+                        
                         // Add to total quantity
                         $initialQuantity += $variantData['stock'] ?? 0;
 
@@ -237,7 +237,7 @@ class ProductService
                     }
                 }
             }
-
+            
             // Update product quantity
             $product->update(['quantity' => $initialQuantity]);
 
@@ -268,21 +268,21 @@ class ProductService
         return DB::transaction(function () use ($id, $data) {
             $storeId = Store::where('user_id', Auth::id())->pluck('id')->first();
             //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-            if (!$storeId) {
+            if(!$storeId){
                 $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-                if ($storeUser) {
+                if($storeUser){
                     $storeId = $storeUser->store_id;
                 }
             }
-            if (!$storeId) {
+            if(!$storeId){
                 throw new Exception('Store not found');
             }
             $product = Product::where('store_id', $storeId)->findOrFail($id);
-
+            
             // Handle quantity: if provided directly, use it; otherwise recalculate from variants
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll handle it separately
-
+            
             $product->update($data);
 
             /** Replace or append new product images */
@@ -341,7 +341,7 @@ class ProductService
                     }
                 }
             }
-
+            
             // Update product quantity: use provided quantity or recalculate from variants
             if ($quantityFromRequest !== null) {
                 $product->update(['quantity' => $quantityFromRequest]);
@@ -357,14 +357,14 @@ class ProductService
     public function delete($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-        if (!$storeId) {
+         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+         if(!$storeId){
             $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
+            if($storeUser){
                 $storeId = $storeUser->store_id;
             }
         }
-        if (!$storeId) {
+        if(!$storeId){
             throw new Exception('Store not found');
         }
 
@@ -375,35 +375,35 @@ class ProductService
     public function markAsSold($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
-        if (!$storeId) {
+         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+         if(!$storeId){
             $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
+            if($storeUser){
                 $storeId = $storeUser->store_id;
             }
         }
-        if (!$storeId) {
+        if(!$storeId){
             throw new Exception('Store not found');
-        }
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => true,
             'is_unavailable' => false, // Reset unavailable when marking as sold
         ]);
-
+        
         return $product->fresh();
     }
 
     public function markAsUnavailable($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-
+        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_unavailable' => true,
             'is_sold' => false, // Reset sold when marking as unavailable
         ]);
-
+        
         return $product->fresh();
     }
 
@@ -411,41 +411,42 @@ class ProductService
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
 
-        if (!$storeId) {
-            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
-                $storeId = $storeUser->store_id;
+            if(!$storeId){
+                $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+                if($storeUser){
+                    $storeId = $storeUser->store_id;
+                }
             }
-        }
-        if (!$storeId) {
-            throw new Exception('Store not found');
-        }
+            if(!$storeId){
+                throw new Exception('Store not found');
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => false, // Reset sold when marking as available
             'is_unavailable' => false, // Reset unavailable when marking as available
         ]);
-
+        
         return $product->fresh();
     }
 
     public function updateQuantity($id, $quantity)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
-        if (!$storeId) {
+        if(!$storeId){
             $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
-            if ($storeUser) {
+            if($storeUser){
                 $storeId = $storeUser->store_id;
             }
         }
-        if (!$storeId) {
+        if(!$storeId){
             throw new Exception('Store not found');
-        }
+        }        
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update(['quantity' => $quantity]);
-
+        
         return $product->fresh();
     }
+
     public function uploadVideo($productId, $videoFile)
     {
         return DB::transaction(function () use ($productId, $videoFile) {
