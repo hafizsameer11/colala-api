@@ -161,7 +161,7 @@ class ProductService
 
             // Set initial quantity based on variants or use provided quantity
             $initialQuantity = $quantityFromRequest ?? 0;
-            if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
+            if (!empty($data['video']) ) {
                 $videoPath = $data['video']->store('products/videos', 'public');
                 $product->update(['video' => $videoPath]);
             }
