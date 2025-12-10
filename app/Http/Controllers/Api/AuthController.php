@@ -219,11 +219,13 @@ public function getPlan(Request $request)
                 'id' => $subscription->id,
                 'plan_id' => $subscription->plan_id,
                 'plan_name' => $subscription->plan ? $subscription->plan->name : null,
+                'plan_price' => $subscription->plan ? $subscription->plan->price : null,
                 'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
                 'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
                 'status' => $subscription->status,
                 'payment_method' => $subscription->payment_method,
                 'payment_status' => $subscription->payment_status,
+
                 'transaction_ref' => $subscription->transaction_ref,
                 'created_at' => $subscription->created_at ? $subscription->created_at->format('Y-m-d H:i:s') : null,
                 'updated_at' => $subscription->updated_at ? $subscription->updated_at->format('Y-m-d H:i:s') : null,
