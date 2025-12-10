@@ -75,15 +75,31 @@ class ProductController extends Controller
     public function create(ProductCreateUpdateRequest $request)
     {
         try {
-            $data=$request->validated();
-            $product=$this->productService->create($data);
+            $data = $request->validated();
+    
+            // Fix: Extract file objects manually
+            $data['video']  = $request->file('video');
+            $data['images'] = $request->file('images');
+    
+            // Variants (nested files)
+            if ($request->has('variants')) {
+                foreach ($request->variants as $index => $variant) {
+                    if ($request->hasFile("variants.$index.images")) {
+                        $data['variants'][$index]['images'] = $request->file("variants.$index.images");
+                    }
+                }
+            }
+    
+            $product = $this->productService->create($data);
+    
             return ResponseHelper::success($product);
+    
         } catch (Exception $e) {
-            Log::error($e->getMessage());
+            Log::error($e);
             return ResponseHelper::error($e->getMessage());
         }
     }
-
+    
     public function update(ProductCreateUpdateRequest $request, $id)
     {
         try {
