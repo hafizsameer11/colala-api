@@ -94,11 +94,18 @@ class SellerChatController extends Controller
 
             $totalUnread = $regularChatUnread + $disputeChatUnread;
             $pendingOrders = \App\Models\StoreOrder::where('store_id', $store->id)->where('status', 'pending')->count();
+            
+            // Count unread notifications for the seller
+            $unreadNotifications = \App\Models\UserNotification::where('user_id', $sellerId)
+                ->where('is_read', false)
+                ->count();
+            
             return ResponseHelper::success([
                 'total_unread' => $totalUnread,
                 'regular_chat_unread' => $regularChatUnread,
                 'dispute_chat_unread' => $disputeChatUnread,
                 'pending_orders' => $pendingOrders,
+                'unread_notifications' => $unreadNotifications,
             ], 'Unread message count retrieved successfully');
 
         } catch (Exception $e) {
