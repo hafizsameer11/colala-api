@@ -93,7 +93,7 @@ class SellerChatController extends Controller
             ->count();
 
             $totalUnread = $regularChatUnread + $disputeChatUnread;
-            $pendingOrders = \App\Models\StoreOrder::where('store_id', $store->id)->where('status', 'pending')->count();
+            $pendingOrders = \App\Models\StoreOrder::where('store_id', $store->id)->whereIn('status', ['pending', 'pending_acceptance'])->count();// status can also be pending_acceptance
             
             // Count unread notifications for the seller
             $unreadNotifications = \App\Models\UserNotification::where('user_id', $sellerId)
