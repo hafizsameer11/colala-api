@@ -21,10 +21,16 @@ class SellerChatService
             throw new Exception('Store not found');
         }
 
-        return Chat::with(['user', 'lastMessage', 'service', 'store'])
+        $chats = Chat::with(['user', 'lastMessage', 'service', 'store'])
             ->where('store_id', $store->id)
             ->get()
-            ->map(function ($chat) {
+            ->sortByDesc(function ($chat) {
+                // Sort by last message time, or chat updated_at if no messages
+                return $chat->lastMessage?->created_at ?? $chat->updated_at;
+            })
+            ->values(); // Reset keys after sorting
+
+        return $chats->map(function ($chat) {
                 $unread = $chat->messages()->where('is_read', false)->count();
                 return [
                     'chat_id'         => $chat->id,
