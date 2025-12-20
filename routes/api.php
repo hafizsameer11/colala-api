@@ -83,6 +83,7 @@ Route::get('/un-auth', function () {
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/admin-login', [AuthController::class, 'adminLogin']);
     Route::post('/forget-password', [AuthController::class, 'forgetPassword']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
