@@ -48,7 +48,7 @@ public function createUserCode()
     public function adminLogin($data){
         $user=User::where('email', $data['email'])->where('role', 'admin')->first();
         if(!$user){
-            throw new \Exception('Email is not registered'.$data['email']);
+            throw new \Exception('You are not an admin');
         }
         //now match password
         if($user && Hash::check($data['password'], $user->password)){
