@@ -15,7 +15,7 @@ class ProductBrowseService {
     {
         // ✅ All products in the category
         $allProducts = Product::where('category_id', $categoryId)
-            ->where('status', 'active')
+            // ->where('status', 'active')
             ->with(['images', 'store'])
             ->latest()
             ->paginate(20);
