@@ -20,7 +20,11 @@ class ChatService {
     public function fetchChatList(int $userId) {
         return Chat::with(['store','lastMessage','service'])
             ->where('user_id',$userId)
+            ->whereHas('store') // Only include chats where store exists
             ->get()
+            ->filter(function($chat) {
+                return $chat->store !== null; // Additional safety check
+            })
             ->map(function($chat){
                 $unread = $chat->messages()->where('is_read',false)->count();
                 return [
@@ -31,7 +35,8 @@ class ChatService {
                     'unread_count'=>$unread,
                     'avatar'=>$chat->store->profile_image ? asset('storage/'.$chat->store->profile_image) : null,
                 ];
-            });
+            })
+            ->values(); // Reset array keys after filtering
     }
 
     public function fetchMessages(int $chatId, int $userId) {
