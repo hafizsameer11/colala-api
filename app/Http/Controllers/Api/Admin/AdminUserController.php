@@ -243,7 +243,8 @@ class AdminUserController extends Controller
     public function userOrders(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             // Get store orders directly instead of through main orders
             $query = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
@@ -307,7 +308,8 @@ class AdminUserController extends Controller
     public function filterUserOrders(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             // Get store orders directly instead of through main orders
             $query = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
@@ -405,7 +407,8 @@ class AdminUserController extends Controller
     public function orderDetails($id, $orderId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             // Find StoreOrder by ID and ensure it belongs to the user
             $storeOrder = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
@@ -569,7 +572,8 @@ class AdminUserController extends Controller
                 'status' => 'required|string|in:order_placed,out_for_delivery,delivered,completed,disputed,uncompleted'
             ]);
 
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             // Find StoreOrder by ID and ensure it belongs to the user
             $storeOrder = \App\Models\StoreOrder::whereHas('order', function ($q) use ($id) {
@@ -728,7 +732,8 @@ class AdminUserController extends Controller
     public function userChats(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = $user->chats()->with(['store', 'messages' => function($query) {
                 $query->latest()->limit(1);
@@ -796,7 +801,8 @@ class AdminUserController extends Controller
     public function filterUserChats(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = $user->chats()->with(['store', 'messages' => function($query) {
                 $query->latest()->limit(1);
@@ -904,7 +910,8 @@ class AdminUserController extends Controller
     public function chatDetails($id, $chatId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $chat = $user->chats()->with([
                 'store',
                 'messages' => function($query) {
@@ -978,7 +985,8 @@ class AdminUserController extends Controller
                 'message' => 'required|string|max:1000'
             ]);
 
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $chat = $user->chats()->findOrFail($chatId);
 
             $message = \App\Models\ChatMessage::create([
@@ -1001,7 +1009,8 @@ class AdminUserController extends Controller
     public function userDetails($id)
     {
         try {
-            $user = User::where('role', 'buyer')->with(['wallet', 'orders', 'transactions'])
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->with(['wallet', 'orders', 'transactions'])
                 ->findOrFail($id);
 
             $userData = [
@@ -1041,7 +1050,8 @@ class AdminUserController extends Controller
     public function userTransactions(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = Transaction::where('user_id', $id);
 
@@ -1130,7 +1140,8 @@ class AdminUserController extends Controller
     public function filterUserTransactions(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = Transaction::where('user_id', $id);
 
@@ -1222,7 +1233,8 @@ class AdminUserController extends Controller
     public function transactionDetails($id, $transactionId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $transaction = Transaction::where('user_id', $id)->findOrFail($transactionId);
 
             $transactionDetails = [
@@ -1279,7 +1291,8 @@ class AdminUserController extends Controller
     public function userPosts(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = \App\Models\Post::where('user_id', $id);
 
@@ -1389,7 +1402,8 @@ class AdminUserController extends Controller
     public function filterUserPosts(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             $query = \App\Models\Post::where('user_id', $id);
 
@@ -1504,7 +1518,8 @@ class AdminUserController extends Controller
     public function postDetails($id, $postId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $post = \App\Models\Post::with([
                 'user',
                 'media',
@@ -1571,7 +1586,8 @@ class AdminUserController extends Controller
     public function deletePost($id, $postId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $post = \App\Models\Post::where('user_id', $id)->findOrFail($postId);
             
             $post->delete();
@@ -1589,7 +1605,8 @@ class AdminUserController extends Controller
     public function postComments($id, $postId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $post = \App\Models\Post::where('user_id', $id)->findOrFail($postId);
             
             $comments = \App\Models\PostComment::where('post_id', $postId)
@@ -1624,7 +1641,8 @@ class AdminUserController extends Controller
     public function deleteComment($id, $postId, $commentId)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $post = \App\Models\Post::where('user_id', $id)->findOrFail($postId);
             $comment = \App\Models\PostComment::where('post_id', $postId)->findOrFail($commentId);
             
@@ -1695,7 +1713,8 @@ class AdminUserController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'full_name' => 'sometimes|string|max:255',
@@ -1733,7 +1752,8 @@ class AdminUserController extends Controller
     public function delete($id)
     {
         try {
-            $user = User::where('role', 'buyer')->findOrFail($id); // Only buyers
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $user->delete();
 
             return ResponseHelper::success(null, 'User deleted successfully');
@@ -1758,7 +1778,8 @@ class AdminUserController extends Controller
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
 
-            $user = User::where('role', 'buyer')->findOrFail($id);
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             $wallet = $this->walletService->topUp($user->id, $request->amount);
 
             // Log admin activity
@@ -1793,7 +1814,8 @@ class AdminUserController extends Controller
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
 
-            $user = User::where('role', 'buyer')->findOrFail($id);
+            // Remove buyer restriction and visibility scope for admin access
+            $user = User::withoutGlobalScopes()->findOrFail($id);
             
             // Ensure wallet exists
             $walletData = $this->walletService->getBalance($user->id);
