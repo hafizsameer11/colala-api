@@ -10,7 +10,7 @@ class ServiceCategorySeeder extends Seeder
     public function run()
     {
         // Clear existing service categories
-        ServiceCategory::truncate();
+        // ServiceCategory::truncate();
 
         $services = $this->getServiceCategories();
         $this->processServiceCategories($services);
