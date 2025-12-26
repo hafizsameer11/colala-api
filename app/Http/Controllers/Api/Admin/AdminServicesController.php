@@ -453,6 +453,13 @@ class AdminServicesController extends Controller
                 'discount_price' => $service->discount_price,
                 'store_name' => $service->store->store_name,
                 'seller_name' => $service->store->user->full_name,
+                'category' => $service->serviceCategory ? [
+                    'id' => $service->serviceCategory->id,
+                    'title' => $service->serviceCategory->title,
+                    'image' => $service->serviceCategory->image ?? null,
+                    'image_url' => $service->serviceCategory->image ? asset('storage/' . $service->serviceCategory->image) : null,
+                    'is_active' => $service->serviceCategory->is_active ?? true,
+                ] : null,
                 'category_name' => $service->serviceCategory->title ?? null,
                 'status' => $service->status,
                 'is_sold' => $service->is_sold,

@@ -21,7 +21,7 @@ class AdminProductsController extends Controller
     public function getAllProducts(Request $request)
     {
         try {
-            $query = Product::with(['store.user', 'images', 'variants', 'reviews', 'boost']);
+            $query = Product::with(['store.user', 'images', 'variants', 'reviews', 'boost', 'category']);
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -426,6 +426,13 @@ class AdminProductsController extends Controller
                 'quantity' => $product->quantity,
                 'reviews_count' => $product->reviews->count(),
                 'average_rating' => $product->reviews->avg('rating') ?? 0,
+                'category' => $product->category ? [
+                    'id' => $product->category->id,
+                    'title' => $product->category->title,
+                    'image' => $product->category->image,
+                    'color' => $product->category->color,
+                    'image_url' => $product->category->image_url ?? null,
+                ] : null,
                 'created_at' => $product->created_at,
                 'formatted_date' => $product->created_at ? $product->created_at->format('d-m-Y H:i A') : null,
                 'primary_image' => $product->images->first() ? 
