@@ -494,8 +494,15 @@ class AdminAllUsersController extends Controller
 
             $user = User::findOrFail($userId);
 
-            $data = $request->all();
+            $data = $request->only([
+                'label', 'phone', 'line1', 'line2', 'city', 'state', 'country', 'zipcode', 'is_default'
+            ]);
             $data['user_id'] = $user->id;
+            
+            // Set city to null if not provided
+            if (!isset($data['city']) || empty($data['city'])) {
+                $data['city'] = null;
+            }
 
             // If setting as default, unset other defaults
             if (!empty($data['is_default']) && $data['is_default']) {
