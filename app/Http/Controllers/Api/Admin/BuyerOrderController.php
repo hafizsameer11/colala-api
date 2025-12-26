@@ -25,15 +25,21 @@ class BuyerOrderController extends Controller
         try {
             // Get store orders directly (treating them as primary orders)
             $query = StoreOrder::with([
-                'order.user',
-                'store.user',
+                'order.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'items.product.images',
                 'items.product.variants',
                 'items.variant',
                 'orderTracking',
                 'chat'
-            ])->whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            ])->whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             });
 
             // Status filter
@@ -59,9 +65,12 @@ class BuyerOrderController extends Controller
                     $q->whereHas('order', function ($orderQuery) use ($search) {
                         $orderQuery->where('order_no', 'like', "%{$search}%");
                     })
-                    ->orWhereHas('order.user', function ($userQuery) use ($search) {
-                        $userQuery->where('full_name', 'like', "%{$search}%")
-                                 ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->whereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->withoutGlobalScopes()
+                                     ->where('full_name', 'like', "%{$search}%")
+                                     ->orWhere('email', 'like', "%{$search}%");
+                        });
                     })
                     ->orWhereHas('store', function ($storeQuery) use ($search) {
                         $storeQuery->where('store_name', 'like', "%{$search}%");
@@ -75,16 +84,22 @@ class BuyerOrderController extends Controller
             $storeOrders = $query->latest()->paginate(15);
 
             // Get comprehensive summary stats
-            $totalStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            $totalStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             })->count();
             
-            $pendingStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            $pendingStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             })->whereIn('status', ['pending', 'order_placed', 'processing'])->count();
             
-            $completedStoreOrders = StoreOrder::whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            $completedStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             })->where('status', 'completed')->count();
 
             $storeOrders->getCollection()->transform(function ($storeOrder) {
@@ -93,28 +108,28 @@ class BuyerOrderController extends Controller
                 
                 return [
                     'id' => $storeOrder->id,
-                    'order_no' => $storeOrder->order->order_no,
-                    'buyer' => [
+                    'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
+                    'buyer' => $storeOrder->order && $storeOrder->order->user ? [
                         'id' => $storeOrder->order->user->id,
                         'name' => $storeOrder->order->user->full_name,
                         'email' => $storeOrder->order->user->email,
                         'phone' => $storeOrder->order->user->phone,
                         'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
-                    ],
-                    'store' => [
+                    ] : null,
+                    'store' => $storeOrder->store ? [
                         'id' => $storeOrder->store->id,
                         'name' => $storeOrder->store->store_name,
                         'email' => $storeOrder->store->store_email,
                         'phone' => $storeOrder->store->store_phone,
                         'location' => $storeOrder->store->store_location,
                         'profile_image' => $storeOrder->store->profile_image ? asset('storage/' . $storeOrder->store->profile_image) : null,
-                        'seller' => [
+                        'seller' => $storeOrder->store->user ? [
                             'id' => $storeOrder->store->user->id,
                             'name' => $storeOrder->store->user->full_name,
                             'email' => $storeOrder->store->user->email,
                             'phone' => $storeOrder->store->user->phone
-                        ]
-                    ],
+                        ] : null
+                    ] : null,
                     'product' => $product ? [
                         'id' => $product->id,
                         'name' => $product->name,
@@ -214,10 +229,15 @@ class BuyerOrderController extends Controller
     public function filter(Request $request)
     {
         try {
-            $query = Order::with(['user', 'storeOrders.store', 'storeOrders.orderTracking'])
-                ->whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                });
+            $query = Order::with([
+                'user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'storeOrders.store',
+                'storeOrders.orderTracking'
+            ])->whereHas('user', function ($q) {
+                $q->withoutGlobalScopes()->where('role', 'buyer');
+            });
 
             $status = $request->get('status', 'all');
             $date = $request->get('date', 'all');
@@ -244,7 +264,8 @@ class BuyerOrderController extends Controller
                     $q->where('order_no', 'like', "%{$search}%")
                       ->orWhere('grand_total', 'like', "%{$search}%")
                       ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('full_name', 'like', "%{$search}%")
+                          $userQuery->withoutGlobalScopes()
+                                   ->where('full_name', 'like', "%{$search}%")
                                    ->orWhere('email', 'like', "%{$search}%");
                       })
                       ->orWhereHas('storeOrders.store', function ($storeQuery) use ($search) {
@@ -258,16 +279,16 @@ class BuyerOrderController extends Controller
                 return [
                     'id' => $order->id,
                     'order_no' => $order->order_no,
-                    'buyer' => [
+                    'buyer' => $order->user ? [
                         'id' => $order->user->id,
                         'name' => $order->user->full_name,
                         'email' => $order->user->email,
                         'phone' => $order->user->phone
-                    ],
-                    'store' => $storeOrder ? [
+                    ] : null,
+                    'store' => $storeOrder && $storeOrder->store ? [
                         'id' => $storeOrder->store->id,
                         'name' => $storeOrder->store->store_name,
-                        'seller' => $storeOrder->store->user->full_name ?? 'Unknown'
+                        'seller' => $storeOrder->store->user ? $storeOrder->store->user->full_name : 'Unknown'
                     ] : null,
                     'product' => $this->getOrderProductInfo($order),
                     'price' => 'N' . number_format($order->grand_total, 0),
@@ -314,7 +335,7 @@ class BuyerOrderController extends Controller
                 $message = "Orders marked as disputed";
             } else {
                 Order::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
+                    $q->withoutGlobalScopes()->where('role', 'buyer');
                 })->whereIn('id', $orderIds)->delete();
                 $message = "Orders deleted successfully";
             }
@@ -333,17 +354,25 @@ class BuyerOrderController extends Controller
     {
         try {
             $storeOrder = StoreOrder::with([
-                'order.user',
+                'order.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'order.deliveryAddress',
-                'store.user',
+                'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'items.product.images',
                 'items.product.variants',
-                'items.product.reviews.user',
+                'items.product.reviews.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'items.variant',
                 'orderTracking',
                 'chat.messages'
-            ])->whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            ])->whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             })->findOrFail($storeOrderId);
             
             $orderDetails = [
@@ -497,8 +526,10 @@ class BuyerOrderController extends Controller
                 'notes' => 'nullable|string'
             ]);
 
-            $storeOrder = StoreOrder::whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+            $storeOrder = StoreOrder::whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
             })->findOrFail($storeOrderId);
 
             // Update store order status
@@ -536,10 +567,16 @@ class BuyerOrderController extends Controller
     public function orderTracking($storeOrderId)
     {
         try {
-            $storeOrder = StoreOrder::with(['order.user', 'orderTracking'])
-                ->whereHas('order.user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->findOrFail($storeOrderId);
+            $storeOrder = StoreOrder::with([
+                'order.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'orderTracking'
+            ])->whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                });
+            })->findOrFail($storeOrderId);
             
             $trackingInfo = [
                 'store_order_id' => $storeOrder->id,
