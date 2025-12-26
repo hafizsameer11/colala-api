@@ -10,7 +10,7 @@ class CategorySeeder extends Seeder
     public function run()
     {
         // Clear existing categories
-        Category::truncate();
+        // Category::truncate();
 
         $categories = $this->getCategories();
         $this->processCategories($categories);
