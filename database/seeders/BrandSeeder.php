@@ -12,49 +12,49 @@ class BrandSeeder extends Seeder
     public function run()
     {
         // Read from brands.txt file directly
-        $txtFile = base_path('brands.txt');
+        // $txtFile = base_path('brands.txt');
         
-        if (!file_exists($txtFile)) {
-            $this->command->error("brands.txt file not found at: {$txtFile}");
-            $this->command->info("Falling back to hardcoded brands...");
-            $this->runHardcoded();
-            return;
-        }
+        // if (!file_exists($txtFile)) {
+        //     $this->command->error("brands.txt file not found at: {$txtFile}");
+        //     $this->command->info("Falling back to hardcoded brands...");
+        //     $this->runHardcoded();
+        //     return;
+        // }
 
-        $handle = fopen($txtFile, 'r');
-        if (!$handle) {
-            $this->command->error("Could not open brands.txt file");
-            $this->command->info("Falling back to hardcoded brands...");
-            $this->runHardcoded();
-            return;
-        }
+        // $handle = fopen($txtFile, 'r');
+        // if (!$handle) {
+        //     $this->command->error("Could not open brands.txt file");
+        //     $this->command->info("Falling back to hardcoded brands...");
+        //     $this->runHardcoded();
+        //     return;
+        // }
 
-        // Skip header row
-        $header = fgetcsv($handle);
+        // // Skip header row
+        // $header = fgetcsv($handle);
         
-        $rows = [];
-        while (($data = fgetcsv($handle)) !== false) {
-            if (count($data) < 4) {
-                continue;
-            }
+        // $rows = [];
+        // while (($data = fgetcsv($handle)) !== false) {
+        //     if (count($data) < 4) {
+        //         continue;
+        //     }
             
-            $level1 = trim($data[0] ?? '');
-            $level2 = trim($data[1] ?? '');
-            $level3 = trim($data[2] ?? '');
-            $brandName = trim($data[3] ?? '');
+        //     $level1 = trim($data[0] ?? '');
+        //     $level2 = trim($data[1] ?? '');
+        //     $level3 = trim($data[2] ?? '');
+        //     $brandName = trim($data[3] ?? '');
             
-            if ($level1 && $brandName) {
-                $rows[] = [$level1, $level2, $level3, $brandName];
-            }
-        }
-        fclose($handle);
+        //     if ($level1 && $brandName) {
+        //         $rows[] = [$level1, $level2, $level3, $brandName];
+        //     }
+        // }
+        // fclose($handle);
 
-        $this->processRows($rows);
+        // $this->processRows($rows);
         
-        // ALWAYS include "Others"
-        Brand::firstOrCreate(['name' => 'Others']);
+        // // ALWAYS include "Others"
+        // Brand::firstOrCreate(['name' => 'Others']);
 
-        $this->command->info("✔ Brand seeding complete!");
+        // $this->command->info("✔ Brand seeding complete!");
     }
 
     private function processRows(array $rows)
