@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Mail\OtpMail;
+use App\Mail\WelcomeBuyerMail;
 use App\Models\UserNotification;
 use App\Models\Subscription;
 use App\Services\UserService;
@@ -40,7 +41,15 @@ class AuthController extends Controller
             $otp=rand(1000,9999);
             $user->otp=$otp;
             $user->save();
+            
+            // Send OTP email
             Mail::to($user->email)->send(new OtpMail($otp));
+            
+            // Send welcome email for buyers
+            if ($user->role === 'buyer') {
+                Mail::to($user->email)->send(new WelcomeBuyerMail($user->full_name));
+            }
+            
             return ResponseHelper::success($user, "OTP sent successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());

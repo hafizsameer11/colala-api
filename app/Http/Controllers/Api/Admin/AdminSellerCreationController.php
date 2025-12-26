@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ResponseHelper;
+use App\Mail\WelcomeSellerMail;
 use App\Models\User;
 use App\Models\Store;
 use App\Models\StoreSocialLink;
@@ -16,6 +17,7 @@ use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -124,6 +126,14 @@ class AdminSellerCreationController extends Controller
             $this->markDone($store, 1, 'level1.profile_media');
             $this->markDone($store, 1, 'level1.categories_social');
 
+            // Send welcome email to seller
+            try {
+                Mail::to($user->email)->send(new WelcomeSellerMail($store->store_name));
+            } catch (\Exception $e) {
+                // Log error but don't fail creation if email fails
+                \Illuminate\Support\Facades\Log::error('Failed to send welcome email to seller: ' . $e->getMessage());
+            }
+
             DB::commit();
 
             return ResponseHelper::success([
@@ -218,6 +228,14 @@ class AdminSellerCreationController extends Controller
 
             // Mark level 1 basic as done
             $this->markDone($store, 1, 'level1.basic');
+
+            // Send welcome email to seller
+            try {
+                Mail::to($user->email)->send(new WelcomeSellerMail($store->store_name));
+            } catch (\Exception $e) {
+                // Log error but don't fail creation if email fails
+                Log::error('Failed to send welcome email to seller: ' . $e->getMessage());
+            }
 
             DB::commit();
 

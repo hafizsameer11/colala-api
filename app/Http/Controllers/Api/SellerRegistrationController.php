@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SellerRegisterStep1Request;
 use App\Http\Requests\SellerRegisterStep2Request;
 use App\Http\Requests\SellerRegisterStep3Request;
+use App\Mail\WelcomeSellerMail;
 use App\Models\Store;
 use App\Models\StoreAddress;
 use App\Models\StoreBusinessDetail;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Models\SellerHelpRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class SellerRegistrationController extends Controller
@@ -63,6 +65,14 @@ class SellerRegistrationController extends Controller
                     'url'      => $link['url']
                 ]);
             }
+        }
+
+        // Send welcome email to seller
+        try {
+            Mail::to($user->email)->send(new WelcomeSellerMail($store->store_name));
+        } catch (\Exception $e) {
+            // Log error but don't fail registration if email fails
+            \Illuminate\Support\Facades\Log::error('Failed to send welcome email to seller: ' . $e->getMessage());
         }
 
         return response()->json([
