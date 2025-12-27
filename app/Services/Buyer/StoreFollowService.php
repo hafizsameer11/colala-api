@@ -26,19 +26,23 @@ class StoreFollowService {
             ->where('user_id',$userId)
             ->latest()
             ->get()
+            ->filter(function($f) {
+                return $f->store !== null;
+            })
             ->map(function($f){
                 return [
                     'id'=>$f->id,
                     'store_id'=>$f->store_id,
-                    'store_name'=>$f->store->store_name,
-                    'store_email'=>$f->store->store_email,
-                    'store_phone'=>$f->store->store_phone,
+                    'store_name'=>$f->store->store_name ?? null,
+                    'store_email'=>$f->store->store_email ?? null,
+                    'store_phone'=>$f->store->store_phone ?? null,
                     'profile_image'=>$f->store->profile_image ? asset('storage/'.$f->store->profile_image) : null,
                     'banner_image'=>$f->store->banner_image ? asset('storage/'.$f->store->banner_image) : null,
                     'followed_at'=>$f->created_at,
-                    'categories'=>$f->store->categories
+                    'categories'=>$f->store->categories ?? []
                 ];
-            });
+            })
+            ->values();
     }
 
     public function isFollowing(int $userId, int $storeId): bool {
