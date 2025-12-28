@@ -23,35 +23,92 @@ class SellerRegistrationController extends Controller
 {
     public function registerStep1(SellerRegisterStep1Request $request)
     {
-        $user = User::create([
-            'full_name' => $request->store_name,
-            'email'     => $request->store_email,
-            'phone'     => $request->store_phone,
-            'password'  => Hash::make($request->password),
-            'role'      => 'seller'
-        ]);
+        // Check if user exists with same email, role 'seller', and not verified (otp_verified is false/0/null)
+        $existingUser = User::withoutGlobalScopes()
+            ->where('email', $request->store_email)
+            ->where('role', 'seller')
+            ->where(function($query) {
+                $query->where('otp_verified', false)
+                      ->orWhere('otp_verified', 0)
+                      ->orWhereNull('otp_verified');
+            })
+            ->first();
 
-        $store = Store::create([
-            'user_id'        => $user->id,
-            'store_name'     => $request->store_name,
-            'store_email'    => $request->store_email,
-            'store_phone'    => $request->store_phone,
-            'store_location' => $request->store_location,
-            'referral_code'  => $request->referral_code,
-        ]);
+        if ($existingUser) {
+            // Update existing user
+            $existingUser->update([
+                'full_name' => $request->store_name,
+                'email'     => $request->store_email,
+                'phone'     => $request->store_phone,
+                'password'  => Hash::make($request->password),
+            ]);
+            $user = $existingUser;
 
-        // Assign store to user
-        $user->update(['store_id' => $store->id]);
+            // Get or create store for this user
+            $store = Store::where('user_id', $user->id)->first();
+            if (!$store) {
+                $store = Store::create([
+                    'user_id'        => $user->id,
+                    'store_name'     => $request->store_name,
+                    'store_email'    => $request->store_email,
+                    'store_phone'    => $request->store_phone,
+                    'store_location' => $request->store_location,
+                    'referral_code'  => $request->referral_code,
+                ]);
+                $user->update(['store_id' => $store->id]);
+            } else {
+                // Update existing store
+                $store->update([
+                    'store_name'     => $request->store_name,
+                    'store_email'    => $request->store_email,
+                    'store_phone'    => $request->store_phone,
+                    'store_location' => $request->store_location,
+                    'referral_code'  => $request->referral_code,
+                ]);
+            }
+
+            // Delete old social links
+            StoreSocialLink::where('store_id', $store->id)->delete();
+        } else {
+            // Create new user
+            $user = User::create([
+                'full_name' => $request->store_name,
+                'email'     => $request->store_email,
+                'phone'     => $request->store_phone,
+                'password'  => Hash::make($request->password),
+                'role'      => 'seller'
+            ]);
+
+            $store = Store::create([
+                'user_id'        => $user->id,
+                'store_name'     => $request->store_name,
+                'store_email'    => $request->store_email,
+                'store_phone'    => $request->store_phone,
+                'store_location' => $request->store_location,
+                'referral_code'  => $request->referral_code,
+            ]);
+
+            // Assign store to user
+            $user->update(['store_id' => $store->id]);
+        }
 
         // ✅ Attach categories
         if ($request->has('categories') && is_array($request->categories)) {
             $store->categories()->sync($request->categories);
         }
         if ($request->has('profile_image')) {
+            // Delete old profile image if exists
+            if ($store->profile_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($store->profile_image);
+            }
             $store->profile_image = $request->file('profile_image')->store("stores/{$store->id}", 'public');
             $store->save();
         }
         if ($request->has('banner_image')) {
+            // Delete old banner image if exists
+            if ($store->banner_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($store->banner_image);
+            }
             $store->banner_image = $request->file('banner_image')->store("stores/{$store->id}", 'public');
             $store->save();
         }
