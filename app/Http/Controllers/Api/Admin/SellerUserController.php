@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Store;
 use App\Models\StoreUser;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Service;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,11 +31,11 @@ class SellerUserController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhereHas('store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('store_name', 'like', "%{$search}%");
-                      });
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhereHas('store', function ($storeQuery) use ($search) {
+                            $storeQuery->where('store_name', 'like', "%{$search}%");
+                        });
                 });
             }
 
@@ -156,11 +158,11 @@ class SellerUserController extends Controller
             $users = User::where('role', 'seller')->with(['store', 'wallet'])
                 ->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhereHas('store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('store_name', 'like', "%{$search}%");
-                      });
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhereHas('store', function ($storeQuery) use ($search) {
+                            $storeQuery->where('store_name', 'like', "%{$search}%");
+                        });
                 })
                 ->limit(10)
                 ->get()
@@ -242,7 +244,7 @@ class SellerUserController extends Controller
             ])->findOrFail($id);
 
             $primaryStore = $user->store;
-            
+
             $sellerDetails = [
                 'user_info' => [
                     'id' => $user->id,
@@ -306,7 +308,7 @@ class SellerUserController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            
+
             $transactions = Transaction::where('user_id', $id)
                 ->with(['order'])
                 ->latest()
@@ -348,7 +350,7 @@ class SellerUserController extends Controller
             ]);
 
             $user = User::where('role', 'seller')->findOrFail($id);
-            
+
             if ($request->action === 'block') {
                 $user->update(['is_active' => false]);
                 $message = "Seller blocked successfully";
@@ -371,8 +373,24 @@ class SellerUserController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
-            $user->delete();
-
+            // $user->delete();
+            $user->update(['is_active' => false]);
+            //now find store and update visibility to 0
+            $store = Store::where('user_id', $id)->first();
+            $store->update(['visibility' => 0]);
+            //now find all products and update visibility to 0
+            $products = Product::where('store_id', $store->id)->get();
+            foreach ($products as $product) {
+                $product->update(['visibility' => 0]);
+            }
+            //now find all services and update visibility to 0
+            $services = Service::where('store_id', $store->id)->get();
+            foreach ($services as $service) {
+                $service->update(['visibility' => 0]);
+            }
+          
+            //now find all reviews and update visibility to 0
+        
             return ResponseHelper::success(null, 'Seller removed successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
