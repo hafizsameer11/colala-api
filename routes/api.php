@@ -334,6 +334,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/banners/{id}/click', [AdminBannerController::class, 'trackBannerClick']);
     Route::post('/buyer/save-expo-token',[PushNotificationController::class, 'saveExpoPushToken']);
     Route::post('test-expo-notification/{userId}',[PushNotificationController::class, 'testExpoNotification']);
+
+    //users/delete-account
+    Route::post('users/delete-account/{id}', [AuthController::class, 'deleteAccount']);
 });
 
 /*

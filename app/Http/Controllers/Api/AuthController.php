@@ -10,8 +10,12 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Mail\OtpMail;
 use App\Mail\WelcomeBuyerMail;
+use App\Models\Product;
+use App\Models\Service;
+use App\Models\Store;
 use App\Models\UserNotification;
 use App\Models\Subscription;
+use App\Models\User;
 use App\Services\UserService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -23,8 +27,8 @@ use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
-    protected $userService,$walletService;
-    public function __construct(UserService $userService,WalletService $walletService)
+    protected $userService, $walletService;
+    public function __construct(UserService $userService, WalletService $walletService)
     {
         $this->userService = $userService;
         $this->walletService = $walletService;
@@ -37,19 +41,19 @@ class AuthController extends Controller
             $data['password'] = Hash::make($data['password']);
             $data['user_code'] =   $this->userService->createUserCode($data['full_name']);
             $user = $this->userService->create($data);
-            $wallet=$this->walletService->create(['user_id'=>$user->id]);
-            $otp=rand(1000,9999);
-            $user->otp=$otp;
+            $wallet = $this->walletService->create(['user_id' => $user->id]);
+            $otp = rand(1000, 9999);
+            $user->otp = $otp;
             $user->save();
-            
+
             // Send OTP email
             Mail::to($user->email)->send(new OtpMail($otp));
-            
+
             // Send welcome email for buyers
             if ($user->role === 'buyer') {
                 Mail::to($user->email)->send(new WelcomeBuyerMail($user->full_name));
             }
-            
+
             return ResponseHelper::success($user, "OTP sent successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -70,19 +74,19 @@ class AuthController extends Controller
         try {
             $data = $loginRequest->validated();
             $user = $this->userService->login($data);
-            $token=$user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
             $activity = ActivityHelper::log($user->id, "user login");
-            $respone=
-            [
-                'user'=>$user,
-                'store'=>$user->store,
-                'token'=>$token
-            ];
+            $respone =
+                [
+                    'user' => $user,
+                    'store' => $user->store,
+                    'token' => $token
+                ];
             //check if user have wallet otherwise creste wallet
-            if(!$user->wallet){
-                $wallet=$this->walletService->create(['user_id'=>$user->id]);
+            if (!$user->wallet) {
+                $wallet = $this->walletService->create(['user_id' => $user->id]);
             }
-            
+
             // Send login notification (in-app + push)
             UserNotificationHelper::notify(
                 $user->id,
@@ -90,7 +94,7 @@ class AuthController extends Controller
                 'You have successfully logged in to your account.',
                 ['type' => 'login', 'timestamp' => now()->toIso8601String()]
             );
-            
+
             return ResponseHelper::success($respone, "user login successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -102,19 +106,19 @@ class AuthController extends Controller
         try {
             $data = $loginRequest->validated();
             $user = $this->userService->adminLogin($data);
-            $token=$user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
             $activity = ActivityHelper::log($user->id, "user login");
-            $respone=
-            [
-                'user'=>$user,
-                'store'=>$user->store,
-                'token'=>$token
-            ];
+            $respone =
+                [
+                    'user' => $user,
+                    'store' => $user->store,
+                    'token' => $token
+                ];
             //check if user have wallet otherwise creste wallet
-            if(!$user->wallet){
-                $wallet=$this->walletService->create(['user_id'=>$user->id]);
+            if (!$user->wallet) {
+                $wallet = $this->walletService->create(['user_id' => $user->id]);
             }
-            
+
             // Send login notification (in-app + push)
             UserNotificationHelper::notify(
                 $user->id,
@@ -122,7 +126,7 @@ class AuthController extends Controller
                 'You have successfully logged in to your account.',
                 ['type' => 'login', 'timestamp' => now()->toIso8601String()]
             );
-            
+
             return ResponseHelper::success($respone, "user login successfully");
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -165,150 +169,173 @@ class AuthController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
-  public function editProfile(Request $request)
-{
-    try {
-        $user = $request->user();
-        $data = $request->only([
-            'full_name',
-            'email',
-            'phone',
-            'user_name',
-            'profile_picture',
-            'country',
-            'state'
-        ]);
+    public function editProfile(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $data = $request->only([
+                'full_name',
+                'email',
+                'phone',
+                'user_name',
+                'profile_picture',
+                'country',
+                'state'
+            ]);
 
-        $updatedUser = $this->userService->update($data, $user->id);
+            $updatedUser = $this->userService->update($data, $user->id);
 
-    return ResponseHelper::success($updatedUser, "Profile updated successfully");
-} catch (\Exception $e) {
-    Log::error($e->getMessage());
-    return ResponseHelper::error($e->getMessage());
-}
-}
-
-/**
- * Get authenticated user's plan with complete subscription details
- *
- * @param Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function getPlan(Request $request)
-{
-    try {
-        $user = $request->user();
-        
-        if (!$user) {
-            return ResponseHelper::error('Unauthenticated', 401);
+            return ResponseHelper::success($updatedUser, "Profile updated successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
         }
+    }
 
-        // Get user's store
-        $store = $user->store;
-        $subscription = null;
-        $needsRenewal = false;
-        $isExpired = false;
+    /**
+     * Get authenticated user's plan with complete subscription details
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPlan(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-        if ($store) {
-            // Get active subscription for the store
-            $subscription = Subscription::with('plan')
-                ->where('store_id', $store->id)
-                ->where('status', 'active')
-                ->latest()
-                ->first();
+            if (!$user) {
+                return ResponseHelper::error('Unauthenticated', 401);
+            }
 
-            if ($subscription) {
-                // Check if subscription has expired
-                $today = Carbon::today();
-                // end_date is already a Carbon instance due to model cast
-                $endDate = $subscription->end_date instanceof \Carbon\Carbon 
-                    ? $subscription->end_date 
-                    : Carbon::parse($subscription->end_date);
+            // Get user's store
+            $store = $user->store;
+            $subscription = null;
+            $needsRenewal = false;
+            $isExpired = false;
 
-                if ($endDate->lt($today)) {
-                    // Subscription has expired - update user plan to basic
-                    $user->plan = 'basic';
-                    $user->save();
+            if ($store) {
+                // Get active subscription for the store
+                $subscription = Subscription::with('plan')
+                    ->where('store_id', $store->id)
+                    ->where('status', 'active')
+                    ->latest()
+                    ->first();
 
-                    // Update subscription status to expired
-                    $subscription->status = 'expired';
-                    $subscription->save();
+                if ($subscription) {
+                    // Check if subscription has expired
+                    $today = Carbon::today();
+                    // end_date is already a Carbon instance due to model cast
+                    $endDate = $subscription->end_date instanceof \Carbon\Carbon
+                        ? $subscription->end_date
+                        : Carbon::parse($subscription->end_date);
 
-                    $isExpired = true;
-                    $needsRenewal = true;
-                } elseif ($endDate->lte($today->copy()->addDays(7))) {
-                    // Subscription expires within 7 days - needs renewal
-                    $needsRenewal = true;
+                    if ($endDate->lt($today)) {
+                        // Subscription has expired - update user plan to basic
+                        $user->plan = 'basic';
+                        $user->save();
+
+                        // Update subscription status to expired
+                        $subscription->status = 'expired';
+                        $subscription->save();
+
+                        $isExpired = true;
+                        $needsRenewal = true;
+                    } elseif ($endDate->lte($today->copy()->addDays(7))) {
+                        // Subscription expires within 7 days - needs renewal
+                        $needsRenewal = true;
+                    }
                 }
             }
-        }
 
-        // If no active subscription or expired, ensure user plan is basic
-        if (!$subscription || $isExpired) {
-            if ($user->plan !== 'basic') {
-                $user->plan = 'basic';
-                $user->save();
+            // If no active subscription or expired, ensure user plan is basic
+            if (!$subscription || $isExpired) {
+                if ($user->plan !== 'basic') {
+                    $user->plan = 'basic';
+                    $user->save();
+                }
             }
+
+            return ResponseHelper::success([
+                'plan' => $user->plan ?? 'basic',
+                'user_id' => $user->id,
+                'full_name' => $user->full_name,
+                'is_free_trial_claimed' => (bool)($user->is_free_trial_claimed ?? false),
+                'subscription' => $subscription ? [
+                    'id' => $subscription->id,
+                    'plan_id' => $subscription->plan_id,
+                    'plan_name' => $subscription->plan ? $subscription->plan->name : null,
+                    'plan_price' => $subscription->plan ? $subscription->plan->price : null,
+                    'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
+                    'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
+                    'status' => $subscription->status,
+                    'payment_method' => $subscription->payment_method,
+                    'payment_status' => $subscription->payment_status,
+
+                    'transaction_ref' => $subscription->transaction_ref,
+                    'created_at' => $subscription->created_at ? $subscription->created_at->format('Y-m-d H:i:s') : null,
+                    'updated_at' => $subscription->updated_at ? $subscription->updated_at->format('Y-m-d H:i:s') : null,
+                ] : null,
+                'needs_renewal' => $needsRenewal,
+                'is_expired' => $isExpired,
+                'days_until_expiry' => $subscription && !$isExpired
+                    ? max(0, ($subscription->end_date instanceof \Carbon\Carbon
+                        ? $subscription->end_date
+                        : Carbon::parse($subscription->end_date))->diffInDays(Carbon::today(), false))
+                    : null,
+            ], 'User plan retrieved successfully');
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
         }
-
-        return ResponseHelper::success([
-            'plan' => $user->plan ?? 'basic',
-            'user_id' => $user->id,
-            'full_name' => $user->full_name,
-            'is_free_trial_claimed' => (bool)($user->is_free_trial_claimed ?? false),
-            'subscription' => $subscription ? [
-                'id' => $subscription->id,
-                'plan_id' => $subscription->plan_id,
-                'plan_name' => $subscription->plan ? $subscription->plan->name : null,
-                'plan_price' => $subscription->plan ? $subscription->plan->price : null,
-                'start_date' => $subscription->start_date ? $subscription->start_date->format('Y-m-d') : null,
-                'end_date' => $subscription->end_date ? $subscription->end_date->format('Y-m-d') : null,
-                'status' => $subscription->status,
-                'payment_method' => $subscription->payment_method,
-                'payment_status' => $subscription->payment_status,
-
-                'transaction_ref' => $subscription->transaction_ref,
-                'created_at' => $subscription->created_at ? $subscription->created_at->format('Y-m-d H:i:s') : null,
-                'updated_at' => $subscription->updated_at ? $subscription->updated_at->format('Y-m-d H:i:s') : null,
-            ] : null,
-            'needs_renewal' => $needsRenewal,
-            'is_expired' => $isExpired,
-            'days_until_expiry' => $subscription && !$isExpired 
-                ? max(0, ($subscription->end_date instanceof \Carbon\Carbon 
-                    ? $subscription->end_date 
-                    : Carbon::parse($subscription->end_date))->diffInDays(Carbon::today(), false))
-                : null,
-        ], 'User plan retrieved successfully');
-    } catch (\Exception $e) {
-        Log::error($e->getMessage());
-        return ResponseHelper::error($e->getMessage());
     }
-}
 
-/**
- * Generate guest token for anonymous users
- *
- * @return \Illuminate\Http\JsonResponse
- */
-public function generateGuestToken()
-{
-    try {
-        // Generate a unique guest token
-        $guestToken = 'guest_' . Str::random(32) . '_' . time();
-        
-        // You can store this token in cache with expiration if needed
-        // Cache::put("guest_token_{$guestToken}", true, now()->addHours(24));
-        
-        return ResponseHelper::success([
-            'guest_token' => $guestToken,
-            'expires_at' => now()->addHours(24)->toISOString(),
-            'token_type' => 'guest'
-        ], 'Guest token generated successfully');
-        
-    } catch (\Exception $e) {
-        Log::error('Guest token generation failed: ' . $e->getMessage());
-        return ResponseHelper::error('Failed to generate guest token', 500);
+    /**
+     * Generate guest token for anonymous users
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function generateGuestToken()
+    {
+        try {
+            // Generate a unique guest token
+            $guestToken = 'guest_' . Str::random(32) . '_' . time();
+
+            // You can store this token in cache with expiration if needed
+            // Cache::put("guest_token_{$guestToken}", true, now()->addHours(24));
+
+            return ResponseHelper::success([
+                'guest_token' => $guestToken,
+                'expires_at' => now()->addHours(24)->toISOString(),
+                'token_type' => 'guest'
+            ], 'Guest token generated successfully');
+        } catch (\Exception $e) {
+            Log::error('Guest token generation failed: ' . $e->getMessage());
+            return ResponseHelper::error('Failed to generate guest token', 500);
+        }
     }
-}
 
+    public function deleteAccount($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            // $user->delete();
+            $user->update(['is_active' => false]);
+            $store = Store::where('user_id', $id)->first();
+            if ($store) {
+                $store->update(['visibility' => 0]);
+                $products = Product::where('store_id', $store->id)->get();
+                foreach ($products as $product) {
+                    $product->update(['visibility' => 0]);
+                }
+                $services = Service::where('store_id', $store->id)->get();
+                foreach ($services as $service) {
+                    $service->update(['visibility' => 0]);
+                }
+            }
+            return ResponseHelper::success(null, 'Account deleted successfully');
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
 }
