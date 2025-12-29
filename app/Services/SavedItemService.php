@@ -47,11 +47,14 @@ class SavedItemService
                     'id'        => $saved->id,
                     'saved_at'  => $saved->created_at,
                     'type'      => $saved->type, // accessor below
+                    
                 ];
 
                 if ($saved->product) {
                     return array_merge($base, [
                         'product_id'     => $saved->product_id,
+                        'store_id'       => $saved->product->store_id ?? null,
+                        'store'     => $saved->product->store ?? null,
                         'name'           => $saved->product->name,
                         'price'          => $saved->product->price,
                         'discount_price' => $saved->product->discount_price,
@@ -62,6 +65,8 @@ class SavedItemService
                 if ($saved->service) {
                     return array_merge($base, [
                         'service_id' => $saved->service_id,
+                        'store_id'       => $saved->service->store_id ?? null,
+                        'store'     => $saved->service->store ?? null,
                         'name'       => $saved->service->name,
                         'price'      => $saved->service->price_to. '-'. $saved->service->price_from,
                         'media'      => $saved->service->media->map(fn ($img) => asset('storage/' . $img->path)),
@@ -70,7 +75,9 @@ class SavedItemService
 
                 if ($saved->post) {
                     return array_merge($base, [
-                       'post'=>$saved->post
+                       'post'=>$saved->post,
+                       'store_id'       => $saved->post->store_id ?? null,
+                       'store'     => $saved->post->store ?? null,
                         
                     ]);
                 }
