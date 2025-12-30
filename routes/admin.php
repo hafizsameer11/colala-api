@@ -223,6 +223,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/create-seller/progress', [AdminSellerCreationController::class, 'getProgress']);
     // Get all available categories for selection
     Route::get('/create-seller/categories', [AdminSellerCreationController::class, 'getAllCategories']);
+    // Reject a specific onboarding field with rejection reason
+    Route::post('/create-seller/reject-field', [AdminSellerCreationController::class, 'rejectField']);
     
     // Store Address Management
     // Get store addresses

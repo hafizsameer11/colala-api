@@ -1,0 +1,101 @@
+{
+  "fieldKeys": [
+    "level1.basic",
+    "level1.profile_media",
+    "level1.categories_social",
+    "level2.business_details",
+    "level2.documents",
+    "level3.physical_store",
+    "level3.utility_bill",
+    "level3.addresses",
+    "level3.delivery_pricing",
+    "level3.theme"
+  ],
+  "fields": [
+    {
+      "key": "level1.basic",
+      "label": "Basic Information",
+      "level": 1,
+      "description": "Store name, email, phone, location, referral code"
+    },
+    {
+      "key": "level1.profile_media",
+      "label": "Profile & Banner Images",
+      "level": 1,
+      "description": "Profile image and banner image"
+    },
+    {
+      "key": "level1.categories_social",
+      "label": "Categories & Social Links",
+      "level": 1,
+      "description": "Selected categories and social media links"
+    },
+    {
+      "key": "level2.business_details",
+      "label": "Business Details",
+      "level": 2,
+      "description": "Registered name, business type, NIN number, BN number, CAC number"
+    },
+    {
+      "key": "level2.documents",
+      "label": "Business Documents",
+      "level": 2,
+      "description": "NIN document, CAC document, utility bill, store video"
+    },
+    {
+      "key": "level3.physical_store",
+      "label": "Physical Store Information",
+      "level": 3,
+      "description": "Physical store flag and store video"
+    },
+    {
+      "key": "level3.utility_bill",
+      "label": "Utility Bill",
+      "level": 3,
+      "description": "Utility bill document upload"
+    },
+    {
+      "key": "level3.addresses",
+      "label": "Store Addresses",
+      "level": 3,
+      "description": "Store address information"
+    },
+    {
+      "key": "level3.delivery_pricing",
+      "label": "Delivery Pricing",
+      "level": 3,
+      "description": "Delivery pricing configuration"
+    },
+    {
+      "key": "level3.theme",
+      "label": "Theme Color",
+      "level": 3,
+      "description": "Store theme color selection"
+    }
+  ],
+  "apiEndpoint": {
+    "method": "POST",
+    "url": "/admin/create-seller/reject-field",
+    "requestBody": {
+      "store_id": "number (required)",
+      "field_key": "string (required) - one of the fieldKeys above",
+      "rejection_reason": "string (required, max 1000 characters)"
+    },
+    "response": {
+      "status": "boolean",
+      "message": "string",
+      "data": {
+        "store_id": "number",
+        "field_key": "string",
+        "status": "rejected",
+        "rejection_reason": "string",
+        "progress": {
+          "level": "number",
+          "percent": "number",
+          "status": "string"
+        }
+      }
+    }
+  }
+}
+

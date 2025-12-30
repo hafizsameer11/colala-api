@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class StoreOnboardingStep extends Model
 {
-    protected $fillable = ['store_id','level','key','status','completed_at'];
+    protected $fillable = ['store_id','level','key','status','completed_at','rejection_reason'];
 
     protected $casts = [
         'completed_at' => 'datetime',

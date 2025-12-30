@@ -30,7 +30,12 @@ class SellerOnboardingController extends Controller
     {
         StoreOnboardingStep::updateOrCreate(
             ['store_id' => $store->id, 'key' => $key],
-            ['level' => $level, 'status' => 'done', 'completed_at' => now()]
+            [
+                'level' => $level, 
+                'status' => 'done', 
+                'completed_at' => now(),
+                'rejection_reason' => null // Clear rejection reason when field is re-uploaded
+            ]
         );
 
         $total = StoreOnboardingStep::where('store_id', $store->id)->count();
@@ -474,16 +479,28 @@ class SellerOnboardingController extends Controller
     // Fetch steps and ignore 'delivery_pricing'
     $steps = StoreOnboardingStep::where('store_id', $store->id)
         ->orderBy('level')
-        ->get(['key', 'status', 'completed_at'])
+        ->get(['key', 'status', 'completed_at', 'rejection_reason'])
         ->reject(function ($step) {
             return $step->key === 'level3.delivery_pricing';
         })
-        ->values(); // reindex after rejection
+        ->values() // reindex after rejection
+        ->map(function ($step) {
+            return [
+                'key' => $step->key,
+                'status' => $step->status,
+                'completed_at' => $step->completed_at,
+                'rejection_reason' => $step->rejection_reason, // Include rejection reason
+                'is_rejected' => $step->status === 'rejected' // Add flag for easy checking
+            ];
+        });
 
-    // Determine if all remaining steps are complete
+    // Determine if all remaining steps are complete (not pending or rejected)
     $isComplete = $steps->every(function ($step) {
-        return $step->status === 'done';
+        return $step['status'] === 'done';
     });
+
+    // Get rejected fields count
+    $rejectedCount = $steps->where('status', 'rejected')->count();
 
     return response()->json([
         'status'        => true,
@@ -491,6 +508,7 @@ class SellerOnboardingController extends Controller
         'percent'       => $store->onboarding_percent,
         'status_label'  => $store->onboarding_status,
         'is_complete'   => $isComplete,
+        'rejected_count' => $rejectedCount,
         'steps'         => $steps,
     ]);
 }

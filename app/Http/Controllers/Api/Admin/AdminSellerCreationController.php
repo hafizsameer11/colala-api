@@ -898,7 +898,16 @@ class AdminSellerCreationController extends Controller
             
             $steps = StoreOnboardingStep::where('store_id', $store->id)
                 ->orderBy('level')
-                ->get(['key', 'status', 'completed_at']);
+                ->get(['key', 'status', 'completed_at', 'rejection_reason'])
+                ->map(function ($step) {
+                    return [
+                        'key' => $step->key,
+                        'status' => $step->status,
+                        'completed_at' => $step->completed_at,
+                        'rejection_reason' => $step->rejection_reason,
+                        'is_rejected' => $step->status === 'rejected'
+                    ];
+                });
 
             return ResponseHelper::success([
                 'store' => [
@@ -930,6 +939,65 @@ class AdminSellerCreationController extends Controller
                 'social_links' => $store->socialLinks,
                 'categories' => $store->categories
             ], 'Store progress retrieved successfully');
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Reject a specific onboarding field with rejection reason
+     */
+    public function rejectField(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'store_id' => 'required|exists:stores,id',
+                'field_key' => 'required|string|in:level1.basic,level1.profile_media,level1.categories_social,level2.business_details,level2.documents,level3.physical_store,level3.utility_bill,level3.addresses,level3.delivery_pricing,level3.theme',
+                'rejection_reason' => 'required|string|max:1000'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            $store = Store::findOrFail($request->store_id);
+            
+            // Find the onboarding step
+            $step = StoreOnboardingStep::where('store_id', $store->id)
+                ->where('key', $request->field_key)
+                ->firstOrFail();
+
+            // Update step to rejected status with reason
+            $step->update([
+                'status' => 'rejected',
+                'rejection_reason' => $request->rejection_reason,
+                'completed_at' => null // Clear completion date when rejected
+            ]);
+
+            // Recalculate progress percentage (exclude rejected from done count)
+            $total = StoreOnboardingStep::where('store_id', $store->id)->count();
+            $done = StoreOnboardingStep::where('store_id', $store->id)
+                ->where('status', 'done')
+                ->count();
+            $percent = $total ? (int) floor($done * 100 / $total) : $store->onboarding_percent;
+
+            $store->update([
+                'onboarding_percent' => $percent,
+            ]);
+
+            return ResponseHelper::success([
+                'store_id' => $store->id,
+                'field_key' => $step->key,
+                'status' => $step->status,
+                'rejection_reason' => $step->rejection_reason,
+                'progress' => [
+                    'level' => $store->onboarding_level,
+                    'percent' => $store->onboarding_percent,
+                    'status' => $store->onboarding_status
+                ]
+            ], 'Field rejected successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());
