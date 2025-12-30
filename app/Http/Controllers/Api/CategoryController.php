@@ -44,7 +44,7 @@ class CategoryController extends Controller
    public function getAll()
 {
     try {
-        $categories = Category::with('children')->withCount('products')->whereNull('parent_id')->get();
+        $categories = Category::with('children')->withCount('products')->whereNull('parent_id')->orderBy('created_at', 'desc')->get();
     
         return ResponseHelper::success($categories);
     } catch(Exception $e) {
