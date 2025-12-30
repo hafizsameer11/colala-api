@@ -557,6 +557,20 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/products/analytics', [AdminProductsController::class, 'getProductAnalytics']);
 
     // ========================================
+    // SERVICE CATEGORIES MANAGEMENT MODULE
+    // ========================================
+    // Get all service categories with pagination
+    Route::get('/service-categories', [\App\Http\Controllers\Api\ServiceCategoryController::class, 'index']);
+    // Get single service category details
+    Route::get('/service-categories/{id}', [\App\Http\Controllers\Api\ServiceCategoryController::class, 'show']);
+    // Create new service category
+    Route::post('/service-categories', [\App\Http\Controllers\Api\ServiceCategoryController::class, 'store']);
+    // Update service category
+    Route::put('/service-categories/{id}', [\App\Http\Controllers\Api\ServiceCategoryController::class, 'update']);
+    // Delete service category
+    Route::delete('/service-categories/{id}', [\App\Http\Controllers\Api\ServiceCategoryController::class, 'destroy']);
+
+    // ========================================
     // SERVICES MANAGEMENT MODULE
     // ========================================
     // Get all services with filtering and pagination

@@ -1,0 +1,504 @@
+{
+  "api": {
+    "name": "Service Categories API",
+    "version": "1.0.0",
+    "baseUrl": "https://colala.hmstech.xyz/api",
+    "adminBaseUrl": "https://colala.hmstech.xyz/api/admin"
+  },
+  "authentication": {
+    "type": "Bearer Token",
+    "header": "Authorization",
+    "format": "Bearer {token}",
+    "requiredFor": ["admin"]
+  },
+  "endpoints": [
+    {
+      "name": "Get All Service Categories (Public)",
+      "method": "GET",
+      "path": "/api/service-categories",
+      "authRequired": false,
+      "description": "Get all service categories with optional pagination",
+      "queryParameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "description": "Page number"
+        },
+        {
+          "name": "per_page",
+          "type": "integer",
+          "required": false,
+          "default": 15,
+          "max": 100,
+          "description": "Items per page"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "required": false,
+          "description": "Filter by active status"
+        }
+      ],
+      "exampleRequest": {
+        "url": "/api/service-categories?page=1&per_page=15",
+        "headers": {}
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "data": {
+            "data": [
+              {
+                "id": 1,
+                "title": "Building & Trades Services",
+                "image": "service_categories/abc123.jpg",
+                "image_url": "https://colala.hmstech.xyz/storage/service_categories/abc123.jpg",
+                "is_active": true,
+                "services_count": 45,
+                "created_at": "2025-01-15T10:30:00.000000Z",
+                "updated_at": "2025-01-15T10:30:00.000000Z"
+              }
+            ],
+            "current_page": 1,
+            "per_page": 15,
+            "total": 25,
+            "last_page": 2,
+            "from": 1,
+            "to": 15
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Single Service Category (Public)",
+      "method": "GET",
+      "path": "/api/service-categories/{id}",
+      "authRequired": false,
+      "description": "Get single service category with services",
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "description": "Category ID"
+        }
+      ],
+      "exampleRequest": {
+        "url": "/api/service-categories/1",
+        "headers": {}
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "data": {
+            "id": 1,
+            "title": "Building & Trades Services",
+            "image": "service_categories/abc123.jpg",
+            "image_url": "https://colala.hmstech.xyz/storage/service_categories/abc123.jpg",
+            "is_active": true,
+            "services_count": 45,
+            "services": [],
+            "created_at": "2025-01-15T10:30:00.000000Z",
+            "updated_at": "2025-01-15T10:30:00.000000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "Get All Service Categories (Admin)",
+      "method": "GET",
+      "path": "/api/admin/service-categories",
+      "authRequired": true,
+      "description": "Get all service categories with pagination (admin)",
+      "queryParameters": [
+        {
+          "name": "page",
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "description": "Page number"
+        },
+        {
+          "name": "per_page",
+          "type": "integer",
+          "required": false,
+          "default": 15,
+          "max": 100,
+          "description": "Items per page"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "required": false,
+          "description": "Filter by active status"
+        }
+      ],
+      "exampleRequest": {
+        "url": "/api/admin/service-categories?page=1&per_page=15",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "data": {
+            "data": [],
+            "current_page": 1,
+            "per_page": 15,
+            "total": 0,
+            "last_page": 1,
+            "from": null,
+            "to": null
+          }
+        }
+      }
+    },
+    {
+      "name": "Get Single Service Category (Admin)",
+      "method": "GET",
+      "path": "/api/admin/service-categories/{id}",
+      "authRequired": true,
+      "description": "Get single service category (admin)",
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "description": "Category ID"
+        }
+      ],
+      "exampleRequest": {
+        "url": "/api/admin/service-categories/1",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        }
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "data": {
+            "id": 1,
+            "title": "Building & Trades Services",
+            "image": "service_categories/abc123.jpg",
+            "image_url": "https://colala.hmstech.xyz/storage/service_categories/abc123.jpg",
+            "is_active": true,
+            "services_count": 45,
+            "services": [],
+            "created_at": "2025-01-15T10:30:00.000000Z",
+            "updated_at": "2025-01-15T10:30:00.000000Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create Service Category",
+      "method": "POST",
+      "path": "/api/admin/service-categories",
+      "authRequired": true,
+      "description": "Create a new service category",
+      "contentType": "multipart/form-data",
+      "requestBody": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string",
+            "required": true,
+            "maxLength": 255,
+            "description": "Category title"
+          },
+          {
+            "name": "image",
+            "type": "file",
+            "required": false,
+            "allowedTypes": ["image/jpeg", "image/jpg", "image/png"],
+            "maxSize": "5MB",
+            "description": "Category image"
+          },
+          {
+            "name": "is_active",
+            "type": "boolean",
+            "required": false,
+            "default": true,
+            "description": "Active status"
+          }
+        ]
+      },
+      "exampleRequest": {
+        "url": "/api/admin/service-categories",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "body": {
+          "title": "New Service Category",
+          "is_active": true,
+          "image": "[FILE]"
+        }
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "message": "Category created successfully.",
+          "data": {
+            "id": 26,
+            "title": "New Service Category",
+            "image": "service_categories/xyz789.jpg",
+            "image_url": "https://colala.hmstech.xyz/storage/service_categories/xyz789.jpg",
+            "is_active": true,
+            "created_at": "2025-01-20T14:30:00.000000Z",
+            "updated_at": "2025-01-20T14:30:00.000000Z"
+          }
+        }
+      },
+      "errorResponses": [
+        {
+          "statusCode": 422,
+          "body": {
+            "status": false,
+            "message": "The title field is required."
+          }
+        },
+        {
+          "statusCode": 401,
+          "body": {
+            "message": "Unauthenticated."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Service Category",
+      "method": "PUT",
+      "path": "/api/admin/service-categories/{id}",
+      "authRequired": true,
+      "description": "Update an existing service category",
+      "contentType": "multipart/form-data",
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "description": "Category ID"
+        }
+      ],
+      "requestBody": {
+        "fields": [
+          {
+            "name": "title",
+            "type": "string",
+            "required": true,
+            "maxLength": 255,
+            "description": "Category title"
+          },
+          {
+            "name": "image",
+            "type": "file",
+            "required": false,
+            "allowedTypes": ["image/jpeg", "image/jpg", "image/png"],
+            "maxSize": "5MB",
+            "description": "Category image (old image will be deleted)"
+          },
+          {
+            "name": "is_active",
+            "type": "boolean",
+            "required": false,
+            "description": "Active status"
+          }
+        ]
+      },
+      "exampleRequest": {
+        "url": "/api/admin/service-categories/1",
+        "method": "PUT",
+        "headers": {
+          "Authorization": "Bearer {token}"
+        },
+        "body": {
+          "title": "Updated Category Name",
+          "is_active": true,
+          "image": "[FILE]"
+        }
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "message": "Category updated successfully.",
+          "data": {
+            "id": 1,
+            "title": "Updated Category Name",
+            "image": "service_categories/new-abc123.jpg",
+            "image_url": "https://colala.hmstech.xyz/storage/service_categories/new-abc123.jpg",
+            "is_active": true,
+            "created_at": "2025-01-15T10:30:00.000000Z",
+            "updated_at": "2025-01-20T15:45:00.000000Z"
+          }
+        }
+      },
+      "errorResponses": [
+        {
+          "statusCode": 404,
+          "body": {
+            "status": false,
+            "message": "No query results for model [App\\Models\\ServiceCategory] 999"
+          }
+        },
+        {
+          "statusCode": 422,
+          "body": {
+            "status": false,
+            "message": "The title field is required."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Service Category",
+      "method": "DELETE",
+      "path": "/api/admin/service-categories/{id}",
+      "authRequired": true,
+      "description": "Delete a service category",
+      "pathParameters": [
+        {
+          "name": "id",
+          "type": "integer",
+          "required": true,
+          "description": "Category ID"
+        }
+      ],
+      "exampleRequest": {
+        "url": "/api/admin/service-categories/1",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": "Bearer {token}",
+          "Content-Type": "application/json"
+        }
+      },
+      "successResponse": {
+        "statusCode": 200,
+        "body": {
+          "status": true,
+          "message": "Category deleted successfully.",
+          "data": null
+        }
+      },
+      "errorResponses": [
+        {
+          "statusCode": 404,
+          "body": {
+            "status": false,
+            "message": "No query results for model [App\\Models\\ServiceCategory] 999"
+          }
+        },
+        {
+          "statusCode": 401,
+          "body": {
+            "message": "Unauthenticated."
+          }
+        }
+      ]
+    }
+  ],
+  "dataModels": {
+    "ServiceCategory": {
+      "id": "number",
+      "title": "string",
+      "image": "string | null",
+      "image_url": "string | null",
+      "is_active": "boolean",
+      "services_count": "number (optional)",
+      "services": "Service[] (optional)",
+      "created_at": "string (ISO 8601)",
+      "updated_at": "string (ISO 8601)"
+    },
+    "PaginationMeta": {
+      "current_page": "number",
+      "per_page": "number",
+      "total": "number",
+      "last_page": "number",
+      "from": "number | null",
+      "to": "number | null"
+    }
+  },
+  "errorCodes": [
+    {
+      "code": 200,
+      "description": "Success"
+    },
+    {
+      "code": 401,
+      "description": "Unauthorized - Missing or invalid token"
+    },
+    {
+      "code": 404,
+      "description": "Not Found - Resource doesn't exist"
+    },
+    {
+      "code": 422,
+      "description": "Validation Error - Invalid request data"
+    },
+    {
+      "code": 500,
+      "description": "Internal Server Error"
+    }
+  ],
+  "validationRules": {
+    "create": {
+      "title": {
+        "required": true,
+        "type": "string",
+        "maxLength": 255
+      },
+      "image": {
+        "required": false,
+        "type": "file",
+        "allowedTypes": ["image/jpeg", "image/jpg", "image/png"],
+        "maxSize": "5MB"
+      },
+      "is_active": {
+        "required": false,
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "update": {
+      "title": {
+        "required": true,
+        "type": "string",
+        "maxLength": 255
+      },
+      "image": {
+        "required": false,
+        "type": "file",
+        "allowedTypes": ["image/jpeg", "image/jpg", "image/png"],
+        "maxSize": "5MB"
+      },
+      "is_active": {
+        "required": false,
+        "type": "boolean"
+      }
+    }
+  },
+  "codeExamples": {
+    "javascript": {
+      "getAll": "fetch('https://colala.hmstech.xyz/api/service-categories?page=1&per_page=15').then(r => r.json())",
+      "create": "const formData = new FormData(); formData.append('title', 'New Category'); formData.append('image', file); fetch('https://colala.hmstech.xyz/api/admin/service-categories', { method: 'POST', headers: { 'Authorization': 'Bearer token' }, body: formData })",
+      "update": "const formData = new FormData(); formData.append('title', 'Updated'); fetch('https://colala.hmstech.xyz/api/admin/service-categories/1', { method: 'PUT', headers: { 'Authorization': 'Bearer token' }, body: formData })",
+      "delete": "fetch('https://colala.hmstech.xyz/api/admin/service-categories/1', { method: 'DELETE', headers: { 'Authorization': 'Bearer token' } })"
+    },
+    "curl": {
+      "getAll": "curl 'https://colala.hmstech.xyz/api/service-categories?page=1&per_page=15'",
+      "create": "curl -X POST 'https://colala.hmstech.xyz/api/admin/service-categories' -H 'Authorization: Bearer token' -F 'title=New Category' -F 'image=@image.jpg'",
+      "update": "curl -X PUT 'https://colala.hmstech.xyz/api/admin/service-categories/1' -H 'Authorization: Bearer token' -F 'title=Updated'",
+      "delete": "curl -X DELETE 'https://colala.hmstech.xyz/api/admin/service-categories/1' -H 'Authorization: Bearer token'"
+    }
+  }
+}
+
