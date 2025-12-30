@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\SavedCardController;
 use App\Http\Controllers\Api\SellerAnalyticsController;
 use App\Http\Controllers\Api\AddOnServiceController;
 use App\Http\Controllers\Api\AddOnServiceChatController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SellerLoyaltyController;
 use App\Http\Controllers\Api\SellerEscrowController;
 use App\Http\Controllers\Api\BulkProductUploadController;
@@ -40,6 +41,8 @@ use App\Http\Controllers\Api\Seller\SellerReviewReplyController;
 use App\Http\Controllers\Api\Seller\SellerDisputeController;
 
 Route::prefix('seller')->group(function () {
+    Route::post('/login', [AuthController::class, 'sellerLogin']);
+
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
     Route::post('register/{storeId}/step2', [SellerRegistrationController::class, 'registerStep2']);
     Route::post('register/{storeId}/step3', [SellerRegistrationController::class, 'registerStep3']);

@@ -33,6 +33,19 @@ class AuthController extends Controller
         $this->userService = $userService;
         $this->walletService = $walletService;
     }
+    public function sellerLogin(Request $request)
+    {
+        try {
+            $data = $request->all();
+            $user = $this->userService->sellerLogin($data);
+            $token = $user->createToken('auth_token')->plainTextToken;
+            return ResponseHelper::success($user, "Seller login successfully");
+        }
+        catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
     public function register(RegisterRequest $registerRequest)
     {
 

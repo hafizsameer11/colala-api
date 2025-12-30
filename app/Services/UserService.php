@@ -57,6 +57,17 @@ public function createUserCode()
         throw new \Exception('Password is incorrect');
         // return User::where('email', $data['email'])->first();
     }
+    public function sellerLogin($data){
+        $user=User::where('email', $data['email'])->where('role', 'seller')->first();
+        if(!$user){
+            throw new \Exception('You are not a seller');
+        }
+        //now match password
+        if($user && Hash::check($data['password'], $user->password)){
+            return $user->load('wallet');
+        }
+        throw new \Exception('Password is incorrect');
+    }
     public function forgetPassword($email){
         $user=User::where('email', $email)->first();
         if(!$user){
