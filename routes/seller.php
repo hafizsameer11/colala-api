@@ -41,7 +41,7 @@ use App\Http\Controllers\Api\Seller\SellerReviewReplyController;
 use App\Http\Controllers\Api\Seller\SellerDisputeController;
 
 Route::prefix('seller')->group(function () {
-    Route::post('/login', [AuthController::class, 'sellerLogin']);
+    Route::post('/login', [AuthController::class, 'sellerLoginNormal']);
 
     Route::post('register/step1', [SellerRegistrationController::class, 'registerStep1']);
     Route::post('register/{storeId}/step2', [SellerRegistrationController::class, 'registerStep2']);

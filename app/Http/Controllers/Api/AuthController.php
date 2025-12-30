@@ -114,6 +114,38 @@ class AuthController extends Controller
             return ResponseHelper::error($e->getMessage());
         }
     }
+    public function sellerLoginNormal(LoginRequest $loginRequest)
+    {
+        try {
+            $data = $loginRequest->validated();
+            $user = $this->userService->sellerLogin($data);
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $activity = ActivityHelper::log($user->id, "user login");
+            $respone =
+                [
+                    'user' => $user,
+                    'store' => $user->store,
+                    'token' => $token
+                ];
+            //check if user have wallet otherwise creste wallet
+            if (!$user->wallet) {
+                $wallet = $this->walletService->create(['user_id' => $user->id]);
+            }
+
+            // Send login notification (in-app + push)
+            UserNotificationHelper::notify(
+                $user->id,
+                'Login Successful',
+                'You have successfully logged in to your account.',
+                ['type' => 'login', 'timestamp' => now()->toIso8601String()]
+            );
+
+            return ResponseHelper::success($respone, "user login successfully");
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage());
+        }
+    }
     public function adminLogin(LoginRequest $loginRequest)
     {
         try {
