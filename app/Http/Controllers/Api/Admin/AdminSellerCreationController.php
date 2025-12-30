@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Mail\WelcomeSellerMail;
 use App\Models\User;
 use App\Models\Store;
@@ -962,12 +963,28 @@ class AdminSellerCreationController extends Controller
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
 
-            $store = Store::findOrFail($request->store_id);
+            $store = Store::with('user')->findOrFail($request->store_id);
             
             // Find the onboarding step
             $step = StoreOnboardingStep::where('store_id', $store->id)
                 ->where('key', $request->field_key)
                 ->firstOrFail();
+
+            // Field key to human-readable name mapping
+            $fieldNames = [
+                'level1.basic' => 'Basic Information',
+                'level1.profile_media' => 'Profile & Banner Images',
+                'level1.categories_social' => 'Categories & Social Links',
+                'level2.business_details' => 'Business Details',
+                'level2.documents' => 'Business Documents',
+                'level3.physical_store' => 'Physical Store Information',
+                'level3.utility_bill' => 'Utility Bill',
+                'level3.addresses' => 'Store Addresses',
+                'level3.delivery_pricing' => 'Delivery Pricing',
+                'level3.theme' => 'Theme Color',
+            ];
+
+            $fieldName = $fieldNames[$request->field_key] ?? $request->field_key;
 
             // Update step to rejected status with reason
             $step->update([
@@ -986,6 +1003,25 @@ class AdminSellerCreationController extends Controller
             $store->update([
                 'onboarding_percent' => $percent,
             ]);
+
+            // Send notification to seller
+            if ($store->user) {
+                $title = 'Onboarding Field Rejected';
+                $content = "Your {$fieldName} has been rejected. Reason: {$request->rejection_reason}. Please review and resubmit.";
+                
+                UserNotificationHelper::notify(
+                    $store->user->id,
+                    $title,
+                    $content,
+                    [
+                        'type' => 'onboarding_field_rejected',
+                        'store_id' => $store->id,
+                        'field_key' => $request->field_key,
+                        'field_name' => $fieldName,
+                        'rejection_reason' => $request->rejection_reason,
+                    ]
+                );
+            }
 
             return ResponseHelper::success([
                 'store_id' => $store->id,
