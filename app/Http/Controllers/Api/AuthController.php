@@ -21,6 +21,8 @@ use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -359,6 +361,9 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Delete user account (old method - kept for backward compatibility)
+     */
     public function deleteAccount($id)
     {
         try {
@@ -381,6 +386,105 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete authenticated user's own account
+     */
+    public function deleteMyAccount(Request $request)
+    {
+        try {
+            $user = $request->user();
+            
+            if (!$user) {
+                return ResponseHelper::error('User not authenticated', 401);
+            }
+
+            DB::beginTransaction();
+
+            // Check if user has active orders or transactions
+            $hasActiveOrders = $user->orders()
+                ->whereIn('payment_status', ['pending', 'paid'])
+                ->exists();
+            
+            // Check store orders if user is a seller
+            if ($user->store) {
+                $hasActiveOrders = $hasActiveOrders || $user->store->orders()
+                    ->whereIn('status', ['pending', 'accepted', 'processing', 'out_for_delivery'])
+                    ->exists();
+            }
+
+            $hasTransactions = $user->transactions()
+                ->whereIn('status', ['pending', 'successful'])
+                ->exists();
+
+            // If user has active orders or transactions, deactivate instead of delete
+            if ($hasActiveOrders || $hasTransactions) {
+                // Deactivate account
+                $user->update(['is_active' => false]);
+                
+                // Hide store and related items if seller
+                if ($user->store) {
+                    $store = $user->store;
+                    $store->update(['visibility' => 0]);
+                    
+                    // Hide products
+                    Product::where('store_id', $store->id)->update(['visibility' => 0]);
+                    
+                    // Hide services
+                    Service::where('store_id', $store->id)->update(['visibility' => 0]);
+                }
+
+                // Revoke all tokens
+                $user->tokens()->delete();
+
+                DB::commit();
+
+                return ResponseHelper::success(null, 'Account deactivated successfully. Your account has been deactivated due to active orders or transactions.');
+            }
+
+            // If no active orders/transactions, proceed with soft delete
+            // Delete profile picture if exists
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+
+            // Handle store if user is a seller
+            if ($user->store) {
+                $store = $user->store;
+                
+                // Delete store images
+                if ($store->profile_image) {
+                    Storage::disk('public')->delete($store->profile_image);
+                }
+                if ($store->banner_image) {
+                    Storage::disk('public')->delete($store->banner_image);
+                }
+
+                // Hide store and related items
+                $store->update(['visibility' => 0]);
+                Product::where('store_id', $store->id)->update(['visibility' => 0]);
+                Service::where('store_id', $store->id)->update(['visibility' => 0]);
+            }
+
+            // Revoke all tokens before deletion
+            $user->tokens()->delete();
+
+            // Soft delete user (cascade will handle related records)
+            $user->delete();
+
+            DB::commit();
+
+            return ResponseHelper::success(null, 'Account deleted successfully');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Account deletion error: ' . $e->getMessage(), [
+                'user_id' => $request->user()?->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return ResponseHelper::error('Failed to delete account: ' . $e->getMessage(), 500);
         }
     }
 }
