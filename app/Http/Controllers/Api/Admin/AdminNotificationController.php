@@ -8,9 +8,11 @@ use App\Models\SystemPushNotification;
 use App\Models\SystemNotificationRecipient;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\ExpoNotificationService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -142,16 +144,22 @@ class AdminNotificationController extends Controller
             // Get target users based on audience type
             $targetUsers = $this->getTargetUsers($notification);
 
-            // Create recipient records
+            // Send Expo push notifications
+            $expoService = new ExpoNotificationService();
+            $sentCount = 0;
+            $failedCount = 0;
+
+            // Create recipient records and send notifications in a single loop
             foreach ($targetUsers as $user) {
-                SystemNotificationRecipient::create([
+                // Create recipient record
+                $recipient = SystemNotificationRecipient::create([
                     'notification_id' => $notification->id,
                     'user_id' => $user->id,
                     'delivery_status' => 'pending',
-                    'device_token' => $user->device_token ?? null,
+                    'device_token' => $user->expo_push_token ?? null,
                 ]);
 
-                // Create user notification record
+                // Create user notification record (in-app notification)
                 UserNotification::create([
                     'user_id' => $user->id,
                     'title' => $notification->title,
@@ -164,6 +172,44 @@ class AdminNotificationController extends Controller
                     ],
                     'is_read' => false,
                 ]);
+
+                // Send Expo push notification if user has expo_push_token
+                if (!empty($user->expo_push_token)) {
+                    try {
+                        $pushData = [
+                            'notification_id' => $notification->id,
+                            'type' => 'system_push',
+                            'link' => $notification->link,
+                            'attachment' => $notification->attachment_url,
+                        ];
+
+                        $expoService->sendNotification(
+                            $user->expo_push_token,
+                            $notification->title,
+                            $notification->message,
+                            $pushData
+                        );
+
+                        // Update recipient delivery status to delivered
+                        $recipient->update(['delivery_status' => 'delivered']);
+                        $sentCount++;
+                    } catch (\Exception $e) {
+                        // Update recipient delivery status to failed
+                        $recipient->update([
+                            'delivery_status' => 'failed',
+                            'failure_reason' => $e->getMessage()
+                        ]);
+
+                        Log::error('Failed to send Expo push notification to user ' . $user->id . ': ' . $e->getMessage());
+                        $failedCount++;
+                    }
+                } else {
+                    // User doesn't have expo_push_token
+                    $recipient->update([
+                        'delivery_status' => 'pending',
+                        'failure_reason' => 'No Expo push token available'
+                    ]);
+                }
             }
 
             // Update notification status
@@ -172,13 +218,21 @@ class AdminNotificationController extends Controller
                 'sent_at' => now(),
             ]);
 
-            // Here you would integrate with your push notification service (FCM, APNs, etc.)
-            // $this->sendPushNotification($notification, $targetUsers);
+            Log::info("Push notification sent", [
+                'notification_id' => $notification->id,
+                'total_recipients' => count($targetUsers),
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount
+            ]);
 
             return true;
 
         } catch (Exception $e) {
             $notification->update(['status' => 'failed']);
+            Log::error('Failed to send notification: ' . $e->getMessage(), [
+                'notification_id' => $notification->id,
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }
@@ -190,18 +244,32 @@ class AdminNotificationController extends Controller
     {
         switch ($notification->audience_type) {
             case 'all':
-                return User::where('is_active', true)->get();
+                return User::select('id', 'full_name', 'email', 'expo_push_token', 'role', 'is_active')
+                    ->where('is_active', true)
+                    ->get();
             
             case 'buyers':
-                return User::where('role', 'buyer')->where('is_active', true)->get();
+                return User::select('id', 'full_name', 'email', 'expo_push_token', 'role', 'is_active')
+                    ->where(function ($q) {
+                        $q->where('role', 'buyer')
+                          ->orWhereNull('role')
+                          ->orWhere('role', '');
+                    })
+                    ->where('is_active', true)
+                    ->whereDoesntHave('store') // Exclude sellers
+                    ->get();
             
             case 'sellers':
-                return User::where('role', 'seller')->where('is_active', true)->get();
+                return User::select('id', 'full_name', 'email', 'expo_push_token', 'role', 'is_active')
+                    ->where('role', 'seller')
+                    ->where('is_active', true)
+                    ->get();
             
             case 'specific':
-                return User::whereIn('id', $notification->target_user_ids ?? [])
-                          ->where('is_active', true)
-                          ->get();
+                return User::select('id', 'full_name', 'email', 'expo_push_token', 'role', 'is_active')
+                    ->whereIn('id', $notification->target_user_ids ?? [])
+                    ->where('is_active', true)
+                    ->get();
             
             default:
                 return collect();
