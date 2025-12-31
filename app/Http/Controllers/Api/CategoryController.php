@@ -45,8 +45,38 @@ class CategoryController extends Controller
 {
     try {
         $categories = Category::with('children')->withCount('products')->whereNull('parent_id')->orderBy('created_at', 'desc')->get();
+        
+        // Reorder to put "service" or "services" category second
+        $serviceCategory = $categories->first(function ($category) {
+            return stripos($category->title ?? '', 'service') !== false;
+        });
+        
+        if ($serviceCategory && $categories->count() > 1) {
+            // Remove service category from its current position
+            $otherCategories = $categories->reject(function ($category) use ($serviceCategory) {
+                return $category->id === $serviceCategory->id;
+            })->values();
+            
+            // Build new collection: first item, then service, then rest
+            $reordered = collect();
+            
+            // Add first category (keep it first)
+            if ($otherCategories->count() > 0) {
+                $reordered->push($otherCategories->first());
+            }
+            
+            // Add service category second
+            $reordered->push($serviceCategory);
+            
+            // Add remaining categories
+            if ($otherCategories->count() > 1) {
+                $reordered = $reordered->concat($otherCategories->slice(1));
+            }
+            
+            $categories = $reordered;
+        }
     
-        return ResponseHelper::success($categories);
+        return ResponseHelper::success($categories->values());
     } catch(Exception $e) {
         Log::error($e->getMessage());
         return ResponseHelper::error($e->getMessage());
