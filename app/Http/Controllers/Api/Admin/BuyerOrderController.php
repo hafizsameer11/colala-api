@@ -38,7 +38,13 @@ class BuyerOrderController extends Controller
                 'chat'
             ])->whereHas('order', function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers (users with stores)
                 });
             });
 
@@ -84,23 +90,23 @@ class BuyerOrderController extends Controller
             $storeOrders = $query->latest()->paginate(15);
 
             // Get comprehensive summary stats
-            $totalStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
+            $buyerOrderQuery = function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 });
-            })->count();
+            };
             
-            $pendingStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
-                $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
-                });
-            })->whereIn('status', ['pending', 'order_placed', 'processing'])->count();
-            
-            $completedStoreOrders = StoreOrder::whereHas('order', function ($orderQuery) {
-                $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
-                });
-            })->where('status', 'completed')->count();
+            $totalStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)->count();
+            $pendingStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)
+                ->whereIn('status', ['pending', 'pending_acceptance', 'order_placed', 'processing'])->count();
+            $completedStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)
+                ->where('status', 'completed')->count();
 
             $storeOrders->getCollection()->transform(function ($storeOrder) {
                 $firstItem = $storeOrder->items->first();
@@ -236,7 +242,13 @@ class BuyerOrderController extends Controller
                 'storeOrders.store',
                 'storeOrders.orderTracking'
             ])->whereHas('user', function ($q) {
-                $q->withoutGlobalScopes()->where('role', 'buyer');
+                $q->withoutGlobalScopes()
+                    ->where(function ($query) {
+                        $query->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                    })
+                    ->whereDoesntHave('store'); // Exclude sellers
             });
 
             $status = $request->get('status', 'all');
@@ -335,7 +347,13 @@ class BuyerOrderController extends Controller
                 $message = "Orders marked as disputed";
             } else {
                 Order::whereHas('user', function ($q) {
-                    $q->withoutGlobalScopes()->where('role', 'buyer');
+                    $q->withoutGlobalScopes()
+                        ->where(function ($query) {
+                            $query->where('role', 'buyer')
+                                  ->orWhereNull('role')
+                                  ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 })->whereIn('id', $orderIds)->delete();
                 $message = "Orders deleted successfully";
             }
@@ -371,7 +389,13 @@ class BuyerOrderController extends Controller
                 'chat.messages'
             ])->whereHas('order', function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 });
             })->findOrFail($storeOrderId);
             
@@ -528,7 +552,13 @@ class BuyerOrderController extends Controller
 
             $storeOrder = StoreOrder::whereHas('order', function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 });
             })->findOrFail($storeOrderId);
 
@@ -574,7 +604,13 @@ class BuyerOrderController extends Controller
                 'orderTracking'
             ])->whereHas('order', function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()->where('role', 'buyer');
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 });
             })->findOrFail($storeOrderId);
             
