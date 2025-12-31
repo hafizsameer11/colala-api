@@ -48,7 +48,7 @@ class CategoryController extends Controller
         
         // Reorder to put "service" or "services" category second
         $serviceCategory = $categories->first(function ($category) {
-            return stripos($category->title ?? '', 'service') !== false;
+            return stripos($category->title ?? '', 'Services') !== false;
         });
         
         if ($serviceCategory && $categories->count() > 1) {
