@@ -73,10 +73,20 @@ public function createUserCode()
         if(!$user){
             throw new \Exception('Email is not registered');
         }
+        
+        // Prevent sending OTP too frequently (within last 60 seconds)
+        // Check if user was updated recently (assuming OTP updates the user)
+        if($user->updated_at && $user->updated_at->diffInSeconds(now()) < 60 && $user->otp){
+            throw new \Exception('Please wait 60 seconds before requesting a new OTP. Check your email.');
+        }
+        
         $otp=rand(1000,9999);
         $user->otp=$otp;
         $user->save();
+        
+        // Send email immediately (OtpMail no longer implements ShouldQueue to prevent duplicates)
         Mail::to($user->email)->send(new OtpMail($otp));
+        
         return $user;
     }
     public function verifyOtp($email, $otp){
