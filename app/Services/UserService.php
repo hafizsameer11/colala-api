@@ -58,7 +58,7 @@ public function createUserCode()
         // return User::where('email', $data['email'])->first();
     }
     public function sellerLogin($data){
-        $user=User::where('email', $data['email'])->where('role', 'seller')->first();
+        $user=User::where('email', $data['email'])->whereNotNull('role')->where('role', '!=', 'admin')->first();
         if(!$user){
             throw new \Exception('You are not a seller');
         }
