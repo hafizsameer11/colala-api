@@ -532,15 +532,21 @@ class SellerOnboardingController extends Controller
     /** One-shot summary for dashboard/profile screens */
     public function overview(Request $req)
     {
+        // Try to get store from user's direct relationship (store owner)
         $store = $req->user()->store;
-        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        
+        // If user is not the owner, check StoreUser table (staff/manager)
         if(!$store){
-            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            $storeUser = StoreUser::where('user_id', $req->user()->id)->first();
             if($storeUser){
                 $store = $storeUser->store;
+            } else {
+                abort(404, 'Store not found');
             }
         }
-        $store = $req->user()->store()->with([
+        
+        // Load relationships on the store object we found
+        $store = Store::with([
             'businessDetails',
             'addresses',
             'deliveryPricing',
@@ -548,7 +554,7 @@ class SellerOnboardingController extends Controller
             'categories:id,title,image',
             'banners',
             'announcements'
-        ])->firstOrFail();
+        ])->findOrFail($store->id);
         $products = Product::where('store_id', $store->id)->with('images', 'reviews')->get();
         $posts = Post::where('user_id', $store->user_id)->latest()->get();
         $services = Service::where('store_id', $store->id)->with('media')->get();
