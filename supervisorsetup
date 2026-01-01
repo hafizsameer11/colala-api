@@ -1,0 +1,1 @@
+tail -f /var/www/colala-api/storage/logs/queue.log

@@ -36,7 +36,8 @@
 
     FlutterwaveCheckout({
 
-      public_key: "FLWPUBK-cc981d6d99b2b94d08c7cccd8a9e5dcf-X",
+      // public_key: "FLWPUBK-cc981d6d99b2b94d08c7cccd8a9e5dcf-X",
+      public_key: "7eb4ed4e-e8f3-4afe-aa4b-2f0db5693949",
 
       // public_key: "FLWPUBK_TEST-dd1514f7562b1d623c4e63fb58b6aedb-X",
 
