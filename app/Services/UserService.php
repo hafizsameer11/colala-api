@@ -59,7 +59,7 @@ public function createUserCode()
     }
     public function sellerLogin($data){
         $user=User::where('email', $data['email'])->whereNotNull('role')->where('role', '!=', 'admin')->first();
-        if(!$user){
+    if(!$user){
             throw new \Exception('You are not a seller');
         }
         //now match password

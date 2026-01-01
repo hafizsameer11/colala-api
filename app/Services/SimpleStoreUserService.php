@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Store;
+use App\Models\StoreUser;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,17 @@ class SimpleStoreUserService
         $existingUser = User::where('email', $data['email'])->first();
         
         if ($existingUser) {
+            // Check if user is already in this store
+            $existingStoreUser = StoreUser::where('store_id', $storeId)
+                ->where('user_id', $existingUser->id)
+                ->first();
+                
+            if ($existingStoreUser) {
+                throw ValidationException::withMessages([
+                    'email' => 'User is already a member of this store.'
+                ]);
+            }
+            
             // Check if user is already in a store
             if ($existingUser->store_id) {
                 throw ValidationException::withMessages([
@@ -68,6 +80,21 @@ class SimpleStoreUserService
                 'role'=>$data['role'],
             ]);
         }
+
+        // Create StoreUser record
+        $storeUser = StoreUser::updateOrCreate(
+            [
+                'store_id' => $storeId,
+                'user_id' => $user->id,
+            ],
+            [
+                'role' => $data['role'] ?? 'staff',
+                'permissions' => $data['permissions'] ?? [],
+                'is_active' => true,
+                'joined_at' => now(),
+                'invited_by' => Auth::id(),
+            ]
+        );
 
         return [
             'id' => $user->id,
