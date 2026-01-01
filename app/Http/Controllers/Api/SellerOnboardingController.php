@@ -26,6 +26,27 @@ class SellerOnboardingController extends Controller
 {
     /* ---------------- Helpers ---------------- */
 
+    /**
+     * Get store for authenticated user (supports both owner and StoreUser)
+     */
+    private function getStore($user): Store
+    {
+        // Try to get store from user's direct relationship (store owner)
+        $store = $user->store;
+        
+        // If user is not the owner, check StoreUser table (staff/manager)
+        if (!$store) {
+            $storeUser = StoreUser::where('user_id', $user->id)->first();
+            if ($storeUser) {
+                $store = $storeUser->store;
+            } else {
+                abort(404, 'Store not found');
+            }
+        }
+        
+        return $store;
+    }
+
     private function markDone(Store $store, int $level, string $key): void
     {
         StoreOnboardingStep::updateOrCreate(
@@ -474,7 +495,7 @@ class SellerOnboardingController extends Controller
     /* ---------------- Progress + Submit ---------------- */
    public function progress(Request $request)
 {
-    $store = $request->user()->store;
+    $store = $this->getStore($request->user());
 
     // Fetch steps and ignore 'delivery_pricing'
     $steps = StoreOnboardingStep::where('store_id', $store->id)
@@ -517,7 +538,7 @@ class SellerOnboardingController extends Controller
 
     public function submitForReview(Request $request)
     {
-        $store = $request->user()->store;
+        $store = $this->getStore($request->user());
         $store->update(['onboarding_status' => 'pending_review']);
         return $this->ok($store, 'Submitted for review');
     }
@@ -532,18 +553,8 @@ class SellerOnboardingController extends Controller
     /** One-shot summary for dashboard/profile screens */
     public function overview(Request $req)
     {
-        // Try to get store from user's direct relationship (store owner)
-        $store = $req->user()->store;
-        
-        // If user is not the owner, check StoreUser table (staff/manager)
-        if(!$store){
-            $storeUser = StoreUser::where('user_id', $req->user()->id)->first();
-            if($storeUser){
-                $store = $storeUser->store;
-            } else {
-                abort(404, 'Store not found');
-            }
-        }
+        // Get store using helper (supports both owner and StoreUser)
+        $store = $this->getStore($req->user());
         
         // Load relationships on the store object we found
         $store = Store::with([
@@ -617,7 +628,8 @@ class SellerOnboardingController extends Controller
     /** Level 1 edit screen: images + categories + socials */
     public function level1Data(Request $req)
     {
-        $store = $req->user()->store()->with(['socialLinks', 'categories:id'])->firstOrFail();
+        $store = $this->getStore($req->user());
+        $store->load(['socialLinks', 'categories:id']);
 
         return response()->json([
             'status' => true,
@@ -631,7 +643,8 @@ class SellerOnboardingController extends Controller
     /** Level 2 edit screen: business text + doc urls */
     public function level2Data(Request $req)
     {
-        $store = $req->user()->store()->with('businessDetails')->firstOrFail();
+        $store = $this->getStore($req->user());
+        $store->load('businessDetails');
         $b = $store->businessDetails;
 
         return response()->json([
@@ -651,7 +664,8 @@ class SellerOnboardingController extends Controller
     /** Level 3 edit screen: physical store flag/video + utility + lists + theme */
     public function level3Data(Request $req)
     {
-        $store = $req->user()->store()->with(['businessDetails', 'addresses', 'deliveryPricing'])->firstOrFail();
+        $store = $this->getStore($req->user());
+        $store->load(['businessDetails', 'addresses', 'deliveryPricing']);
         $b = $store->businessDetails;
 
         return response()->json([
@@ -670,7 +684,7 @@ class SellerOnboardingController extends Controller
     /** Lists for modals/pickers */
     public function listAddresses(Request $req)
     {
-        $store = $req->user()->store;
+        $store = $this->getStore($req->user());
         return response()->json([
             'status' => true,
             'items' => $store->addresses()->orderByDesc('is_main')->get(['id', 'state', 'local_government', 'full_address', 'is_main', 'opening_hours'])
@@ -679,7 +693,7 @@ class SellerOnboardingController extends Controller
 
     public function listDelivery(Request $req)
     {
-        $store = $req->user()->store;
+        $store = $this->getStore($req->user());
         return response()->json([
             'status' => true,
             'items' => $store->deliveryPricing()->get(['id', 'state', 'local_government', 'variant', 'price', 'is_free'])
@@ -688,7 +702,7 @@ class SellerOnboardingController extends Controller
 
     public function listSocialLinks(Request $req)
     {
-        $store = $req->user()->store;
+        $store = $this->getStore($req->user());
         return response()->json([
             'status' => true,
             'items' => $store->socialLinks()->get(['id', 'type', 'url'])
@@ -697,7 +711,8 @@ class SellerOnboardingController extends Controller
 
     public function listSelectedCategories(Request $req)
     {
-        $store = $req->user()->store()->with('categories:id,title')->firstOrFail();
+        $store = $this->getStore($req->user());
+        $store->load('categories:id,title');
         return response()->json([
             'status' => true,
             'selected' => $store->categories->map->only(['id', 'title'])
