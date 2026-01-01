@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
-use App\Models\{StoreVisitor, Store, Chat};
+use App\Models\{StoreVisitor, Store, Chat, StoreUser};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +21,14 @@ class SellerVisitorController extends Controller
             $user = Auth::user();
             
             // Get seller's store
-            $store = Store::where('user_id', $user->id)->first();
+            $store = $user->store;
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if (!$store) {
+                $storeUser = StoreUser::where('user_id', $user->id)->first();
+                if ($storeUser) {
+                    $store = $storeUser->store;
+                }
+            }
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
             }
@@ -175,7 +182,14 @@ class SellerVisitorController extends Controller
             $user = Auth::user();
             
             // Get seller's store
-            $store = Store::where('user_id', $user->id)->first();
+            $store = $user->store;
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if (!$store) {
+                $storeUser = StoreUser::where('user_id', $user->id)->first();
+                if ($storeUser) {
+                    $store = $storeUser->store;
+                }
+            }
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
             }
@@ -242,7 +256,14 @@ class SellerVisitorController extends Controller
             $user = Auth::user();
             
             // Get seller's store
-            $store = Store::where('user_id', $user->id)->first();
+            $store = $user->store;
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if (!$store) {
+                $storeUser = StoreUser::where('user_id', $user->id)->first();
+                if ($storeUser) {
+                    $store = $storeUser->store;
+                }
+            }
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
             }

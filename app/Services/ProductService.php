@@ -397,6 +397,16 @@ class ProductService
     public function markAsUnavailable($id)
     {
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
+        //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+        if(!$storeId){
+            $storeUser = StoreUser::where('user_id', Auth::user()->id)->first();
+            if($storeUser){
+                $storeId = $storeUser->store_id;
+            }
+        }
+        if(!$storeId){
+            throw new Exception('Store not found');
+        }
         
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([

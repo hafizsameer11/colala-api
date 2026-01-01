@@ -13,6 +13,7 @@ use App\Models\StoreReview;
 use App\Models\ProductStat;
 use App\Models\ServiceStat;
 use App\Models\LoyaltyPoint;
+use App\Models\StoreUser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,14 @@ class SellerAnalyticsController extends Controller
     {
         try {
             $user = $request->user();
-            $store = Store::where('user_id', $user->id)->first();
+            $store = $user->store;
+            //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
+            if (!$store) {
+                $storeUser = StoreUser::where('user_id', $user->id)->first();
+                if ($storeUser) {
+                    $store = $storeUser->store;
+                }
+            }
             
             if (!$store) {
                 return ResponseHelper::error('Store not found', 404);
