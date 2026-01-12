@@ -19,7 +19,7 @@ class ServiceCreateUpdateRequest extends FormRequest
     {
         return [
             
-            'category_id' => 'required|exists:service_categories,id',
+            'service_category_id' => 'nullable|exists:service_categories,id',
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string|max:255',
             'full_description' => 'nullable|string',
