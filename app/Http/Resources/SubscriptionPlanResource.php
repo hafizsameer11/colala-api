@@ -21,6 +21,8 @@ class SubscriptionPlanResource extends JsonResource
             'currency' => $this->currency,
             'duration_days' => $this->duration_days,
             'features' => $this->features,
+            'apple_product_id_monthly' => $this->apple_product_id_monthly,
+            'apple_product_id_annual' => $this->apple_product_id_annual,
         ];
     }
 }

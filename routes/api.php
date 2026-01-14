@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\Buyer\BuyerTermsController;
 use App\Http\Controllers\Api\Seller\SellerStoreSettingsController;
 use App\Http\Controllers\Api\UserActivityController;
 use App\Http\Controllers\PushNotificationController;
+use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\WebhookController;
 
 require __DIR__ . '/seller.php';
@@ -146,6 +147,9 @@ Route::get('/banners/active', [AdminBannerController::class, 'getActiveBanners']
 
 // Flutterwave Webhook (PUBLIC - No authentication required)
 Route::post('flutterwave/webhook', [WebhookController::class, 'flutterwave']);
+
+// Apple IAP Webhook (public, no auth required - Apple calls this)
+Route::post('seller/subscriptions/apple-webhook', [SubscriptionController::class, 'appleWebhook']);
 
 
 // ==================== PROTECTED ROUTES (AUTH REQUIRED) ====================

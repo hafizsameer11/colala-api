@@ -9,12 +9,14 @@ class Subscription extends Model
 {
     protected $fillable = [
         'store_id','plan_id','start_date','end_date',
-        'status','payment_method','payment_status','transaction_ref'
+        'status','payment_method','payment_status','transaction_ref',
+        'apple_transaction_id','apple_original_transaction_id','apple_receipt_data','is_auto_renewable'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date'   => 'date',
+        'is_auto_renewable' => 'boolean',
     ];
 
     public function plan() {

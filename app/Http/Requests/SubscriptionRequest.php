@@ -22,10 +22,21 @@ class SubscriptionRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
   public function rules(): array {
-        return [
+        $rules = [
             'plan_id'        => 'required|exists:subscription_plans,id',
-            'payment_method' => 'required|in:wallet,flutterwave,paystack',
+            'payment_method' => 'required|in:wallet,flutterwave,paystack,apple_iap',
         ];
+
+        // If payment_method is apple_iap, require additional fields
+        if ($this->input('payment_method') === 'apple_iap') {
+            $rules['receipt_data'] = 'required|string';
+            $rules['transaction_id'] = 'required|string';
+            $rules['original_transaction_id'] = 'required|string';
+            $rules['product_id'] = 'required|string';
+            $rules['billing_period'] = 'nullable|in:monthly,annual';
+        }
+
+        return $rules;
     }
     protected function failedValidation(Validator $validator)
     {

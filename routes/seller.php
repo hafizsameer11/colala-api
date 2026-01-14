@@ -124,6 +124,8 @@ Route::prefix('seller')->middleware('auth:sanctum')->group(function () {
     Route::get('/plans', [SubscriptionController::class, 'plans']);
     Route::get('/subscriptions', [SubscriptionController::class, 'mySubscriptions']);
     Route::post('/subscriptions', [SubscriptionController::class, 'subscribe']);
+    Route::post('/subscriptions/validate-receipt', [SubscriptionController::class, 'validateReceipt']);
+    Route::post('/subscriptions/restore-purchases', [SubscriptionController::class, 'restorePurchases']);
     Route::patch('/subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel']);
     Route::get('/coupons', [CouponController::class, 'index']);
     Route::post('/coupons', [CouponController::class, 'store']);

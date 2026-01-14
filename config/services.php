@@ -38,4 +38,9 @@ return [
         'vision_api_key' => env('GOOGLE_VISION_API_KEY'),
     ],
 
+    'apple' => [
+        'shared_secret' => env('APPLE_SHARED_SECRET'),
+        'use_sandbox' => env('APPLE_USE_SANDBOX', false),
+    ],
+
 ];
