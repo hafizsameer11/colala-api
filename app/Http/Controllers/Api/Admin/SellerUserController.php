@@ -24,7 +24,8 @@ class SellerUserController extends Controller
     {
         try {
             $query = User::with(['store', 'wallet'])
-                ->where('role', 'seller'); // Only sellers
+                ->where('role', 'seller')
+                ->whereHas('store'); // Only sellers with stores
 
             // Search functionality
             if ($request->has('search') && $request->search) {
@@ -53,10 +54,10 @@ class SellerUserController extends Controller
 
             $users = $query->latest()->paginate(15);
 
-            // Get summary stats (only for sellers)
-            $totalStores = User::where('role', 'seller')->count();
-            $activeStores = User::where('role', 'seller')->where('is_active', true)->count();
-            $newStores = User::where('role', 'seller')->where('created_at', '>=', now()->subMonth())->count();
+            // Get summary stats (only for sellers with stores)
+            $totalStores = User::where('role', 'seller')->whereHas('store')->count();
+            $activeStores = User::where('role', 'seller')->whereHas('store')->where('is_active', true)->count();
+            $newStores = User::where('role', 'seller')->whereHas('store')->where('created_at', '>=', now()->subMonth())->count();
 
             $users->getCollection()->transform(function ($user) {
                 $primaryStore = $user->store;
@@ -112,9 +113,9 @@ class SellerUserController extends Controller
     public function stats()
     {
         try {
-            $totalStores = User::where('role', 'seller')->count();
-            $activeStores = User::where('role', 'seller')->where('is_active', true)->count();
-            $newStores = User::where('role', 'seller')->where('created_at', '>=', now()->subMonth())->count();
+            $totalStores = User::where('role', 'seller')->whereHas('store')->count();
+            $activeStores = User::where('role', 'seller')->whereHas('store')->where('is_active', true)->count();
+            $newStores = User::where('role', 'seller')->whereHas('store')->where('created_at', '>=', now()->subMonth())->count();
 
             // Calculate percentage increase (mock data for now)
             $totalIncrease = 4;
@@ -155,7 +156,9 @@ class SellerUserController extends Controller
             ]);
 
             $search = $request->search;
-            $users = User::where('role', 'seller')->with(['store', 'wallet'])
+            $users = User::where('role', 'seller')
+                ->whereHas('store') // Only sellers with stores
+                ->with(['store', 'wallet'])
                 ->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")

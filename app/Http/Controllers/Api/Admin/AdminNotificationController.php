@@ -268,8 +268,8 @@ class AdminNotificationController extends Controller
             case 'specific':
                 return User::select('id', 'full_name', 'email', 'expo_push_token', 'role', 'is_active')
                     ->whereIn('id', $notification->target_user_ids ?? [])
-                    ->where('is_active', true)
-                    ->get();
+                          ->where('is_active', true)
+                          ->get();
             
             default:
                 return collect();
