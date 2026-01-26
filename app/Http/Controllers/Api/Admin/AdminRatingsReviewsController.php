@@ -8,21 +8,37 @@ use App\Models\ProductReview;
 use App\Models\StoreReview;
 use App\Models\Product;
 use App\Models\Store;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 
 class AdminRatingsReviewsController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Ratings & Reviews summary (cards on top of the page)
      */
     public function summary(Request $request)
     {
         try {
-            $totalStoreReviews = StoreReview::count();
-            $totalProductReviews = ProductReview::count();
-            $avgStoreRating = round(StoreReview::avg('rating') ?? 0, 2);
-            $avgProductRating = round(ProductReview::avg('rating') ?? 0, 2);
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalStoreReviewsQuery = StoreReview::query();
+            $totalProductReviewsQuery = ProductReview::query();
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalStoreReviewsQuery, $period);
+                $this->applyPeriodFilter($totalProductReviewsQuery, $period);
+            }
+            
+            $totalStoreReviews = $totalStoreReviewsQuery->count();
+            $totalProductReviews = $totalProductReviewsQuery->count();
+            $avgStoreRating = round($totalStoreReviewsQuery->avg('rating') ?? 0, 2);
+            $avgProductRating = round($totalProductReviewsQuery->avg('rating') ?? 0, 2);
 
             return ResponseHelper::success([
                 'total_store_reviews' => $totalStoreReviews,
@@ -192,6 +208,17 @@ class AdminRatingsReviewsController extends Controller
                           $sq->where('store_name', 'like', "%{$search}%");
                       });
                 });
+            }
+
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
             }
 
             $reviews = $query->latest()->paginate($request->get('per_page', 20));

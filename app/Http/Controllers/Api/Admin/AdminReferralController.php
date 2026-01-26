@@ -9,6 +9,7 @@ use App\Models\Referral;
 use App\Models\ReferralFaq;
 use App\Models\Wallet;
 use App\Models\LoyaltySetting;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminReferralController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get referral dashboard statistics and list of referrers
      */
@@ -36,12 +38,24 @@ class AdminReferralController extends Controller
                 ->where('role', 'seller')
                 ->count();
 
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
             // Get referrers with their referral counts and wallet information
-            $referrers = User::whereHas('referrals')
+            $referrersQuery = User::whereHas('referrals')
                 ->withCount('referrals')
                 ->with(['wallet'])
-                ->select('id', 'full_name', 'email', 'user_code', 'referral_code', 'role', 'created_at')
-                ->paginate($request->get('per_page', 20));
+                ->select('id', 'full_name', 'email', 'user_code', 'referral_code', 'role', 'created_at');
+            
+            // Apply period filter
+            if ($period) {
+                $this->applyPeriodFilter($referrersQuery, $period);
+            }
+            
+            $referrers = $referrersQuery->paginate($request->get('per_page', 20));
 
             // Calculate amount earned for each referrer from wallet
             $referrers->getCollection()->transform(function ($referrer) {
@@ -53,16 +67,40 @@ class AdminReferralController extends Controller
                 return $referrer;
             });
 
-            // Get referral statistics from wallet
+            // Get referral statistics from wallet with period filtering
+            $totalReferredQuery = User::whereNotNull('referral_code');
+            $todayReferredQuery = User::whereNotNull('referral_code')->where('role', 'buyer');
+            $sellersReferredQuery = User::whereNotNull('referral_code')->where('role', 'seller');
+            $totalReferrersQuery = User::whereHas('referrals');
+            $totalReferralBalanceQuery = Wallet::query();
+            $totalShoppingBalanceQuery = Wallet::query();
+            $totalRewardBalanceQuery = Wallet::query();
+            $totalLoyaltyPointsQuery = Wallet::query();
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalReferredQuery, $period);
+                if ($period === 'today') {
+                    $todayReferredQuery->whereDate('created_at', today());
+                } else {
+                    $this->applyPeriodFilter($todayReferredQuery, $period);
+                }
+                $this->applyPeriodFilter($sellersReferredQuery, $period);
+                $this->applyPeriodFilter($totalReferrersQuery, $period);
+                $this->applyPeriodFilter($totalReferralBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalShoppingBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalRewardBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalLoyaltyPointsQuery, $period, 'wallets.created_at');
+            }
+            
             $stats = [
-                'total_referred' => $totalReferred,
-                'today_referred' => $todayReferred,
-                'sellers_referred' => $sellersReferred,
-                'total_referrers' => User::whereHas('referrals')->count(),
-                'total_referral_balance' => Wallet::sum('referral_balance'),
-                'total_shopping_balance' => Wallet::sum('shopping_balance'),
-                'total_reward_balance' => Wallet::sum('reward_balance'),
-                'total_loyalty_points' => Wallet::sum('loyality_points'),
+                'total_referred' => $totalReferredQuery->count(),
+                'today_referred' => $todayReferredQuery->count(),
+                'sellers_referred' => $sellersReferredQuery->count(),
+                'total_referrers' => $totalReferrersQuery->count(),
+                'total_referral_balance' => $totalReferralBalanceQuery->sum('referral_balance'),
+                'total_shopping_balance' => $totalShoppingBalanceQuery->sum('shopping_balance'),
+                'total_reward_balance' => $totalRewardBalanceQuery->sum('reward_balance'),
+                'total_loyalty_points' => $totalLoyaltyPointsQuery->sum('loyality_points'),
             ];
 
             return ResponseHelper::success([

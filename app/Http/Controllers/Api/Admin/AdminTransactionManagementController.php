@@ -7,12 +7,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminTransactionManagementController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all transactions with filtering and pagination
      */
@@ -30,7 +32,17 @@ class AdminTransactionManagementController extends Controller
                 $query->where('type', $request->type);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -57,13 +69,25 @@ class AdminTransactionManagementController extends Controller
 
             $transactions = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalTransactionsQuery = Transaction::query();
+            $pendingTransactionsQuery = Transaction::where('status', 'pending');
+            $successfulTransactionsQuery = Transaction::where('status', 'successful');
+            $failedTransactionsQuery = Transaction::where('status', 'failed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalTransactionsQuery, $period);
+                $this->applyPeriodFilter($pendingTransactionsQuery, $period);
+                $this->applyPeriodFilter($successfulTransactionsQuery, $period);
+                $this->applyPeriodFilter($failedTransactionsQuery, $period);
+            }
+            
             $stats = [
-                'total_transactions' => Transaction::count(),
-                'pending_transactions' => Transaction::where('status', 'pending')->count(),
-                'successful_transactions' => Transaction::where('status', 'successful')->count(),
-                'failed_transactions' => Transaction::where('status', 'failed')->count(),
-                'total_amount' => Transaction::where('status', 'successful')->sum('amount'),
+                'total_transactions' => $totalTransactionsQuery->count(),
+                'pending_transactions' => $pendingTransactionsQuery->count(),
+                'successful_transactions' => $successfulTransactionsQuery->count(),
+                'failed_transactions' => $failedTransactionsQuery->count(),
+                'total_amount' => $successfulTransactionsQuery->sum('amount'),
             ];
 
             return ResponseHelper::success([
@@ -198,17 +222,37 @@ class AdminTransactionManagementController extends Controller
     /**
      * Get transaction statistics
      */
-    public function getTransactionStatistics()
+    public function getTransactionStatistics(Request $request)
     {
         try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalTransactionsQuery = Transaction::query();
+            $pendingTransactionsQuery = Transaction::where('status', 'pending');
+            $successfulTransactionsQuery = Transaction::where('status', 'successful');
+            $failedTransactionsQuery = Transaction::where('status', 'failed');
+            $cancelledTransactionsQuery = Transaction::where('status', 'cancelled');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalTransactionsQuery, $period);
+                $this->applyPeriodFilter($pendingTransactionsQuery, $period);
+                $this->applyPeriodFilter($successfulTransactionsQuery, $period);
+                $this->applyPeriodFilter($failedTransactionsQuery, $period);
+                $this->applyPeriodFilter($cancelledTransactionsQuery, $period);
+            }
+            
             $stats = [
-                'total_transactions' => Transaction::count(),
-                'pending_transactions' => Transaction::where('status', 'pending')->count(),
-                'successful_transactions' => Transaction::where('status', 'successful')->count(),
-                'failed_transactions' => Transaction::where('status', 'failed')->count(),
-                'cancelled_transactions' => Transaction::where('status', 'cancelled')->count(),
-                'total_amount' => Transaction::where('status', 'successful')->sum('amount'),
-                'average_transaction_amount' => Transaction::where('status', 'successful')->avg('amount'),
+                'total_transactions' => $totalTransactionsQuery->count(),
+                'pending_transactions' => $pendingTransactionsQuery->count(),
+                'successful_transactions' => $successfulTransactionsQuery->count(),
+                'failed_transactions' => $failedTransactionsQuery->count(),
+                'cancelled_transactions' => $cancelledTransactionsQuery->count(),
+                'total_amount' => $successfulTransactionsQuery->sum('amount'),
+                'average_transaction_amount' => $successfulTransactionsQuery->avg('amount'),
             ];
 
             // Transaction types breakdown
@@ -244,8 +288,22 @@ class AdminTransactionManagementController extends Controller
     public function getTransactionAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // Daily transaction volume
             $dailyVolume = Transaction::selectRaw('

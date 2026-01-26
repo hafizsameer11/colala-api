@@ -7,12 +7,14 @@ use App\Helpers\ResponseHelper;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Order;
+use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class BuyerTransactionController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all buyer transactions with summary stats
      */
@@ -34,8 +36,16 @@ class BuyerTransactionController extends Controller
                 $query->where('type', $request->type);
             }
 
-            // Date filter
-            if ($request->has('date') && $request->date !== 'all') {
+            // Period filter (priority over date for backward compatibility)
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date') && $request->date !== 'all') {
+                // Legacy support for date parameter
                 if ($request->date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($request->date === 'week') {
@@ -61,19 +71,31 @@ class BuyerTransactionController extends Controller
 
             $transactions = $query->latest()->paginate(15);
 
-            // Get summary stats (only for buyers)
-            $totalTransactions = Transaction::whereHas('user', function ($q) {
+            // Get summary stats (only for buyers) with period filtering
+            $totalTransactionsQuery = Transaction::whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
-            })->count();
-            $pendingTransactions = Transaction::whereHas('user', function ($q) {
+            });
+            $pendingTransactionsQuery = Transaction::whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
-            })->where('status', 'pending')->count();
-            $successfulTransactions = Transaction::whereHas('user', function ($q) {
+            })->where('status', 'pending');
+            $successfulTransactionsQuery = Transaction::whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
-            })->where('status', 'successful')->count();
-            $failedTransactions = Transaction::whereHas('user', function ($q) {
+            })->where('status', 'successful');
+            $failedTransactionsQuery = Transaction::whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
-            })->where('status', 'failed')->count();
+            })->where('status', 'failed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalTransactionsQuery, $period);
+                $this->applyPeriodFilter($pendingTransactionsQuery, $period);
+                $this->applyPeriodFilter($successfulTransactionsQuery, $period);
+                $this->applyPeriodFilter($failedTransactionsQuery, $period);
+            }
+            
+            $totalTransactions = $totalTransactionsQuery->count();
+            $pendingTransactions = $pendingTransactionsQuery->count();
+            $successfulTransactions = $successfulTransactionsQuery->count();
+            $failedTransactions = $failedTransactionsQuery->count();
 
             $transactions->getCollection()->transform(function ($transaction) {
                 return [
@@ -158,7 +180,16 @@ class BuyerTransactionController extends Controller
                 $query->where('type', $type);
             }
 
-            if ($date !== 'all') {
+            // Period filter (priority over date for backward compatibility)
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($date !== 'all') {
+                // Legacy support for date parameter
                 if ($date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($date === 'week') {
@@ -363,21 +394,31 @@ class BuyerTransactionController extends Controller
     public function analytics(Request $request)
     {
         try {
-            $dateRange = $request->get('date_range', 'month'); // today, week, month, year
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
             
             $query = Transaction::whereHas('user', function ($q) {
                 $q->where('role', 'buyer');
             });
 
-            // Apply date range
-            if ($dateRange === 'today') {
-                $query->whereDate('created_at', today());
-            } elseif ($dateRange === 'week') {
-                $query->whereBetween('created_at', [now()->subWeek(), now()]);
-            } elseif ($dateRange === 'month') {
-                $query->whereMonth('created_at', now()->month);
-            } elseif ($dateRange === 'year') {
-                $query->whereYear('created_at', now()->year);
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } else {
+                // Legacy support for date_range parameter
+                $dateRange = $request->get('date_range', 'month');
+                if ($dateRange === 'today') {
+                    $query->whereDate('created_at', today());
+                } elseif ($dateRange === 'week') {
+                    $query->whereBetween('created_at', [now()->subWeek(), now()]);
+                } elseif ($dateRange === 'month') {
+                    $query->whereMonth('created_at', now()->month);
+                } elseif ($dateRange === 'year') {
+                    $query->whereYear('created_at', now()->year);
+                }
             }
 
             $analytics = [

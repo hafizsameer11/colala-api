@@ -8,6 +8,7 @@ use App\Models\SystemBanner;
 use App\Models\SystemBannerView;
 use App\Models\SystemBannerClick;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminBannerController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all system banners
      */
@@ -48,16 +50,42 @@ class AdminBannerController extends Controller
                 });
             }
 
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            }
+
             $banners = $query->paginate($request->get('per_page', 20));
 
-            // Get statistics
+            // Get statistics with period filtering
+            $totalBannersQuery = SystemBanner::query();
+            $activeBannersQuery = SystemBanner::active();
+            $totalViewsQuery = SystemBannerView::query();
+            $totalClicksQuery = SystemBannerClick::query();
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalBannersQuery, $period);
+                $this->applyPeriodFilter($activeBannersQuery, $period);
+                $this->applyPeriodFilter($totalViewsQuery, $period);
+                $this->applyPeriodFilter($totalClicksQuery, $period);
+            }
+            
+            $totalViews = $totalViewsQuery->count();
+            $totalClicks = $totalClicksQuery->count();
+            
             $stats = [
-                'total_banners' => SystemBanner::count(),
-                'active_banners' => SystemBanner::active()->count(),
-                'total_views' => SystemBannerView::count(),
-                'total_clicks' => SystemBannerClick::count(),
-                'average_ctr' => SystemBannerView::count() > 0 
-                    ? round((SystemBannerClick::count() / SystemBannerView::count()) * 100, 2)
+                'total_banners' => $totalBannersQuery->count(),
+                'active_banners' => $activeBannersQuery->count(),
+                'total_views' => $totalViews,
+                'total_clicks' => $totalClicks,
+                'average_ctr' => $totalViews > 0 
+                    ? round(($totalClicks / $totalViews) * 100, 2)
                     : 0,
             ];
 

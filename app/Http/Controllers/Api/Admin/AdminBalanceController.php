@@ -8,12 +8,14 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Transaction;
 use App\Models\Escrow;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminBalanceController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all user balances with filtering and pagination
      */
@@ -27,7 +29,17 @@ class AdminBalanceController extends Controller
                 $query->where('role', $request->user_type);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -297,11 +309,60 @@ class AdminBalanceController extends Controller
     /**
      * Get balance analytics
      */
+    public function getBalanceStatistics(Request $request)
+    {
+        try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalShoppingBalanceQuery = Wallet::query();
+            $totalRewardBalanceQuery = Wallet::query();
+            $totalReferralBalanceQuery = Wallet::query();
+            $totalLoyaltyPointsQuery = Wallet::query();
+            $totalEscrowBalanceQuery = Escrow::where('status', 'active');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalShoppingBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalRewardBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalReferralBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalLoyaltyPointsQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalEscrowBalanceQuery, $period);
+            }
+            
+            return ResponseHelper::success([
+                'total_shopping_balance' => $totalShoppingBalanceQuery->sum('shopping_balance'),
+                'total_reward_balance' => $totalRewardBalanceQuery->sum('reward_balance'),
+                'total_referral_balance' => $totalReferralBalanceQuery->sum('referral_balance'),
+                'total_loyalty_points' => $totalLoyaltyPointsQuery->sum('loyality_points'),
+                'total_escrow_balance' => $totalEscrowBalanceQuery->sum('amount'),
+            ], 'Balance statistics retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
     public function getBalanceAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // Balance trends
             $balanceTrends = Wallet::selectRaw('

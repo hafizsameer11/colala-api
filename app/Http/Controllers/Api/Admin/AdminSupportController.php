@@ -10,12 +10,14 @@ use App\Models\SupportTicket;
 use App\Models\SupportMessage;
 use App\Models\User;
 use App\Models\Store;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminSupportController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all support tickets with filtering and pagination
      */
@@ -47,7 +49,17 @@ class AdminSupportController extends Controller
                 $query->where('issue_type', $request->issue_type);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -75,13 +87,27 @@ class AdminSupportController extends Controller
 
             $tickets = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalTicketsQuery = SupportTicket::query();
+            $openTicketsQuery = SupportTicket::where('status', 'open');
+            $pendingTicketsQuery = SupportTicket::where('status', 'pending');
+            $resolvedTicketsQuery = SupportTicket::where('status', 'resolved');
+            $closedTicketsQuery = SupportTicket::where('status', 'closed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalTicketsQuery, $period);
+                $this->applyPeriodFilter($openTicketsQuery, $period);
+                $this->applyPeriodFilter($pendingTicketsQuery, $period);
+                $this->applyPeriodFilter($resolvedTicketsQuery, $period);
+                $this->applyPeriodFilter($closedTicketsQuery, $period);
+            }
+            
             $stats = [
-                'total_tickets' => SupportTicket::count(),
-                'open_tickets' => SupportTicket::where('status', 'open')->count(),
-                'pending_tickets' => SupportTicket::where('status', 'pending')->count(),
-                'resolved_tickets' => SupportTicket::where('status', 'resolved')->count(),
-                'closed_tickets' => SupportTicket::where('status', 'closed')->count(),
+                'total_tickets' => $totalTicketsQuery->count(),
+                'open_tickets' => $openTicketsQuery->count(),
+                'pending_tickets' => $pendingTicketsQuery->count(),
+                'resolved_tickets' => $resolvedTicketsQuery->count(),
+                'closed_tickets' => $closedTicketsQuery->count(),
             ];
 
             return ResponseHelper::success([
@@ -272,13 +298,65 @@ class AdminSupportController extends Controller
     }
 
     /**
+     * Get support ticket statistics
+     */
+    public function getSupportTicketStatistics(Request $request)
+    {
+        try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalTicketsQuery = SupportTicket::query();
+            $openTicketsQuery = SupportTicket::where('status', 'open');
+            $pendingTicketsQuery = SupportTicket::where('status', 'pending');
+            $resolvedTicketsQuery = SupportTicket::where('status', 'resolved');
+            $closedTicketsQuery = SupportTicket::where('status', 'closed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalTicketsQuery, $period);
+                $this->applyPeriodFilter($openTicketsQuery, $period);
+                $this->applyPeriodFilter($pendingTicketsQuery, $period);
+                $this->applyPeriodFilter($resolvedTicketsQuery, $period);
+                $this->applyPeriodFilter($closedTicketsQuery, $period);
+            }
+            
+            return ResponseHelper::success([
+                'total_tickets' => $totalTicketsQuery->count(),
+                'open_tickets' => $openTicketsQuery->count(),
+                'pending_tickets' => $pendingTicketsQuery->count(),
+                'resolved_tickets' => $resolvedTicketsQuery->count(),
+                'closed_tickets' => $closedTicketsQuery->count(),
+            ], 'Support ticket statistics retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get support analytics
      */
     public function getSupportAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // Ticket trends
             $ticketTrends = SupportTicket::selectRaw('

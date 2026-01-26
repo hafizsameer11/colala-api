@@ -9,12 +9,14 @@ use App\Models\ProductStat;
 use App\Models\BoostProduct;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminProductsController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all products with filtering and pagination
      */
@@ -49,7 +51,17 @@ class AdminProductsController extends Controller
                 $query->where('category_id', $request->category);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -76,17 +88,31 @@ class AdminProductsController extends Controller
 
             $products = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalProductsQuery = Product::query();
+            $generalProductsQuery = Product::whereDoesntHave('boost', function ($q) {
+                $q->where('status', 'active');
+            });
+            $sponsoredProductsQuery = Product::whereHas('boost', function ($q) {
+                $q->where('status', 'active');
+            });
+            $activeProductsQuery = Product::where('status', 'active');
+            $inactiveProductsQuery = Product::where('status', 'inactive');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalProductsQuery, $period);
+                $this->applyPeriodFilter($generalProductsQuery, $period);
+                $this->applyPeriodFilter($sponsoredProductsQuery, $period);
+                $this->applyPeriodFilter($activeProductsQuery, $period);
+                $this->applyPeriodFilter($inactiveProductsQuery, $period);
+            }
+            
             $stats = [
-                'total_products' => Product::count(),
-                'general_products' => Product::whereDoesntHave('boost', function ($q) {
-                    $q->where('status', 'active');
-                })->count(),
-                'sponsored_products' => Product::whereHas('boost', function ($q) {
-                    $q->where('status', 'active');
-                })->count(),
-                'active_products' => Product::where('status', 'active')->count(),
-                'inactive_products' => Product::where('status', 'inactive')->count(),
+                'total_products' => $totalProductsQuery->count(),
+                'general_products' => $generalProductsQuery->count(),
+                'sponsored_products' => $sponsoredProductsQuery->count(),
+                'active_products' => $activeProductsQuery->count(),
+                'inactive_products' => $inactiveProductsQuery->count(),
             ];
 
             return ResponseHelper::success([

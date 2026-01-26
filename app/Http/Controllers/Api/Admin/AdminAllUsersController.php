@@ -10,6 +10,7 @@ use App\Models\Escrow;
 use App\Models\LoyaltyPoint;
 use App\Models\Order;
 use App\Models\Store;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminAllUsersController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all users with filtering and pagination
      */
@@ -25,12 +27,22 @@ class AdminAllUsersController extends Controller
         try {
             $query = User::with(['wallet', 'store']);
 
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
             // Apply filters
             if ($request->has('user_type') && $request->user_type !== 'all') {
                 $query->where('role', $request->user_type);
             }
 
-            if ($request->has('date_range')) {
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -55,14 +67,8 @@ class AdminAllUsersController extends Controller
 
             $users = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
-            $stats = [
-                'total_users' => User::count(),
-                'buyer_users' => User::where('role', 'buyer')->count(),
-                'seller_users' => User::where('role', 'seller')->count(),
-                'active_users' => User::where('status', 'active')->count(),
-                'inactive_users' => User::where('status', 'inactive')->count(),
-            ];
+            // Get summary statistics with period filtering
+            $stats = $this->getUserStatistics($period);
 
             return ResponseHelper::success([
                 'users' => $this->formatUsersData($users),
@@ -257,8 +263,22 @@ class AdminAllUsersController extends Controller
     public function getUserAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // User registration trends
             $registrationTrends = User::selectRaw('
@@ -272,28 +292,57 @@ class AdminAllUsersController extends Controller
             ->orderBy('date')
             ->get();
 
-            // User activity statistics
-            $activityStats = [
-                'total_users' => User::count(),
-                'active_users' => User::where('status', 'active')->count(),
-                'inactive_users' => User::where('status', 'inactive')->count(),
-                'buyer_users' => User::where('role', 'buyer')->count(),
-                'seller_users' => User::where('role', 'seller')->count(),
-                'users_with_orders' => User::whereHas('orders')->count(),
-                'users_with_transactions' => User::whereHas('transactions')->count(),
-            ];
+            // User activity statistics with period filtering
+            $activityStats = $this->getUserStatistics($period);
 
             return ResponseHelper::success([
                 'registration_trends' => $registrationTrends,
                 'activity_stats' => $activityStats,
                 'date_range' => [
                     'from' => $dateFrom,
-                    'to' => $dateTo
+                    'to' => $dateTo,
+                    'period' => $period ?? 'all_time'
                 ]
             ]);
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Get user statistics with period filtering
+     */
+    private function getUserStatistics($period = null)
+    {
+        // Build base queries
+        $totalUsersQuery = User::query();
+        $buyerUsersQuery = User::where('role', 'buyer');
+        $sellerUsersQuery = User::where('role', 'seller');
+        $activeUsersQuery = User::where('status', 'active');
+        $inactiveUsersQuery = User::where('status', 'inactive');
+        $usersWithOrdersQuery = User::whereHas('orders');
+        $usersWithTransactionsQuery = User::whereHas('transactions');
+
+        // Apply period filter if provided
+        if ($period) {
+            $this->applyPeriodFilter($totalUsersQuery, $period);
+            $this->applyPeriodFilter($buyerUsersQuery, $period);
+            $this->applyPeriodFilter($sellerUsersQuery, $period);
+            $this->applyPeriodFilter($activeUsersQuery, $period);
+            $this->applyPeriodFilter($inactiveUsersQuery, $period);
+            $this->applyPeriodFilter($usersWithOrdersQuery, $period);
+            $this->applyPeriodFilter($usersWithTransactionsQuery, $period);
+        }
+
+        return [
+            'total_users' => $totalUsersQuery->count(),
+            'buyer_users' => $buyerUsersQuery->count(),
+            'seller_users' => $sellerUsersQuery->count(),
+            'active_users' => $activeUsersQuery->count(),
+            'inactive_users' => $inactiveUsersQuery->count(),
+            'users_with_orders' => $usersWithOrdersQuery->count(),
+            'users_with_transactions' => $usersWithTransactionsQuery->count(),
+        ];
     }
 
     /**

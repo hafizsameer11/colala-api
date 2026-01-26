@@ -10,12 +10,14 @@ use App\Models\PostLike;
 use App\Models\PostShare;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminSocialFeedController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all social feed posts with filtering and pagination
      */
@@ -31,7 +33,17 @@ class AdminSocialFeedController extends Controller
                 });
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -57,12 +69,24 @@ class AdminSocialFeedController extends Controller
 
             $posts = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalPostsQuery = Post::query();
+            $totalLikesQuery = PostLike::query();
+            $totalCommentsQuery = PostComment::query();
+            $totalSharesQuery = PostShare::query();
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalPostsQuery, $period);
+                $this->applyPeriodFilter($totalLikesQuery, $period);
+                $this->applyPeriodFilter($totalCommentsQuery, $period);
+                $this->applyPeriodFilter($totalSharesQuery, $period);
+            }
+            
             $stats = [
-                'total_posts' => Post::count(),
-                'total_likes' => PostLike::count(),
-                'total_comments' => PostComment::count(),
-                'total_shares' => PostShare::count(),
+                'total_posts' => $totalPostsQuery->count(),
+                'total_likes' => $totalLikesQuery->count(),
+                'total_comments' => $totalCommentsQuery->count(),
+                'total_shares' => $totalSharesQuery->count(),
             ];
 
             return ResponseHelper::success([
@@ -252,17 +276,41 @@ class AdminSocialFeedController extends Controller
     /**
      * Get social feed statistics
      */
-    public function getSocialFeedStatistics()
+    public function getSocialFeedStatistics(Request $request)
     {
         try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalPostsQuery = Post::query();
+            $totalLikesQuery = PostLike::query();
+            $totalCommentsQuery = PostComment::query();
+            $totalSharesQuery = PostShare::query();
+            $publicPostsQuery = Post::where('visibility', 'public');
+            $privatePostsQuery = Post::where('visibility', 'private');
+            $friendsPostsQuery = Post::where('visibility', 'friends');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalPostsQuery, $period);
+                $this->applyPeriodFilter($totalLikesQuery, $period);
+                $this->applyPeriodFilter($totalCommentsQuery, $period);
+                $this->applyPeriodFilter($totalSharesQuery, $period);
+                $this->applyPeriodFilter($publicPostsQuery, $period);
+                $this->applyPeriodFilter($privatePostsQuery, $period);
+                $this->applyPeriodFilter($friendsPostsQuery, $period);
+            }
+            
             $stats = [
-                'total_posts' => Post::count(),
-                'total_likes' => PostLike::count(),
-                'total_comments' => PostComment::count(),
-                'total_shares' => PostShare::count(),
-                'public_posts' => Post::where('visibility', 'public')->count(),
-                'private_posts' => Post::where('visibility', 'private')->count(),
-                'friends_posts' => Post::where('visibility', 'friends')->count(),
+                'total_posts' => $totalPostsQuery->count(),
+                'total_likes' => $totalLikesQuery->count(),
+                'total_comments' => $totalCommentsQuery->count(),
+                'total_shares' => $totalSharesQuery->count(),
+                'public_posts' => $publicPostsQuery->count(),
+                'private_posts' => $privatePostsQuery->count(),
+                'friends_posts' => $friendsPostsQuery->count(),
             ];
 
             // Daily engagement trends

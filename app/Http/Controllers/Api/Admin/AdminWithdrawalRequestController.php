@@ -41,12 +41,24 @@ class AdminWithdrawalRequestController extends Controller
                 });
             }
 
-            if ($request->filled('date_from')) {
-                $query->whereDate('created_at', '>=', $request->date_from);
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            if ($request->filled('date_to')) {
-                $query->whereDate('created_at', '<=', $request->date_to);
+            // Apply period filter (priority over date_from/date_to for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } else {
+                // Legacy support for date_from/date_to
+                if ($request->filled('date_from')) {
+                    $query->whereDate('created_at', '>=', $request->date_from);
+                }
+
+                if ($request->filled('date_to')) {
+                    $query->whereDate('created_at', '<=', $request->date_to);
+                }
             }
 
             $perPage = (int) $request->get('per_page', 20);

@@ -11,12 +11,14 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\OrderTracking;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class BuyerOrderController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all store orders with comprehensive details and summary stats
      */
@@ -53,14 +55,27 @@ class BuyerOrderController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // Date filter
-            if ($request->has('date') && $request->date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter to the main query
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $tableName = (new StoreOrder())->getTable();
+                    $query->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($request->has('date') && $request->date !== 'all') {
+                // Legacy support for date parameter
+                $tableName = (new StoreOrder())->getTable();
                 if ($request->date === 'today') {
-                    $query->whereDate('created_at', today());
+                    $query->whereDate($tableName . '.created_at', today());
                 } elseif ($request->date === 'week') {
-                    $query->whereBetween('created_at', [now()->subWeek(), now()]);
+                    $query->whereBetween($tableName . '.created_at', [now()->subWeek(), now()]);
                 } elseif ($request->date === 'month') {
-                    $query->whereMonth('created_at', now()->month);
+                    $query->whereMonth($tableName . '.created_at', now()->month);
                 }
             }
 
@@ -89,7 +104,7 @@ class BuyerOrderController extends Controller
 
             $storeOrders = $query->latest()->paginate(15);
 
-            // Get comprehensive summary stats
+            // Get comprehensive summary stats with period filtering
             $buyerOrderQuery = function ($orderQuery) {
                 $orderQuery->whereHas('user', function ($userQuery) {
                     $userQuery->withoutGlobalScopes()
@@ -102,11 +117,25 @@ class BuyerOrderController extends Controller
                 });
             };
             
-            $totalStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)->count();
-            $pendingStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)
-                ->whereIn('status', ['pending', 'pending_acceptance', 'order_placed', 'processing'])->count();
-            $completedStoreOrders = StoreOrder::whereHas('order', $buyerOrderQuery)
-                ->where('status', 'completed')->count();
+            $totalStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery);
+            $pendingStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery)
+                ->whereIn('status', ['pending', 'pending_acceptance', 'order_placed', 'processing']);
+            $completedStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery)
+                ->where('status', 'completed');
+            
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                $tableName = (new StoreOrder())->getTable();
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $totalStoreOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $pendingStoreOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $completedStoreOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+            
+            $totalStoreOrders = $totalStoreOrdersQuery->count();
+            $pendingStoreOrders = $pendingStoreOrdersQuery->count();
+            $completedStoreOrders = $completedStoreOrdersQuery->count();
 
             $storeOrders->getCollection()->transform(function ($storeOrder) {
                 $firstItem = $storeOrder->items->first();
@@ -261,13 +290,25 @@ class BuyerOrderController extends Controller
                 });
             }
 
-            if ($date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter - Order model uses 'orders' table
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('orders.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($date !== 'all') {
+                // Legacy support for date parameter
                 if ($date === 'today') {
-                    $query->whereDate('created_at', today());
+                    $query->whereDate('orders.created_at', today());
                 } elseif ($date === 'week') {
-                    $query->whereBetween('created_at', [now()->subWeek(), now()]);
+                    $query->whereBetween('orders.created_at', [now()->subWeek(), now()]);
                 } elseif ($date === 'month') {
-                    $query->whereMonth('created_at', now()->month);
+                    $query->whereMonth('orders.created_at', now()->month);
                 }
             }
 

@@ -11,6 +11,7 @@ use App\Models\Chat;
 use App\Models\StoreOrder;
 use App\Models\User;
 use App\Models\Store;
+use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminDisputeController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all disputes with filtering and pagination
      */
@@ -46,7 +48,17 @@ class AdminDisputeController extends Controller
                 $query->where('category', $request->category);
             }
 
-            if ($request->has('date_from') && $request->has('date_to')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_from/date_to for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_from') && $request->has('date_to')) {
+                // Legacy support for date_from/date_to
                 $query->whereBetween('created_at', [$request->date_from, $request->date_to]);
             }
 

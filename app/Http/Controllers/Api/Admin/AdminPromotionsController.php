@@ -8,12 +8,14 @@ use App\Models\BoostProduct;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminPromotionsController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all boosted products (promotions) with filtering and pagination
      */
@@ -27,7 +29,17 @@ class AdminPromotionsController extends Controller
                 $query->where('status', $request->status);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -52,15 +64,27 @@ class AdminPromotionsController extends Controller
 
             $promotions = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalPromotionsQuery = BoostProduct::query();
+            $activePromotionsQuery = BoostProduct::where('status', 'active');
+            $pendingPromotionsQuery = BoostProduct::where('status', 'pending');
+            $completedPromotionsQuery = BoostProduct::where('status', 'completed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalPromotionsQuery, $period);
+                $this->applyPeriodFilter($activePromotionsQuery, $period);
+                $this->applyPeriodFilter($pendingPromotionsQuery, $period);
+                $this->applyPeriodFilter($completedPromotionsQuery, $period);
+            }
+            
             $stats = [
-                'total_promotions' => BoostProduct::count(),
-                'active_promotions' => BoostProduct::where('status', 'active')->count(),
-                'pending_promotions' => BoostProduct::where('status', 'pending')->count(),
-                'completed_promotions' => BoostProduct::where('status', 'completed')->count(),
-                'total_revenue' => BoostProduct::where('status', 'active')->sum('total_amount'),
-                'total_impressions' => BoostProduct::where('status', 'active')->sum('impressions'),
-                'total_clicks' => BoostProduct::where('status', 'active')->sum('clicks'),
+                'total_promotions' => $totalPromotionsQuery->count(),
+                'active_promotions' => $activePromotionsQuery->count(),
+                'pending_promotions' => $pendingPromotionsQuery->count(),
+                'completed_promotions' => $completedPromotionsQuery->count(),
+                'total_revenue' => $activePromotionsQuery->sum('total_amount'),
+                'total_impressions' => $activePromotionsQuery->sum('impressions'),
+                'total_clicks' => $activePromotionsQuery->sum('clicks'),
             ];
 
             return ResponseHelper::success([

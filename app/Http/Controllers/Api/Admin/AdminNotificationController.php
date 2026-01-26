@@ -9,6 +9,7 @@ use App\Models\SystemNotificationRecipient;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\ExpoNotificationService;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Validator;
 
 class AdminNotificationController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all system push notifications
      */
@@ -46,17 +48,46 @@ class AdminNotificationController extends Controller
                 });
             }
 
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            }
+
             $notifications = $query->paginate($request->get('per_page', 20));
 
-            // Get statistics
+            // Get statistics with period filtering
+            $totalNotificationsQuery = SystemPushNotification::query();
+            $sentNotificationsQuery = SystemPushNotification::where('status', 'sent');
+            $scheduledNotificationsQuery = SystemPushNotification::where('status', 'scheduled');
+            $draftNotificationsQuery = SystemPushNotification::where('status', 'draft');
+            $totalRecipientsQuery = SystemNotificationRecipient::query();
+            $deliveredNotificationsQuery = SystemNotificationRecipient::where('delivery_status', 'delivered');
+            $failedNotificationsQuery = SystemNotificationRecipient::where('delivery_status', 'failed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalNotificationsQuery, $period);
+                $this->applyPeriodFilter($sentNotificationsQuery, $period);
+                $this->applyPeriodFilter($scheduledNotificationsQuery, $period);
+                $this->applyPeriodFilter($draftNotificationsQuery, $period);
+                $this->applyPeriodFilter($totalRecipientsQuery, $period);
+                $this->applyPeriodFilter($deliveredNotificationsQuery, $period);
+                $this->applyPeriodFilter($failedNotificationsQuery, $period);
+            }
+            
             $stats = [
-                'total_notifications' => SystemPushNotification::count(),
-                'sent_notifications' => SystemPushNotification::where('status', 'sent')->count(),
-                'scheduled_notifications' => SystemPushNotification::where('status', 'scheduled')->count(),
-                'draft_notifications' => SystemPushNotification::where('status', 'draft')->count(),
-                'total_recipients' => SystemNotificationRecipient::count(),
-                'delivered_notifications' => SystemNotificationRecipient::where('delivery_status', 'delivered')->count(),
-                'failed_notifications' => SystemNotificationRecipient::where('delivery_status', 'failed')->count(),
+                'total_notifications' => $totalNotificationsQuery->count(),
+                'sent_notifications' => $sentNotificationsQuery->count(),
+                'scheduled_notifications' => $scheduledNotificationsQuery->count(),
+                'draft_notifications' => $draftNotificationsQuery->count(),
+                'total_recipients' => $totalRecipientsQuery->count(),
+                'delivered_notifications' => $deliveredNotificationsQuery->count(),
+                'failed_notifications' => $failedNotificationsQuery->count(),
             ];
 
             return ResponseHelper::success([

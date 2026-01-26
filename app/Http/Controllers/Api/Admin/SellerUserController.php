@@ -11,12 +11,14 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class SellerUserController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all seller users with summary stats
      */
@@ -52,12 +54,42 @@ class SellerUserController extends Controller
                 });
             }
 
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            }
+
             $users = $query->latest()->paginate(15);
 
-            // Get summary stats (only for sellers with stores)
-            $totalStores = User::where('role', 'seller')->whereHas('store')->count();
-            $activeStores = User::where('role', 'seller')->whereHas('store')->where('is_active', true)->count();
-            $newStores = User::where('role', 'seller')->whereHas('store')->where('created_at', '>=', now()->subMonth())->count();
+            // Get summary stats (only for sellers with stores) with period filtering
+            $totalStoresQuery = User::where('role', 'seller')->whereHas('store');
+            $activeStoresQuery = User::where('role', 'seller')->whereHas('store')->where('is_active', true);
+            $newStoresQuery = User::where('role', 'seller')->whereHas('store');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalStoresQuery, $period);
+                $this->applyPeriodFilter($activeStoresQuery, $period);
+                // For new stores, we want those created within the period
+                if ($period !== 'all_time') {
+                    $dateRange = $this->getDateRange($period);
+                    if ($dateRange) {
+                        $newStoresQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                    }
+                }
+            } else {
+                // Default: last month for new stores
+                $newStoresQuery->where('created_at', '>=', now()->subMonth());
+            }
+            
+            $totalStores = $totalStoresQuery->count();
+            $activeStores = $activeStoresQuery->count();
+            $newStores = $newStoresQuery->count();
 
             $users->getCollection()->transform(function ($user) {
                 $primaryStore = $user->store;
@@ -110,17 +142,63 @@ class SellerUserController extends Controller
     /**
      * Get seller user statistics
      */
-    public function stats()
+    public function stats(Request $request)
     {
         try {
-            $totalStores = User::where('role', 'seller')->whereHas('store')->count();
-            $activeStores = User::where('role', 'seller')->whereHas('store')->where('is_active', true)->count();
-            $newStores = User::where('role', 'seller')->whereHas('store')->where('created_at', '>=', now()->subMonth())->count();
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalStoresQuery = User::where('role', 'seller')->whereHas('store');
+            $activeStoresQuery = User::where('role', 'seller')->whereHas('store')->where('is_active', true);
+            $newStoresQuery = User::where('role', 'seller')->whereHas('store');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalStoresQuery, $period);
+                $this->applyPeriodFilter($activeStoresQuery, $period);
+                // For new stores, we want those created within the period
+                if ($period !== 'all_time') {
+                    $dateRange = $this->getDateRange($period);
+                    if ($dateRange) {
+                        $newStoresQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                    }
+                }
+            } else {
+                // Default: last month for new stores
+                $newStoresQuery->where('created_at', '>=', now()->subMonth());
+            }
+            
+            $totalStores = $totalStoresQuery->count();
+            $activeStores = $activeStoresQuery->count();
+            $newStores = $newStoresQuery->count();
 
-            // Calculate percentage increase (mock data for now)
-            $totalIncrease = 4;
-            $activeIncrease = 4;
-            $newIncrease = 4;
+            // Calculate percentage increase
+            $dateRange = $this->getDateRange($period);
+            $previousTotalStores = 0;
+            $previousActiveStores = 0;
+            $previousNewStores = 0;
+            
+            if ($dateRange) {
+                $previousTotalStores = User::where('role', 'seller')
+                    ->whereHas('store')
+                    ->where('created_at', '<=', $dateRange['previous_end'])
+                    ->count();
+                $previousActiveStores = User::where('role', 'seller')
+                    ->whereHas('store')
+                    ->where('is_active', true)
+                    ->where('created_at', '<=', $dateRange['previous_end'])
+                    ->count();
+                $previousNewStores = User::where('role', 'seller')
+                    ->whereHas('store')
+                    ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                    ->count();
+            }
+            
+            $totalIncrease = $this->calculateIncrease($totalStores, $previousTotalStores);
+            $activeIncrease = $this->calculateIncrease($activeStores, $previousActiveStores);
+            $newIncrease = $this->calculateIncrease($newStores, $previousNewStores);
 
             return ResponseHelper::success([
                 'total_stores' => [

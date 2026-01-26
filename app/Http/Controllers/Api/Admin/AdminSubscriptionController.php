@@ -8,12 +8,14 @@ use App\Models\Subscription;
 use App\Models\SubscriptionPlan;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminSubscriptionController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all subscriptions with filtering and pagination
      */
@@ -33,7 +35,17 @@ class AdminSubscriptionController extends Controller
                 $query->where('status', $request->status);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -59,24 +71,46 @@ class AdminSubscriptionController extends Controller
 
             $subscriptions = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalSubscriptionsQuery = Subscription::query();
+            $activeSubscriptionsQuery = Subscription::where('status', 'active');
+            $expiredSubscriptionsQuery = Subscription::where('status', 'expired');
+            $cancelledSubscriptionsQuery = Subscription::where('status', 'cancelled');
+            $basicPlanQuery = Subscription::whereHas('plan', function ($q) {
+                $q->where('name', 'like', '%basic%');
+            })->where('status', 'active');
+            $standardPlanQuery = Subscription::whereHas('plan', function ($q) {
+                $q->where('name', 'like', '%standard%');
+            })->where('status', 'active');
+            $ultraPlanQuery = Subscription::whereHas('plan', function ($q) {
+                $q->where('name', 'like', '%ultra%');
+            })->where('status', 'active');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($activeSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($expiredSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($cancelledSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($basicPlanQuery, $period);
+                $this->applyPeriodFilter($standardPlanQuery, $period);
+                $this->applyPeriodFilter($ultraPlanQuery, $period);
+            }
+            
+            $revenueQuery = Subscription::where('status', 'active')
+                ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id');
+            if ($period) {
+                $this->applyPeriodFilter($revenueQuery, $period, 'subscriptions.created_at');
+            }
+            
             $stats = [
-                'total_subscriptions' => Subscription::count(),
-                'active_subscriptions' => Subscription::where('status', 'active')->count(),
-                'expired_subscriptions' => Subscription::where('status', 'expired')->count(),
-                'cancelled_subscriptions' => Subscription::where('status', 'cancelled')->count(),
-                'total_revenue' => Subscription::where('status', 'active')
-                    ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
-                    ->sum('subscription_plans.price'),
-                'basic_plan_stores' => Subscription::whereHas('plan', function ($q) {
-                    $q->where('name', 'like', '%basic%');
-                })->where('status', 'active')->count(),
-                'standard_plan_stores' => Subscription::whereHas('plan', function ($q) {
-                    $q->where('name', 'like', '%standard%');
-                })->where('status', 'active')->count(),
-                'ultra_plan_stores' => Subscription::whereHas('plan', function ($q) {
-                    $q->where('name', 'like', '%ultra%');
-                })->where('status', 'active')->count(),
+                'total_subscriptions' => $totalSubscriptionsQuery->count(),
+                'active_subscriptions' => $activeSubscriptionsQuery->count(),
+                'expired_subscriptions' => $expiredSubscriptionsQuery->count(),
+                'cancelled_subscriptions' => $cancelledSubscriptionsQuery->count(),
+                'total_revenue' => $revenueQuery->sum('subscription_plans.price'),
+                'basic_plan_stores' => $basicPlanQuery->count(),
+                'standard_plan_stores' => $standardPlanQuery->count(),
+                'ultra_plan_stores' => $ultraPlanQuery->count(),
             ];
 
             return ResponseHelper::success([

@@ -11,12 +11,14 @@ use App\Models\OrderItem;
 use App\Models\OrderTracking;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminOrderManagementController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all orders with filtering and pagination
      */
@@ -37,7 +39,17 @@ class AdminOrderManagementController extends Controller
                 $query->where('status', $request->status);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -62,14 +74,30 @@ class AdminOrderManagementController extends Controller
 
             $orders = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalOrdersQuery = StoreOrder::query();
+            $pendingOrdersQuery = StoreOrder::where('status', 'pending');
+            $completedOrdersQuery = StoreOrder::where('status', 'completed');
+            $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
+            $deliveredQuery = StoreOrder::where('status', 'delivered');
+            $disputedQuery = StoreOrder::where('status', 'disputed');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalOrdersQuery, $period);
+                $this->applyPeriodFilter($pendingOrdersQuery, $period);
+                $this->applyPeriodFilter($completedOrdersQuery, $period);
+                $this->applyPeriodFilter($outForDeliveryQuery, $period);
+                $this->applyPeriodFilter($deliveredQuery, $period);
+                $this->applyPeriodFilter($disputedQuery, $period);
+            }
+            
             $stats = [
-                'total_orders' => StoreOrder::count(),
-                'pending_orders' => StoreOrder::where('status', 'pending')->count(),
-                'completed_orders' => StoreOrder::where('status', 'completed')->count(),
-                'out_for_delivery' => StoreOrder::where('status', 'out_for_delivery')->count(),
-                'delivered' => StoreOrder::where('status', 'delivered')->count(),
-                'disputed' => StoreOrder::where('status', 'disputed')->count(),
+                'total_orders' => $totalOrdersQuery->count(),
+                'pending_orders' => $pendingOrdersQuery->count(),
+                'completed_orders' => $completedOrdersQuery->count(),
+                'out_for_delivery' => $outForDeliveryQuery->count(),
+                'delivered' => $deliveredQuery->count(),
+                'disputed' => $disputedQuery->count(),
             ];
 
             return ResponseHelper::success([
@@ -357,19 +385,47 @@ class AdminOrderManagementController extends Controller
     /**
      * Get order statistics
      */
-    public function getOrderStatistics()
+    public function getOrderStatistics(Request $request)
     {
         try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalOrdersQuery = StoreOrder::query();
+            $pendingOrdersQuery = StoreOrder::where('status', 'pending');
+            $processingOrdersQuery = StoreOrder::where('status', 'processing');
+            $shippedOrdersQuery = StoreOrder::where('status', 'shipped');
+            $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
+            $deliveredOrdersQuery = StoreOrder::where('status', 'delivered');
+            $completedOrdersQuery = StoreOrder::where('status', 'completed');
+            $disputedOrdersQuery = StoreOrder::where('status', 'disputed');
+            $cancelledOrdersQuery = StoreOrder::where('status', 'cancelled');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalOrdersQuery, $period);
+                $this->applyPeriodFilter($pendingOrdersQuery, $period);
+                $this->applyPeriodFilter($processingOrdersQuery, $period);
+                $this->applyPeriodFilter($shippedOrdersQuery, $period);
+                $this->applyPeriodFilter($outForDeliveryQuery, $period);
+                $this->applyPeriodFilter($deliveredOrdersQuery, $period);
+                $this->applyPeriodFilter($completedOrdersQuery, $period);
+                $this->applyPeriodFilter($disputedOrdersQuery, $period);
+                $this->applyPeriodFilter($cancelledOrdersQuery, $period);
+            }
+            
             $stats = [
-                'total_orders' => StoreOrder::count(),
-                'pending_orders' => StoreOrder::where('status', 'pending')->count(),
-                'processing_orders' => StoreOrder::where('status', 'processing')->count(),
-                'shipped_orders' => StoreOrder::where('status', 'shipped')->count(),
-                'out_for_delivery' => StoreOrder::where('status', 'out_for_delivery')->count(),
-                'delivered_orders' => StoreOrder::where('status', 'delivered')->count(),
-                'completed_orders' => StoreOrder::where('status', 'completed')->count(),
-                'disputed_orders' => StoreOrder::where('status', 'disputed')->count(),
-                'cancelled_orders' => StoreOrder::where('status', 'cancelled')->count(),
+                'total_orders' => $totalOrdersQuery->count(),
+                'pending_orders' => $pendingOrdersQuery->count(),
+                'processing_orders' => $processingOrdersQuery->count(),
+                'shipped_orders' => $shippedOrdersQuery->count(),
+                'out_for_delivery' => $outForDeliveryQuery->count(),
+                'delivered_orders' => $deliveredOrdersQuery->count(),
+                'completed_orders' => $completedOrdersQuery->count(),
+                'disputed_orders' => $disputedOrdersQuery->count(),
+                'cancelled_orders' => $cancelledOrdersQuery->count(),
             ];
 
             // Monthly trends

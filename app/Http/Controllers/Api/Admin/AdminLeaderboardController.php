@@ -9,6 +9,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Product;
+use App\Traits\PeriodFilterTrait;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -16,19 +17,38 @@ use Illuminate\Support\Facades\DB;
 
 class AdminLeaderboardController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get comprehensive leaderboard data
      */
     public function getLeaderboard(Request $request)
     {
         try {
-            $now = Carbon::now();
-            $windows = [
-                'today'   => [Carbon::today(), Carbon::today()->endOfDay()],
-                'weekly'  => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
-                'monthly' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
-                'all'     => [null, null],
-            ];
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            // If period is provided, use it; otherwise use default windows
+            if ($period) {
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $windows = [
+                        $period => [$dateRange['start'], $dateRange['end']]
+                    ];
+                } else {
+                    $windows = ['all_time' => [null, null]];
+                }
+            } else {
+                $now = Carbon::now();
+                $windows = [
+                    'today'   => [Carbon::today(), Carbon::today()->endOfDay()],
+                    'weekly'  => [$now->copy()->startOfWeek(), $now->copy()->endOfWeek()],
+                    'monthly' => [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()],
+                    'all'     => [null, null],
+                ];
+            }
 
             // Fetch aggregates per window
             $results = [];
@@ -111,12 +131,20 @@ class AdminLeaderboardController extends Controller
                 };
             }
 
-            return ResponseHelper::success([
-                'today'   => $build($results['today']),
-                'weekly'  => $build($results['weekly']),
-                'monthly' => $build($results['monthly']),
-                'all'     => $build($results['all']),
-            ]);
+            // Return results based on period or all windows
+            if ($period) {
+                $key = $period === 'all_time' ? 'all' : $period;
+                return ResponseHelper::success([
+                    $key => $build($results[$key] ?? collect()),
+                ]);
+            } else {
+                return ResponseHelper::success([
+                    'today'   => $build($results['today'] ?? collect()),
+                    'weekly'  => $build($results['weekly'] ?? collect()),
+                    'monthly' => $build($results['monthly'] ?? collect()),
+                    'all'     => $build($results['all'] ?? collect()),
+                ]);
+            }
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
@@ -128,8 +156,22 @@ class AdminLeaderboardController extends Controller
     public function getTopStoresByRevenue(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             $topStores = Store::withCount(['orders', 'products'])
                 ->withSum('orders', 'subtotal_with_shipping')
@@ -170,8 +212,22 @@ class AdminLeaderboardController extends Controller
     public function getTopStoresByOrders(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             $topStores = Store::withCount(['orders'])
                 ->withSum('orders', 'subtotal_with_shipping')
@@ -244,8 +300,22 @@ class AdminLeaderboardController extends Controller
     public function getLeaderboardAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // Store performance trends
             $storeTrends = Store::selectRaw('

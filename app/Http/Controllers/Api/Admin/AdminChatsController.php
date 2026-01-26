@@ -8,12 +8,14 @@ use App\Models\Chat;
 use App\Models\ChatMessage;
 use App\Models\User;
 use App\Models\Store;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminChatsController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all chats with filtering and pagination
      */
@@ -49,7 +51,17 @@ class AdminChatsController extends Controller
                 }
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -76,18 +88,34 @@ class AdminChatsController extends Controller
 
             $chats = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalChatsQuery = Chat::query();
+            $unreadChatsQuery = Chat::whereHas('messages', function ($q) {
+                $q->where('is_read', false);
+            });
+            $readChatsQuery = Chat::whereDoesntHave('messages', function ($q) {
+                $q->where('is_read', false);
+            });
+            $disputeChatsQuery = Chat::where('type', 'dispute');
+            $supportChatsQuery = Chat::where('type', 'support');
+            $generalChatsQuery = Chat::where('type', 'general');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalChatsQuery, $period);
+                $this->applyPeriodFilter($unreadChatsQuery, $period);
+                $this->applyPeriodFilter($readChatsQuery, $period);
+                $this->applyPeriodFilter($disputeChatsQuery, $period);
+                $this->applyPeriodFilter($supportChatsQuery, $period);
+                $this->applyPeriodFilter($generalChatsQuery, $period);
+            }
+            
             $stats = [
-                'total_chats' => Chat::count(),
-                'unread_chats' => Chat::whereHas('messages', function ($q) {
-                    $q->where('is_read', false);
-                })->count(),
-                'read_chats' => Chat::whereDoesntHave('messages', function ($q) {
-                    $q->where('is_read', false);
-                })->count(),
-                'dispute_chats' => Chat::where('type', 'dispute')->count(),
-                'support_chats' => Chat::where('type', 'support')->count(),
-                'general_chats' => Chat::where('type', 'general')->count(),
+                'total_chats' => $totalChatsQuery->count(),
+                'unread_chats' => $unreadChatsQuery->count(),
+                'read_chats' => $readChatsQuery->count(),
+                'dispute_chats' => $disputeChatsQuery->count(),
+                'support_chats' => $supportChatsQuery->count(),
+                'general_chats' => $generalChatsQuery->count(),
             ];
 
             return ResponseHelper::success([
@@ -291,13 +319,72 @@ class AdminChatsController extends Controller
     }
 
     /**
+     * Get chat statistics
+     */
+    public function getChatStatistics(Request $request)
+    {
+        try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalChatsQuery = Chat::query();
+            $unreadChatsQuery = Chat::whereHas('messages', function ($q) {
+                $q->where('is_read', false);
+            });
+            $readChatsQuery = Chat::whereDoesntHave('messages', function ($q) {
+                $q->where('is_read', false);
+            });
+            $disputeChatsQuery = Chat::where('type', 'dispute');
+            $supportChatsQuery = Chat::where('type', 'support');
+            $generalChatsQuery = Chat::where('type', 'general');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalChatsQuery, $period);
+                $this->applyPeriodFilter($unreadChatsQuery, $period);
+                $this->applyPeriodFilter($readChatsQuery, $period);
+                $this->applyPeriodFilter($disputeChatsQuery, $period);
+                $this->applyPeriodFilter($supportChatsQuery, $period);
+                $this->applyPeriodFilter($generalChatsQuery, $period);
+            }
+            
+            return ResponseHelper::success([
+                'total_chats' => $totalChatsQuery->count(),
+                'unread_chats' => $unreadChatsQuery->count(),
+                'read_chats' => $readChatsQuery->count(),
+                'dispute_chats' => $disputeChatsQuery->count(),
+                'support_chats' => $supportChatsQuery->count(),
+                'general_chats' => $generalChatsQuery->count(),
+            ], 'Chat statistics retrieved successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get chat analytics
      */
     public function getChatAnalytics(Request $request)
     {
         try {
-            $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
-            $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $dateRange = $this->getDateRange($period);
+            
+            // Use period if provided, otherwise fall back to date_from/date_to
+            if ($dateRange) {
+                $dateFrom = $dateRange['start']->format('Y-m-d');
+                $dateTo = $dateRange['end']->format('Y-m-d');
+            } else {
+                $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
+                $dateTo = $request->get('date_to', now()->format('Y-m-d'));
+            }
 
             // Chat trends
             $chatTrends = Chat::selectRaw('

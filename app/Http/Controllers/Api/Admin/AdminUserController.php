@@ -11,6 +11,7 @@ use App\Models\UserNotification;
 use App\Models\UserActivity;
 use App\Services\UserService;
 use App\Services\WalletService;
+use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 
 class AdminUserController extends Controller
 {
+    use PeriodFilterTrait;
     protected $userService;
     protected $walletService;
 
@@ -107,56 +109,6 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Get date range based on period
-     */
-    private function getDateRange($period)
-    {
-        switch ($period) {
-            case 'today':
-                return [
-                    'start' => now()->startOfDay(),
-                    'end' => now()->endOfDay(),
-                    'previous_start' => now()->subDay()->startOfDay(),
-                    'previous_end' => now()->subDay()->endOfDay()
-                ];
-            case 'this_week':
-                return [
-                    'start' => now()->startOfWeek(),
-                    'end' => now()->endOfWeek(),
-                    'previous_start' => now()->subWeek()->startOfWeek(),
-                    'previous_end' => now()->subWeek()->endOfWeek()
-                ];
-            case 'this_month':
-                return [
-                    'start' => now()->startOfMonth(),
-                    'end' => now()->endOfMonth(),
-                    'previous_start' => now()->subMonth()->startOfMonth(),
-                    'previous_end' => now()->subMonth()->endOfMonth()
-                ];
-            case 'this_year':
-                return [
-                    'start' => now()->startOfYear(),
-                    'end' => now()->endOfYear(),
-                    'previous_start' => now()->subYear()->startOfYear(),
-                    'previous_end' => now()->subYear()->endOfYear()
-                ];
-            default:
-                return null; // All time
-        }
-    }
-
-    /**
-     * Calculate percentage increase
-     */
-    private function calculateIncrease($current, $previous)
-    {
-        if ($previous == 0) {
-            return $current > 0 ? 100 : 0;
-        }
-        return round((($current - $previous) / $previous) * 100, 1);
-    }
-
-    /**
      * Get user statistics with period filtering
      */
     private function getUserStats($period = 'all_time')
@@ -169,11 +121,11 @@ class AdminUserController extends Controller
         $newUsersQuery = User::query(); // New users are those created in the period
 
         if ($dateRange) {
-            // For total users, we count all users up to the end of the period
-            $totalUsersQuery->where('created_at', '<=', $dateRange['end']);
-            // For active users, we count active users up to the end of the period
-            $activeUsersQuery->where('created_at', '<=', $dateRange['end']);
-            // For new users, we count users created within the period
+            // For total users, count all users created within the period
+            $totalUsersQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            // For active users, count active users created within the period
+            $activeUsersQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            // For new users, count users created within the period (same as total for period-based stats)
             $newUsersQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
         }
 
@@ -187,12 +139,13 @@ class AdminUserController extends Controller
         $previousNewUsers = 0;
 
         if ($dateRange) {
-            // Previous period total users (up to end of previous period)
-            $previousTotalUsers = User::where('created_at', '<=', $dateRange['previous_end'])->count();
+            // Previous period total users (created within previous period)
+            $previousTotalUsers = User::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
             
-            // Previous period active users (up to end of previous period)
+            // Previous period active users (created within previous period)
             $previousActiveUsers = User::where('is_active', true)
-                ->where('created_at', '<=', $dateRange['previous_end'])
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
             // Previous period new users (created within previous period)

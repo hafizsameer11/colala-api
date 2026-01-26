@@ -8,12 +8,14 @@ use App\Models\Service;
 use App\Models\ServiceStat;
 use App\Models\Store;
 use App\Models\User;
+use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AdminServicesController extends Controller
 {
+    use PeriodFilterTrait;
     /**
      * Get all services with filtering and pagination
      */
@@ -44,7 +46,17 @@ class AdminServicesController extends Controller
                 $query->where('service_category_id', $request->category);
             }
 
-            if ($request->has('date_range')) {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+
+            // Apply period filter (priority over date_range for backward compatibility)
+            if ($period) {
+                $this->applyPeriodFilter($query, $period);
+            } elseif ($request->has('date_range')) {
+                // Legacy support for date_range parameter
                 switch ($request->date_range) {
                     case 'today':
                         $query->whereDate('created_at', today());
@@ -71,13 +83,27 @@ class AdminServicesController extends Controller
 
             $services = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalServicesQuery = Service::query();
+            $activeServicesQuery = Service::where('status', 'active');
+            $inactiveServicesQuery = Service::where('status', 'inactive');
+            $soldServicesQuery = Service::where('is_sold', true);
+            $unavailableServicesQuery = Service::where('is_unavailable', true);
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalServicesQuery, $period);
+                $this->applyPeriodFilter($activeServicesQuery, $period);
+                $this->applyPeriodFilter($inactiveServicesQuery, $period);
+                $this->applyPeriodFilter($soldServicesQuery, $period);
+                $this->applyPeriodFilter($unavailableServicesQuery, $period);
+            }
+            
             $stats = [
-                'total_services' => Service::count(),
-                'active_services' => Service::where('status', 'active')->count(),
-                'inactive_services' => Service::where('status', 'inactive')->count(),
-                'sold_services' => Service::where('is_sold', true)->count(),
-                'unavailable_services' => Service::where('is_unavailable', true)->count(),
+                'total_services' => $totalServicesQuery->count(),
+                'active_services' => $activeServicesQuery->count(),
+                'inactive_services' => $inactiveServicesQuery->count(),
+                'sold_services' => $soldServicesQuery->count(),
+                'unavailable_services' => $unavailableServicesQuery->count(),
             ];
 
             return ResponseHelper::success([
