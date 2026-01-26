@@ -19,13 +19,15 @@ class AdminDashboardController extends Controller
     /**
      * Get complete dashboard data
      */
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         try {
+            $period = $request->get('period', 'all_time');
+            
             $data = [
-                'buyer_stats' => $this->getBuyerStats(),
-                'seller_stats' => $this->getSellerStats(),
-                'site_stats' => $this->getSiteStats(),
+                'buyer_stats' => $this->getBuyerStats($period),
+                'seller_stats' => $this->getSellerStats($period),
+                'site_stats' => $this->getSiteStats($period),
                 'latest_chats' => $this->getLatestChats(),
                 'latest_orders' => $this->getLatestOrders()
             ];
@@ -40,10 +42,11 @@ class AdminDashboardController extends Controller
     /**
      * Get buyer statistics
      */
-    public function buyerStats()
+    public function buyerStats(Request $request)
     {
         try {
-            $stats = $this->getBuyerStats();
+            $period = $request->get('period', 'all_time');
+            $stats = $this->getBuyerStats($period);
             return ResponseHelper::success($stats, 'Buyer statistics retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -54,10 +57,11 @@ class AdminDashboardController extends Controller
     /**
      * Get seller statistics
      */
-    public function sellerStats()
+    public function sellerStats(Request $request)
     {
         try {
-            $stats = $this->getSellerStats();
+            $period = $request->get('period', 'all_time');
+            $stats = $this->getSellerStats($period);
             return ResponseHelper::success($stats, 'Seller statistics retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -68,10 +72,11 @@ class AdminDashboardController extends Controller
     /**
      * Get site statistics (chart data)
      */
-    public function siteStats()
+    public function siteStats(Request $request)
     {
         try {
-            $stats = $this->getSiteStats();
+            $period = $request->get('period', 'all_time');
+            $stats = $this->getSiteStats($period);
             return ResponseHelper::success($stats, 'Site statistics retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -157,25 +162,116 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Get date range based on period
+     */
+    private function getDateRange($period)
+    {
+        switch ($period) {
+            case 'today':
+                return [
+                    'start' => now()->startOfDay(),
+                    'end' => now()->endOfDay(),
+                    'previous_start' => now()->subDay()->startOfDay(),
+                    'previous_end' => now()->subDay()->endOfDay()
+                ];
+            case 'this_week':
+                return [
+                    'start' => now()->startOfWeek(),
+                    'end' => now()->endOfWeek(),
+                    'previous_start' => now()->subWeek()->startOfWeek(),
+                    'previous_end' => now()->subWeek()->endOfWeek()
+                ];
+            case 'this_month':
+                return [
+                    'start' => now()->startOfMonth(),
+                    'end' => now()->endOfMonth(),
+                    'previous_start' => now()->subMonth()->startOfMonth(),
+                    'previous_end' => now()->subMonth()->endOfMonth()
+                ];
+            case 'this_year':
+                return [
+                    'start' => now()->startOfYear(),
+                    'end' => now()->endOfYear(),
+                    'previous_start' => now()->subYear()->startOfYear(),
+                    'previous_end' => now()->subYear()->endOfYear()
+                ];
+            default:
+                return null; // All time
+        }
+    }
+
+    /**
+     * Calculate percentage increase
+     */
+    private function calculateIncrease($current, $previous)
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100 : 0;
+        }
+        return round((($current - $previous) / $previous) * 100, 1);
+    }
+
+    /**
      * Get buyer statistics data
      */
-    private function getBuyerStats()
+    private function getBuyerStats($period = 'all_time')
     {
-        $totalUsers = User::where('role', 'buyer')->count();
-        $totalOrders = Order::count();
-        $completedOrders = Order::where('payment_status', 'completed')->count();
+        $dateRange = $this->getDateRange($period);
+        
+        // Build queries with period filter
+        $userQuery = User::where('role', 'buyer');
+        $orderQuery = Order::query();
+        $completedOrderQuery = Order::where('payment_status', 'completed');
+        $transactionQuery = Transaction::query();
+
+        if ($dateRange) {
+            $userQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $orderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $completedOrderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $transactionQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        }
+
+        $totalUsers = $userQuery->count();
+        $totalOrders = $orderQuery->count();
+        $completedOrders = $completedOrderQuery->count();
         $totalTransactions = 0;
         try {
-            $totalTransactions = Transaction::count();
+            $totalTransactions = $transactionQuery->count();
         } catch (\Exception $e) {
             // Table might not exist yet
         }
 
-        // Calculate percentage increase (mock data for now)
-        $userIncrease = 5;
-        $orderIncrease = 5;
-        $completedIncrease = 5;
-        $transactionIncrease = 5;
+        // Calculate previous period values for increase calculation
+        $previousUsers = 0;
+        $previousOrders = 0;
+        $previousCompletedOrders = 0;
+        $previousTransactions = 0;
+
+        if ($dateRange) {
+            $previousUsers = User::where('role', 'buyer')
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousOrders = Order::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousCompletedOrders = Order::where('payment_status', 'completed')
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            try {
+                $previousTransactions = Transaction::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                    ->count();
+            } catch (\Exception $e) {
+                // Table might not exist yet
+            }
+        }
+
+        // Calculate percentage increase
+        $userIncrease = $this->calculateIncrease($totalUsers, $previousUsers);
+        $orderIncrease = $this->calculateIncrease($totalOrders, $previousOrders);
+        $completedIncrease = $this->calculateIncrease($completedOrders, $previousCompletedOrders);
+        $transactionIncrease = $this->calculateIncrease($totalTransactions, $previousTransactions);
 
         return [
             'total_users' => [
@@ -208,18 +304,63 @@ class AdminDashboardController extends Controller
     /**
      * Get seller statistics data
      */
-    private function getSellerStats()
+    private function getSellerStats($period = 'all_time')
     {
-        $totalSellers = User::where('role', 'seller')->count();
-        $totalStores = Store::count();
-        $activeStores = Store::where('status', 'active')->count();
-        $totalStoreOrders = StoreOrder::count();
+        $dateRange = $this->getDateRange($period);
+        
+        // Build queries with period filter
+        $sellerQuery = User::where('role', 'seller');
+        $storeQuery = Store::query();
+        $activeStoreQuery = Store::where('status', 'active');
+        $storeOrderQuery = StoreOrder::query();
+        $completedStoreOrderQuery = StoreOrder::where('status', 'completed');
 
-        // Calculate percentage increase (mock data for now)
-        $sellerIncrease = 5;
-        $storeIncrease = 5;
-        $activeStoreIncrease = 5;
-        $storeOrderIncrease = 5;
+        if ($dateRange) {
+            $sellerQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $storeQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $activeStoreQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $storeOrderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            $completedStoreOrderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        }
+
+        $totalSellers = $sellerQuery->count();
+        $totalStores = $storeQuery->count();
+        $activeStores = $activeStoreQuery->count();
+        $totalStoreOrders = $storeOrderQuery->count();
+        $completedStoreOrders = $completedStoreOrderQuery->count();
+
+        // Calculate previous period values for increase calculation
+        $previousSellers = 0;
+        $previousStores = 0;
+        $previousActiveStores = 0;
+        $previousStoreOrders = 0;
+        $previousCompletedStoreOrders = 0;
+
+        if ($dateRange) {
+            $previousSellers = User::where('role', 'seller')
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousStores = Store::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousActiveStores = Store::where('status', 'active')
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousStoreOrders = StoreOrder::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+            
+            $previousCompletedStoreOrders = StoreOrder::where('status', 'completed')
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+        }
+
+        // Calculate percentage increase
+        $sellerIncrease = $this->calculateIncrease($totalSellers, $previousSellers);
+        $storeOrderIncrease = $this->calculateIncrease($totalStoreOrders, $previousStoreOrders);
+        $completedIncrease = $this->calculateIncrease($completedStoreOrders, $previousCompletedStoreOrders);
+        $transactionIncrease = $this->calculateIncrease(0, 0); // Transactions not tracked for sellers yet
 
         return [
             'total_users' => [
@@ -235,14 +376,14 @@ class AdminDashboardController extends Controller
                 'color' => 'blue'
             ],
             'completed_orders' => [
-                'value' => StoreOrder::where('status', 'completed')->count(),
-                'increase' => $storeOrderIncrease,
+                'value' => $completedStoreOrders,
+                'increase' => $completedIncrease,
                 'icon' => 'cart',
                 'color' => 'brown'
             ],
             'total_transactions' => [
                 'value' => 0,
-                'increase' => $storeOrderIncrease,
+                'increase' => $transactionIncrease,
                 'icon' => 'money',
                 'color' => 'green'
             ]
@@ -252,33 +393,133 @@ class AdminDashboardController extends Controller
     /**
      * Get site statistics (chart data)
      */
-    private function getSiteStats()
+    private function getSiteStats($period = 'all_time')
     {
-        // Get monthly data for the current year
-        $currentYear = date('Y');
+        $dateRange = $this->getDateRange($period);
         
-        $userData = User::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->whereYear('created_at', $currentYear)
-            ->groupBy('month')
-            ->pluck('count', 'month')
-            ->toArray();
+        // For period-based stats, show daily/weekly/monthly breakdown
+        if ($dateRange) {
+            if ($period === 'today') {
+                // Show hourly data for today
+                $userData = User::selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
+                    ->whereDate('created_at', today())
+                    ->groupBy('hour')
+                    ->pluck('count', 'hour')
+                    ->toArray();
 
-        $orderData = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
-            ->whereYear('created_at', $currentYear)
-            ->groupBy('month')
-            ->pluck('count', 'month')
-            ->toArray();
+                $orderData = Order::selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
+                    ->whereDate('created_at', today())
+                    ->groupBy('hour')
+                    ->pluck('count', 'hour')
+                    ->toArray();
 
-        // Fill in missing months with 0
-        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $chartData = [];
-        
-        for ($i = 1; $i <= 12; $i++) {
-            $chartData[] = [
-                'month' => $months[$i - 1],
-                'users' => $userData[$i] ?? 0,
-                'orders' => $orderData[$i] ?? 0
-            ];
+                $chartData = [];
+                for ($i = 0; $i < 24; $i++) {
+                    $chartData[] = [
+                        'month' => sprintf('%02d:00', $i),
+                        'users' => $userData[$i] ?? 0,
+                        'orders' => $orderData[$i] ?? 0
+                    ];
+                }
+            } elseif ($period === 'this_week') {
+                // Show daily data for this week
+                $userData = User::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('date')
+                    ->pluck('count', 'date')
+                    ->toArray();
+
+                $orderData = Order::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('date')
+                    ->pluck('count', 'date')
+                    ->toArray();
+
+                $chartData = [];
+                $startDate = $dateRange['start']->copy();
+                for ($i = 0; $i < 7; $i++) {
+                    $date = $startDate->copy()->addDays($i);
+                    $dateKey = $date->format('Y-m-d');
+                    $chartData[] = [
+                        'month' => $date->format('D'),
+                        'users' => $userData[$dateKey] ?? 0,
+                        'orders' => $orderData[$dateKey] ?? 0
+                    ];
+                }
+            } elseif ($period === 'this_month') {
+                // Show daily data for this month
+                $userData = User::selectRaw('DAY(created_at) as day, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('day')
+                    ->pluck('count', 'day')
+                    ->toArray();
+
+                $orderData = Order::selectRaw('DAY(created_at) as day, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('day')
+                    ->pluck('count', 'day')
+                    ->toArray();
+
+                $chartData = [];
+                $daysInMonth = $dateRange['start']->daysInMonth;
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+                    $chartData[] = [
+                        'month' => (string)$i,
+                        'users' => $userData[$i] ?? 0,
+                        'orders' => $orderData[$i] ?? 0
+                    ];
+                }
+            } else {
+                // Default to monthly for this_year
+                $userData = User::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('month')
+                    ->pluck('count', 'month')
+                    ->toArray();
+
+                $orderData = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                    ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+                    ->groupBy('month')
+                    ->pluck('count', 'month')
+                    ->toArray();
+
+                $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                $chartData = [];
+                for ($i = 1; $i <= 12; $i++) {
+                    $chartData[] = [
+                        'month' => $months[$i - 1],
+                        'users' => $userData[$i] ?? 0,
+                        'orders' => $orderData[$i] ?? 0
+                    ];
+                }
+            }
+        } else {
+            // All time - show monthly data for the current year
+            $currentYear = date('Y');
+            
+            $userData = User::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                ->whereYear('created_at', $currentYear)
+                ->groupBy('month')
+                ->pluck('count', 'month')
+                ->toArray();
+
+            $orderData = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                ->whereYear('created_at', $currentYear)
+                ->groupBy('month')
+                ->pluck('count', 'month')
+                ->toArray();
+
+            // Fill in missing months with 0
+            $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            $chartData = [];
+            
+            for ($i = 1; $i <= 12; $i++) {
+                $chartData[] = [
+                    'month' => $months[$i - 1],
+                    'users' => $userData[$i] ?? 0,
+                    'orders' => $orderData[$i] ?? 0
+                ];
+            }
         }
 
         return [
