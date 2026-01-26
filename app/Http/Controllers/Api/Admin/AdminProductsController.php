@@ -136,22 +136,30 @@ class AdminProductsController extends Controller
     public function getProductDetails($productId)
     {
         try {
-            $product = Product::withoutGlobalScopes()->with([
-                'store' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'store.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'images',
-                'variants',
-                'reviews.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'boost',
-                'productStats',
-                'category'
-            ])->findOrFail($productId);
+            // Use withoutGlobalScopes() to bypass ALL global scopes including visibility filter
+            // Query explicitly to ensure scope is bypassed
+            $product = Product::withoutGlobalScopes()
+                ->where('id', $productId)
+                ->with([
+                    'store' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'store.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'images',
+                    'variants',
+                    'reviews.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'boost',
+                    'productStats',
+                    'category'
+                ])->first();
+            
+            if (!$product) {
+                return ResponseHelper::error('Product not found', 404);
+            }
 
             $productData = [
                 'product_info' => [
