@@ -328,9 +328,9 @@ class AdminUserController extends Controller
                 
                 return [
                     'id' => $storeOrder->id, // StoreOrder ID
-                    'order_no' => $storeOrder->order->order_no,
-                    'store_name' => $storeOrder->store->store_name,
-                    'product_name' => $product ? $product->product->name : 'Unknown Product',
+                    'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
+                    'store_name' => $storeOrder->store ? $storeOrder->store->store_name : 'Deleted Store',
+                    'product_name' => $product && $product->product ? $product->product->name : 'Unknown Product',
                     'price' => number_format($storeOrder->subtotal_with_shipping, 2),
                     'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s'),
                     'status' => $storeOrder->status,
@@ -379,10 +379,14 @@ class AdminUserController extends Controller
             }
 
             if ($search) {
-                $query->whereHas('store', function ($q) use ($search) {
-                    $q->where('store_name', 'like', "%{$search}%");
-                })->orWhereHas('items.product', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('store', function ($storeQuery) use ($search) {
+                        $storeQuery->where('store_name', 'like', "%{$search}%");
+                    })->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    })->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%");
+                    });
                 });
             }
 
@@ -391,9 +395,9 @@ class AdminUserController extends Controller
                 
                 return [
                     'id' => $storeOrder->id, // StoreOrder ID
-                    'order_no' => $storeOrder->order->order_no,
-                    'store_name' => $storeOrder->store->store_name,
-                    'product_name' => $product ? $product->product->name : 'Unknown Product',
+                    'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
+                    'store_name' => $storeOrder->store ? $storeOrder->store->store_name : 'Deleted Store',
+                    'product_name' => $product && $product->product ? $product->product->name : 'Unknown Product',
                     'price' => number_format($storeOrder->subtotal_with_shipping, 2),
                     'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s'),
                     'status' => $storeOrder->status,
@@ -482,16 +486,16 @@ class AdminUserController extends Controller
             // Format the complete order details
             $orderDetails = [
                 'id' => $storeOrder->id,
-                'order_no' => $storeOrder->order->order_no,
+                'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
                 'status' => $storeOrder->status,
                 'status_color' => $this->getOrderStatusColor($storeOrder->status),
-                'store' => [
+                'store' => $storeOrder->store ? [
                     'id' => $storeOrder->store->id,
                     'name' => $storeOrder->store->store_name,
                     'email' => $storeOrder->store->store_email,
                     'phone' => $storeOrder->store->store_phone,
                     'location' => $storeOrder->store->store_location,
-                ],
+                ] : null,
                 'customer' => [
                     'id' => $user->id,
                     'name' => $user->full_name,
@@ -538,7 +542,7 @@ class AdminUserController extends Controller
                                     'is_active' => $variant->is_active
                                 ];
                             }),
-                            'store' => [
+                            'store' => $storeOrder->store ? [
                                 'id' => $storeOrder->store->id,
                                 'store_name' => $storeOrder->store->store_name,
                                 'store_email' => $storeOrder->store->store_email,
@@ -550,7 +554,7 @@ class AdminUserController extends Controller
                                 'average_rating' => $storeOrder->store->average_rating,
                                 'total_sold' => $storeOrder->store->total_sold,
                                 'followers_count' => $storeOrder->store->followers_count
-                            ],
+                            ] : null,
                             'reviews' => $item->product->reviews->map(function ($review) {
                                 return [
                                     'id' => $review->id,
