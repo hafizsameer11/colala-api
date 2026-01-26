@@ -311,13 +311,31 @@ class AdminUserController extends Controller
                 $query->where('status', $request->status);
             }
 
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter to the main query
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $tableName = (new \App\Models\StoreOrder())->getTable();
+                    $query->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
             // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
-                $query->whereHas('store', function ($q) use ($search) {
-                    $q->where('store_name', 'like', "%{$search}%");
-                })->orWhereHas('items.product', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('store', function ($storeQuery) use ($search) {
+                        $storeQuery->where('store_name', 'like', "%{$search}%");
+                    })->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    })->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%");
+                    });
                 });
             }
 
@@ -378,6 +396,20 @@ class AdminUserController extends Controller
                 $query->where('status', $status);
             }
 
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter to the main query
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $tableName = (new \App\Models\StoreOrder())->getTable();
+                    $query->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('store', function ($storeQuery) use ($search) {
@@ -405,15 +437,16 @@ class AdminUserController extends Controller
                 ];
             });
 
-            // Get order statistics for this user
-            $orderStats = $this->getUserOrderStats($user);
+            // Get order statistics for this user with period filtering
+            $orderStats = $this->getUserOrderStats($user, $period);
 
             return ResponseHelper::success([
                 'orders' => $storeOrders,
                 'statistics' => $orderStats,
                 'filters' => [
                     'status' => $status,
-                    'search' => $search
+                    'search' => $search,
+                    'period' => $period ?? 'all_time'
                 ]
             ], 'Filtered orders retrieved successfully');
         } catch (\Exception $e) {
@@ -671,38 +704,94 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Get user order statistics (based on StoreOrders)
+     * Get user order statistics (based on StoreOrders) with period filtering
      */
-    private function getUserOrderStats($user)
+    private function getUserOrderStats($user, $period = 'all_time')
     {
         // Get StoreOrders for this user
         $storeOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         });
 
+        $pendingOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->whereIn('status', ['pending', 'processing', 'shipped', 'pending_acceptance', 'order_placed']);
+
+        $completedOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->where('status', 'completed');
+
+        // Apply period filter if provided
+        if ($period && $period !== 'all_time' && $period !== 'null') {
+            $dateRange = $this->getDateRange($period);
+            if ($dateRange) {
+                $tableName = (new \App\Models\StoreOrder())->getTable();
+                $storeOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                $pendingOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+                $completedOrdersQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
+            }
+        }
+
         $totalOrders = $storeOrdersQuery->count();
-        $pendingOrders = $storeOrdersQuery->whereIn('status', ['pending', 'processing', 'shipped'])->count();
-        $completedOrders = $storeOrdersQuery->where('status', 'delivered')->count();
+        $pendingOrders = $pendingOrdersQuery->count();
+        $completedOrders = $completedOrdersQuery->count();
 
-        // Calculate percentage increase from last month
-        $lastMonth = now()->subMonth();
-        $currentMonth = now();
-        
-        $lastMonthOrders = $storeOrdersQuery->whereBetween('created_at', [
-            $lastMonth->startOfMonth(),
-            $lastMonth->endOfMonth()
-        ])->count();
-        
-        $currentMonthOrders = $storeOrdersQuery->whereBetween('created_at', [
-            $currentMonth->startOfMonth(),
-            $currentMonth->endOfMonth()
-        ])->count();
+        // Calculate percentage increase based on period
+        $totalIncrease = 0;
+        $pendingIncrease = 0;
+        $completedIncrease = 0;
 
-        $totalIncrease = $lastMonthOrders > 0 ? 
-            round((($currentMonthOrders - $lastMonthOrders) / $lastMonthOrders) * 100, 1) : 0;
-        
-        $pendingIncrease = 5; // Mock data for pending orders increase
-        $completedIncrease = 5; // Mock data for completed orders increase
+        if ($period && $period !== 'all_time' && $period !== 'null') {
+            $dateRange = $this->getDateRange($period);
+            if ($dateRange) {
+                $tableName = (new \App\Models\StoreOrder())->getTable();
+                
+                // Previous period queries
+                $previousTotalOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })->whereBetween($tableName . '.created_at', [$dateRange['previous_start'], $dateRange['previous_end']]);
+
+                $previousPendingOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })->whereIn('status', ['pending', 'processing', 'shipped', 'pending_acceptance', 'order_placed'])
+                  ->whereBetween($tableName . '.created_at', [$dateRange['previous_start'], $dateRange['previous_end']]);
+
+                $previousCompletedOrdersQuery = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })->where('status', 'completed')
+                  ->whereBetween($tableName . '.created_at', [$dateRange['previous_start'], $dateRange['previous_end']]);
+
+                $previousTotalOrders = $previousTotalOrdersQuery->count();
+                $previousPendingOrders = $previousPendingOrdersQuery->count();
+                $previousCompletedOrders = $previousCompletedOrdersQuery->count();
+
+                $totalIncrease = $this->calculateIncrease($totalOrders, $previousTotalOrders);
+                $pendingIncrease = $this->calculateIncrease($pendingOrders, $previousPendingOrders);
+                $completedIncrease = $this->calculateIncrease($completedOrders, $previousCompletedOrders);
+            }
+        } else {
+            // Default: calculate increase from last month
+            $lastMonth = now()->subMonth();
+            $currentMonth = now();
+            
+            $lastMonthOrders = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->whereBetween('created_at', [
+                $lastMonth->startOfMonth(),
+                $lastMonth->endOfMonth()
+            ])->count();
+            
+            $currentMonthOrders = \App\Models\StoreOrder::whereHas('order', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->whereBetween('created_at', [
+                $currentMonth->startOfMonth(),
+                $currentMonth->endOfMonth()
+            ])->count();
+
+            $totalIncrease = $this->calculateIncrease($currentMonthOrders, $lastMonthOrders);
+            $pendingIncrease = 5; // Mock data for pending orders increase
+            $completedIncrease = 5; // Mock data for completed orders increase
+        }
 
         return [
             'total_orders' => [
@@ -730,35 +819,78 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Get user chat statistics
+     * Get user chat statistics with period filtering
      */
-    private function getUserChatStats($user)
+    private function getUserChatStats($user, $period = 'all_time')
     {
-        $totalChats = $user->chats()->count();
-        $unreadChats = $user->chats()->whereHas('messages', function ($q) {
+        $totalChatsQuery = $user->chats();
+        $unreadChatsQuery = $user->chats()->whereHas('messages', function ($q) {
             $q->where('is_read', false);
-        })->count();
-        $disputeChats = $user->chats()->whereHas('dispute')->count();
+        });
+        $disputeChatsQuery = $user->chats()->whereHas('dispute');
 
-        // Calculate percentage increase from last month
-        $lastMonth = now()->subMonth();
-        $currentMonth = now();
-        
-        $lastMonthChats = $user->chats()->whereBetween('created_at', [
-            $lastMonth->startOfMonth(),
-            $lastMonth->endOfMonth()
-        ])->count();
-        
-        $currentMonthChats = $user->chats()->whereBetween('created_at', [
-            $currentMonth->startOfMonth(),
-            $currentMonth->endOfMonth()
-        ])->count();
+        // Apply period filter if provided
+        if ($period && $period !== 'all_time' && $period !== 'null') {
+            $dateRange = $this->getDateRange($period);
+            if ($dateRange) {
+                $totalChatsQuery->whereBetween('chats.created_at', [$dateRange['start'], $dateRange['end']]);
+                $unreadChatsQuery->whereBetween('chats.created_at', [$dateRange['start'], $dateRange['end']]);
+                $disputeChatsQuery->whereBetween('chats.created_at', [$dateRange['start'], $dateRange['end']]);
+            }
+        }
 
-        $totalIncrease = $lastMonthChats > 0 ? 
-            round((($currentMonthChats - $lastMonthChats) / $lastMonthChats) * 100, 1) : 0;
-        
-        $unreadIncrease = 5; // Mock data for unread chats increase
-        $disputeIncrease = 5; // Mock data for dispute chats increase
+        $totalChats = $totalChatsQuery->count();
+        $unreadChats = $unreadChatsQuery->count();
+        $disputeChats = $disputeChatsQuery->count();
+
+        // Calculate percentage increase based on period
+        $totalIncrease = 0;
+        $unreadIncrease = 0;
+        $disputeIncrease = 0;
+
+        if ($period && $period !== 'all_time' && $period !== 'null') {
+            $dateRange = $this->getDateRange($period);
+            if ($dateRange) {
+                // Previous period queries
+                $previousTotalChats = $user->chats()
+                    ->whereBetween('chats.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                    ->count();
+                
+                $previousUnreadChats = $user->chats()
+                    ->whereHas('messages', function ($q) {
+                        $q->where('is_read', false);
+                    })
+                    ->whereBetween('chats.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                    ->count();
+                
+                $previousDisputeChats = $user->chats()
+                    ->whereHas('dispute')
+                    ->whereBetween('chats.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                    ->count();
+
+                $totalIncrease = $this->calculateIncrease($totalChats, $previousTotalChats);
+                $unreadIncrease = $this->calculateIncrease($unreadChats, $previousUnreadChats);
+                $disputeIncrease = $this->calculateIncrease($disputeChats, $previousDisputeChats);
+            }
+        } else {
+            // Default: calculate increase from last month
+            $lastMonth = now()->subMonth();
+            $currentMonth = now();
+            
+            $lastMonthChats = $user->chats()->whereBetween('created_at', [
+                $lastMonth->startOfMonth(),
+                $lastMonth->endOfMonth()
+            ])->count();
+            
+            $currentMonthChats = $user->chats()->whereBetween('created_at', [
+                $currentMonth->startOfMonth(),
+                $currentMonth->endOfMonth()
+            ])->count();
+
+            $totalIncrease = $this->calculateIncrease($currentMonthChats, $lastMonthChats);
+            $unreadIncrease = 5; // Mock data for unread chats increase
+            $disputeIncrease = 5; // Mock data for dispute chats increase
+        }
 
         return [
             'total_chats' => [
@@ -806,6 +938,19 @@ class AdminUserController extends Controller
                     });
                 } elseif ($request->status === 'dispute') {
                     $query->whereHas('dispute');
+                }
+            }
+
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter to the main query
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('chats.created_at', [$dateRange['start'], $dateRange['end']]);
                 }
             }
 
@@ -880,6 +1025,19 @@ class AdminUserController extends Controller
                 }
             }
 
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter to the main query
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('chats.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
             if ($search) {
                 $query->whereHas('store', function ($q) use ($search) {
                     $q->where('store_name', 'like', "%{$search}%");
@@ -902,15 +1060,16 @@ class AdminUserController extends Controller
                 ];
             });
 
-            // Get chat statistics for this user
-            $chatStats = $this->getUserChatStats($user);
+            // Get chat statistics for this user with period filtering
+            $chatStats = $this->getUserChatStats($user, $period);
 
             return ResponseHelper::success([
                 'chats' => $chats,
                 'statistics' => $chatStats,
                 'filters' => [
                     'status' => $status,
-                    'search' => $search
+                    'search' => $search,
+                    'period' => $period ?? 'all_time'
                 ]
             ], 'Filtered chats retrieved successfully');
         } catch (\Exception $e) {
@@ -1124,8 +1283,19 @@ class AdminUserController extends Controller
                 $query->where('type', $request->type);
             }
 
-            // Date filter
-            if ($request->has('date') && $request->date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter (priority over date for backward compatibility)
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($request->has('date') && $request->date !== 'all') {
+                // Legacy support for date parameter
                 if ($request->date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($request->date === 'week') {
@@ -1146,11 +1316,52 @@ class AdminUserController extends Controller
 
             $transactions = $query->latest()->paginate(15);
 
-            // Get summary stats
-            $allTransactions = Transaction::where('user_id', $id)->count();
-            $pendingTransactions = Transaction::where('user_id', $id)->where('status', 'pending')->count();
-            $successfulTransactions = Transaction::where('user_id', $id)->where('status', 'successful')->count();
-            $failedTransactions = Transaction::where('user_id', $id)->where('status', 'failed')->count();
+            // Get summary stats with period filtering
+            $allTransactionsQuery = Transaction::where('user_id', $id);
+            $pendingTransactionsQuery = Transaction::where('user_id', $id)->where('status', 'pending');
+            $successfulTransactionsQuery = Transaction::where('user_id', $id)->where('status', 'successful');
+            $failedTransactionsQuery = Transaction::where('user_id', $id)->where('status', 'failed');
+
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $allTransactionsQuery->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $pendingTransactionsQuery->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $successfulTransactionsQuery->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $failedTransactionsQuery->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
+            $allTransactions = $allTransactionsQuery->count();
+            $pendingTransactions = $pendingTransactionsQuery->count();
+            $successfulTransactions = $successfulTransactionsQuery->count();
+            $failedTransactions = $failedTransactionsQuery->count();
+
+            // Calculate percentage increases
+            $allIncrease = 0;
+            $pendingIncrease = 0;
+            $successfulIncrease = 0;
+
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $previousAllTransactions = Transaction::where('user_id', $id)
+                        ->whereBetween('transactions.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+                    $previousPendingTransactions = Transaction::where('user_id', $id)
+                        ->where('status', 'pending')
+                        ->whereBetween('transactions.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+                    $previousSuccessfulTransactions = Transaction::where('user_id', $id)
+                        ->where('status', 'successful')
+                        ->whereBetween('transactions.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+
+                    $allIncrease = $this->calculateIncrease($allTransactions, $previousAllTransactions);
+                    $pendingIncrease = $this->calculateIncrease($pendingTransactions, $previousPendingTransactions);
+                    $successfulIncrease = $this->calculateIncrease($successfulTransactions, $previousSuccessfulTransactions);
+                }
+            }
 
             $transactions->getCollection()->transform(function ($transaction) {
                 return [
@@ -1168,17 +1379,17 @@ class AdminUserController extends Controller
             $summaryStats = [
                 'all_transactions' => [
                     'count' => $allTransactions,
-                    'increase' => 10, // Mock data
+                    'increase' => $allIncrease,
                     'color' => 'red'
                 ],
                 'pending_transactions' => [
                     'count' => $pendingTransactions,
-                    'increase' => 10, // Mock data
+                    'increase' => $pendingIncrease,
                     'color' => 'red'
                 ],
                 'successful_transactions' => [
                     'count' => $successfulTransactions,
-                    'increase' => 10, // Mock data
+                    'increase' => $successfulIncrease,
                     'color' => 'red'
                 ]
             ];
@@ -1217,7 +1428,19 @@ class AdminUserController extends Controller
                 $query->where('type', $type);
             }
 
-            if ($date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter (priority over date for backward compatibility)
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('transactions.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($date !== 'all') {
+                // Legacy support for date parameter
                 if ($date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($date === 'week') {
@@ -1372,8 +1595,19 @@ class AdminUserController extends Controller
                 }
             }
 
-            // Date filter
-            if ($request->has('date') && $request->date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter (priority over date for backward compatibility)
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('posts.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($request->has('date') && $request->date !== 'all') {
+                // Legacy support for date parameter
                 if ($request->date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($request->date === 'week') {
@@ -1396,10 +1630,47 @@ class AdminUserController extends Controller
                 ->latest()
                 ->paginate(15);
 
-            // Get summary stats
-            $leadPosts = \App\Models\Post::where('user_id', $id)->count();
-            $comments = \App\Models\PostComment::where('user_id', $id)->count();
-            $savedPosts = \App\Models\PostShare::where('user_id', $id)->count();
+            // Get summary stats with period filtering
+            $leadPostsQuery = \App\Models\Post::where('user_id', $id);
+            $commentsQuery = \App\Models\PostComment::where('user_id', $id);
+            $savedPostsQuery = \App\Models\PostShare::where('user_id', $id);
+
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $leadPostsQuery->whereBetween('posts.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $commentsQuery->whereBetween('post_comments.created_at', [$dateRange['start'], $dateRange['end']]);
+                    $savedPostsQuery->whereBetween('post_shares.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
+            $leadPosts = $leadPostsQuery->count();
+            $comments = $commentsQuery->count();
+            $savedPosts = $savedPostsQuery->count();
+
+            // Calculate percentage increases
+            $leadPostsIncrease = 0;
+            $commentsIncrease = 0;
+            $savedPostsIncrease = 0;
+
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $previousLeadPosts = \App\Models\Post::where('user_id', $id)
+                        ->whereBetween('posts.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+                    $previousComments = \App\Models\PostComment::where('user_id', $id)
+                        ->whereBetween('post_comments.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+                    $previousSavedPosts = \App\Models\PostShare::where('user_id', $id)
+                        ->whereBetween('post_shares.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                        ->count();
+
+                    $leadPostsIncrease = $this->calculateIncrease($leadPosts, $previousLeadPosts);
+                    $commentsIncrease = $this->calculateIncrease($comments, $previousComments);
+                    $savedPostsIncrease = $this->calculateIncrease($savedPosts, $previousSavedPosts);
+                }
+            }
 
             $posts->getCollection()->transform(function ($post) {
                 return [
@@ -1430,17 +1701,17 @@ class AdminUserController extends Controller
             $summaryStats = [
                 'lead_posts' => [
                     'count' => $leadPosts,
-                    'increase' => 10, // Mock data
+                    'increase' => $leadPostsIncrease,
                     'color' => 'red'
                 ],
                 'comments' => [
                     'count' => $comments,
-                    'increase' => 2, // Mock data
+                    'increase' => $commentsIncrease,
                     'color' => 'red'
                 ],
                 'saved_posts' => [
                     'count' => $savedPosts,
-                    'increase' => 0, // Mock data
+                    'increase' => $savedPostsIncrease,
                     'color' => 'red'
                 ]
             ];
@@ -1486,7 +1757,19 @@ class AdminUserController extends Controller
                 }
             }
 
-            if ($date !== 'all') {
+            // Validate and apply period parameter
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+                }
+                // Apply period filter (priority over date for backward compatibility)
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('posts.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            } elseif ($date !== 'all') {
+                // Legacy support for date parameter
                 if ($date === 'today') {
                     $query->whereDate('created_at', today());
                 } elseif ($date === 'week') {
