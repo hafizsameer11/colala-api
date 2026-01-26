@@ -30,6 +30,9 @@ class BuyerOrderController extends Controller
                 'order.user' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'store.user' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
@@ -94,7 +97,8 @@ class BuyerOrderController extends Controller
                         });
                     })
                     ->orWhereHas('store', function ($storeQuery) use ($search) {
-                        $storeQuery->where('store_name', 'like', "%{$search}%");
+                        $storeQuery->withoutGlobalScopes()
+                                   ->where('store_name', 'like', "%{$search}%");
                     })
                     ->orWhereHas('items.product', function ($productQuery) use ($search) {
                         $productQuery->where('name', 'like', "%{$search}%");
@@ -268,7 +272,9 @@ class BuyerOrderController extends Controller
                 'user' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
-                'storeOrders.store',
+                'storeOrders.store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'storeOrders.orderTracking'
             ])->whereHas('user', function ($q) {
                 $q->withoutGlobalScopes()
@@ -322,7 +328,8 @@ class BuyerOrderController extends Controller
                                    ->orWhere('email', 'like', "%{$search}%");
                       })
                       ->orWhereHas('storeOrders.store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('store_name', 'like', "%{$search}%");
+                          $storeQuery->withoutGlobalScopes()
+                                     ->where('store_name', 'like', "%{$search}%");
                       });
                 });
             }
@@ -417,6 +424,9 @@ class BuyerOrderController extends Controller
                     $q->withoutGlobalScopes();
                 },
                 'order.deliveryAddress',
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'store.user' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
@@ -640,6 +650,9 @@ class BuyerOrderController extends Controller
         try {
             $storeOrder = StoreOrder::with([
                 'order.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'store' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
                 'orderTracking'
