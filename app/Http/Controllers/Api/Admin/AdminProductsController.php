@@ -136,11 +136,18 @@ class AdminProductsController extends Controller
     public function getProductDetails($productId)
     {
         try {
-            $product = Product::with([
-                'store.user',
+            $product = Product::withoutGlobalScopes()->with([
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'images',
                 'variants',
-                'reviews.user',
+                'reviews.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'boost',
                 'productStats',
                 'category'
@@ -233,7 +240,7 @@ class AdminProductsController extends Controller
                 'is_unavailable' => 'boolean',
             ]);
 
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             $product->update([
                 'status' => $request->status,
@@ -265,7 +272,11 @@ class AdminProductsController extends Controller
                 'location' => 'nullable|string|max:255',
             ]);
 
-            $product = Product::with('store')->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->with([
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                }
+            ])->findOrFail($productId);
 
             // Check if product already has active boost
             $existingBoost = BoostProduct::where('product_id', $productId)
@@ -320,7 +331,7 @@ class AdminProductsController extends Controller
                 'status' => 'required|in:active,inactive',
             ]);
 
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             $product->update([
                 'name' => $request->name,
@@ -348,7 +359,7 @@ class AdminProductsController extends Controller
     public function deleteProduct($productId)
     {
         try {
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             // Delete related data
             $product->images()->delete();
