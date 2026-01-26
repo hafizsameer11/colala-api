@@ -340,7 +340,7 @@ class AdminAllUsersController extends Controller
                 'password' => 'required|string|min:8',
                 'role' => 'required|in:buyer,seller,admin',
                 'status' => 'nullable|in:active,inactive',
-                'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+                'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp',
             ]);
 
             $userData = [

@@ -75,7 +75,16 @@ class AdminUserController extends Controller
                 ];
             });
 
-            return ResponseHelper::success($users, 'Users retrieved successfully');
+            // Get stats with period filtering
+            $period = $request->get('period', 'all_time');
+            $stats = $this->getUserStats($period);
+
+            // Merge stats with pagination data
+            $responseData = array_merge($users->toArray(), [
+                'stats' => $stats
+            ]);
+
+            return ResponseHelper::success($responseData, 'Users retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
@@ -85,44 +94,137 @@ class AdminUserController extends Controller
     /**
      * Get user statistics
      */
-    public function stats()
+    public function stats(Request $request)
     {
         try {
-            $totalUsers = User::where('role', 'buyer')->count(); // Only buyers
-            $activeUsers = User::where('role', 'buyer')->where('is_active', true)->count(); // Only buyers
-            $newUsers = User::where('role', 'buyer')->where('created_at', '>=', now()->subMonth())->count(); // Only buyers
-
-            // Calculate percentage increase (mock data for now)
-            $totalIncrease = 5;
-            $activeIncrease = 5;
-            $newIncrease = 5;
-
-            $stats = [
-                'total_users' => [
-                    'value' => $totalUsers,
-                    'increase' => $totalIncrease,
-                    'icon' => 'users',
-                    'color' => 'red'
-                ],
-                'active_users' => [
-                    'value' => $activeUsers,
-                    'increase' => $activeIncrease,
-                    'icon' => 'users',
-                    'color' => 'red'
-                ],
-                'new_users' => [
-                    'value' => $newUsers,
-                    'increase' => $newIncrease,
-                    'icon' => 'users',
-                    'color' => 'red'
-                ]
-            ];
-
+            $period = $request->get('period', 'all_time');
+            $stats = $this->getUserStats($period);
             return ResponseHelper::success($stats, 'User statistics retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Get date range based on period
+     */
+    private function getDateRange($period)
+    {
+        switch ($period) {
+            case 'today':
+                return [
+                    'start' => now()->startOfDay(),
+                    'end' => now()->endOfDay(),
+                    'previous_start' => now()->subDay()->startOfDay(),
+                    'previous_end' => now()->subDay()->endOfDay()
+                ];
+            case 'this_week':
+                return [
+                    'start' => now()->startOfWeek(),
+                    'end' => now()->endOfWeek(),
+                    'previous_start' => now()->subWeek()->startOfWeek(),
+                    'previous_end' => now()->subWeek()->endOfWeek()
+                ];
+            case 'this_month':
+                return [
+                    'start' => now()->startOfMonth(),
+                    'end' => now()->endOfMonth(),
+                    'previous_start' => now()->subMonth()->startOfMonth(),
+                    'previous_end' => now()->subMonth()->endOfMonth()
+                ];
+            case 'this_year':
+                return [
+                    'start' => now()->startOfYear(),
+                    'end' => now()->endOfYear(),
+                    'previous_start' => now()->subYear()->startOfYear(),
+                    'previous_end' => now()->subYear()->endOfYear()
+                ];
+            default:
+                return null; // All time
+        }
+    }
+
+    /**
+     * Calculate percentage increase
+     */
+    private function calculateIncrease($current, $previous)
+    {
+        if ($previous == 0) {
+            return $current > 0 ? 100 : 0;
+        }
+        return round((($current - $previous) / $previous) * 100, 1);
+    }
+
+    /**
+     * Get user statistics with period filtering
+     */
+    private function getUserStats($period = 'all_time')
+    {
+        $dateRange = $this->getDateRange($period);
+        
+        // Build queries with period filter
+        $totalUsersQuery = User::query();
+        $activeUsersQuery = User::where('is_active', true);
+        $newUsersQuery = User::query(); // New users are those created in the period
+
+        if ($dateRange) {
+            // For total users, we count all users up to the end of the period
+            $totalUsersQuery->where('created_at', '<=', $dateRange['end']);
+            // For active users, we count active users up to the end of the period
+            $activeUsersQuery->where('created_at', '<=', $dateRange['end']);
+            // For new users, we count users created within the period
+            $newUsersQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        }
+
+        $totalUsers = $totalUsersQuery->count();
+        $activeUsers = $activeUsersQuery->count();
+        $newUsers = $newUsersQuery->count();
+
+        // Calculate previous period values for increase calculation
+        $previousTotalUsers = 0;
+        $previousActiveUsers = 0;
+        $previousNewUsers = 0;
+
+        if ($dateRange) {
+            // Previous period total users (up to end of previous period)
+            $previousTotalUsers = User::where('created_at', '<=', $dateRange['previous_end'])->count();
+            
+            // Previous period active users (up to end of previous period)
+            $previousActiveUsers = User::where('is_active', true)
+                ->where('created_at', '<=', $dateRange['previous_end'])
+                ->count();
+            
+            // Previous period new users (created within previous period)
+            $previousNewUsers = User::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
+        }
+
+        // Calculate percentage increase
+        $totalIncrease = $this->calculateIncrease($totalUsers, $previousTotalUsers);
+        $activeIncrease = $this->calculateIncrease($activeUsers, $previousActiveUsers);
+        $newIncrease = $this->calculateIncrease($newUsers, $previousNewUsers);
+
+        return [
+            'total_users' => [
+                'value' => $totalUsers,
+                'increase' => $totalIncrease,
+                'icon' => 'users',
+                'color' => 'purple'
+            ],
+            'active_users' => [
+                'value' => $activeUsers,
+                'increase' => $activeIncrease,
+                'icon' => 'users',
+                'color' => 'green'
+            ],
+            'new_users' => [
+                'value' => $newUsers,
+                'increase' => $newIncrease,
+                'icon' => 'users',
+                'color' => 'blue'
+            ]
+        ];
     }
 
     /**
