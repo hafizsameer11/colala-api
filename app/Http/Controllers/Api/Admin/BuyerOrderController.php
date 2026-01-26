@@ -36,6 +36,9 @@ class BuyerOrderController extends Controller
                 'store.user' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
+                'items.product' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'items.product.images',
                 'items.product.variants',
                 'items.variant',
@@ -101,7 +104,8 @@ class BuyerOrderController extends Controller
                                    ->where('store_name', 'like', "%{$search}%");
                     })
                     ->orWhereHas('items.product', function ($productQuery) use ($search) {
-                        $productQuery->where('name', 'like', "%{$search}%");
+                        $productQuery->withoutGlobalScopes()
+                                     ->where('name', 'like', "%{$search}%");
                     });
                 });
             }
@@ -275,6 +279,9 @@ class BuyerOrderController extends Controller
                 'storeOrders.store' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
+                'storeOrders.items.product' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'storeOrders.orderTracking'
             ])->whereHas('user', function ($q) {
                 $q->withoutGlobalScopes()
@@ -428,6 +435,9 @@ class BuyerOrderController extends Controller
                     $q->withoutGlobalScopes();
                 },
                 'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'items.product' => function ($q) {
                     $q->withoutGlobalScopes();
                 },
                 'items.product.images',
@@ -710,7 +720,14 @@ class BuyerOrderController extends Controller
         }
 
         $firstItem = $storeOrder->items->first();
-        return $firstItem->product->name ?? 'Unknown Product';
+        // Product should be loaded without global scopes via eager loading
+        // If not loaded, fetch it without global scopes
+        if (!$firstItem->relationLoaded('product') && $firstItem->product_id) {
+            $product = \App\Models\Product::withoutGlobalScopes()->find($firstItem->product_id);
+            return $product ? $product->name : 'Unknown Product';
+        }
+        
+        return $firstItem->product ? $firstItem->product->name : 'Unknown Product';
     }
 
     /**
