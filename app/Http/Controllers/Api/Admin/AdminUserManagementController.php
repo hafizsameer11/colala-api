@@ -30,11 +30,13 @@ class AdminUserManagementController extends Controller
     public function index(Request $request)
     {
         try {
-            // Remove global scope to get ALL users (including those with visibility=0)
-            $query = User::withoutGlobalScopes()->with('wallet')
-                // Only return users with admin roles (exclude seller, buyer, and null)
-                ->whereNotNull('role')
-                ->whereNotIn('role', ['seller', 'buyer']);
+            // Build query: Only return users with admin roles (exclude seller, buyer, and null)
+            // Admin roles: admin, moderator, super_admin, support_agent, financial_manager, content_manager
+            $adminRoles = ['admin', 'moderator', 'super_admin', 'support_agent', 'financial_manager', 'content_manager'];
+            
+            $query = User::withoutGlobalScopes()
+                ->whereIn('role', $adminRoles)
+                ->with('wallet');
 
             // Search functionality
             if ($request->has('search') && $request->search) {
