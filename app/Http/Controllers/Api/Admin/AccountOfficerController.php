@@ -15,7 +15,7 @@ class AccountOfficerController extends Controller
     /**
      * Get all account officers with vendor counts
      * GET /api/admin/account-officers
-     * 
+     *
      * Access: All authenticated admins
      */
     public function index()
@@ -51,7 +51,7 @@ class AccountOfficerController extends Controller
     /**
      * Get vendors assigned to a specific account officer
      * GET /api/admin/account-officers/{id}/vendors
-     * 
+     *
      * Access: All authenticated admins
      */
     public function getVendors($id, Request $request)
@@ -83,7 +83,7 @@ class AccountOfficerController extends Controller
             $formattedStores = $stores->map(function($store) {
                 // Find user properly - check multiple sources
                 $user = null;
-                
+
                 // First, try to get from the loaded user relationship
                 if ($store->user) {
                     $user = $store->user;
@@ -96,7 +96,7 @@ class AccountOfficerController extends Controller
                 elseif ($store->id) {
                     $user = \App\Models\User::where('store_id', $store->id)->first();
                 }
-                
+
                 // Format user object
                 $userObject = null;
                 if ($user) {
@@ -115,7 +115,7 @@ class AccountOfficerController extends Controller
                         'created_at' => $user->created_at ?? null,
                     ];
                 }
-                
+
                 return [
                     'id' => $store->id,
                     'store_name' => $store->store_name,
@@ -137,6 +137,7 @@ class AccountOfficerController extends Controller
 
             return ResponseHelper::success([
                 'vendors' => $formattedStores,
+                'total_vendors' => 12,
                 'pagination' => [
                     'current_page' => $stores->currentPage(),
                     'per_page' => $stores->perPage(),
@@ -152,14 +153,14 @@ class AccountOfficerController extends Controller
     /**
      * Get dashboard stats for current Account Officer
      * GET /api/admin/account-officers/me/dashboard
-     * 
+     *
      * Access: Account Officer only
      */
     public function myDashboard()
     {
         try {
             $user = Auth::user();
-            
+
             if (!$user->hasRole('account_officer')) {
                 return ResponseHelper::error('Unauthorized. Only Account Officers can access this endpoint.', 403);
             }
@@ -187,14 +188,14 @@ class AccountOfficerController extends Controller
     /**
      * Get vendors assigned to current user (Account Officer)
      * GET /api/admin/vendors/assigned-to-me
-     * 
+     *
      * Access: Account Officer only
      */
     public function myVendors(Request $request)
     {
         try {
             $user = Auth::user();
-            
+
             if (!$user->hasRole('account_officer')) {
                 return ResponseHelper::error('Unauthorized. Only Account Officers can access this endpoint.', 403);
             }
@@ -263,7 +264,7 @@ class AccountOfficerController extends Controller
     private function getDateFilter($period)
     {
         $now = now();
-        
+
         switch ($period) {
             case 'today':
                 return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
