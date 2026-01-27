@@ -145,13 +145,16 @@ class SellerDetailsController extends Controller
             }
 
             // Treat each StoreOrder as a separate order for seller context
+            // Only include store orders that still have a parent Order record
             $query = StoreOrder::with([
                 'order.user',
                 'store',
                 'items.product.images',
                 'items.variant',
                 'orderTracking'
-            ])->where('store_id', $store->id);
+            ])
+                ->where('store_id', $store->id)
+                ->whereHas('order');
 
             // Filter by date range
             if ($request->has('date_from') && $request->date_from) {
