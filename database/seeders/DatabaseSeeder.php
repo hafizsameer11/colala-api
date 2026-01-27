@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             ServiceCategorySeeder::class,
             // BrandSeeder::class,
             RolePermissionSeeder::class, // RBAC: Roles and Permissions
+            AccountOfficerPermissionsSeeder::class, // Account Officer permissions and role
         ]);
     }
 }
