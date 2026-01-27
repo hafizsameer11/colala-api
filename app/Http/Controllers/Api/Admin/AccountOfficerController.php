@@ -86,6 +86,7 @@ class AccountOfficerController extends Controller
                     'store_email' => $store->store_email,
                     'store_phone' => $store->store_phone,
                     'status' => $store->status,
+                    'user_id' => $store->user_id,
                     'seller_name' => $store->user?->full_name ?? $store->user?->name ?? 'Unknown',
                     'seller_email' => $store->user?->email,
                     'created_at' => $store->created_at,
