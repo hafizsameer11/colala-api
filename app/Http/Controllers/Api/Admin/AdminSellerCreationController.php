@@ -793,7 +793,7 @@ class AdminSellerCreationController extends Controller
             if ($request->filled('addresses')) {
                 // Clear existing addresses
                 StoreAddress::where('store_id', $store->id)->delete();
-                
+
                 foreach ($request->addresses as $addressData) {
                     StoreAddress::create([
                         'store_id' => $store->id,
@@ -810,7 +810,7 @@ class AdminSellerCreationController extends Controller
             if ($request->filled('delivery_pricing')) {
                 // Clear existing delivery pricing
                 StoreDeliveryPricing::where('store_id', $store->id)->delete();
-                
+
                 foreach ($request->delivery_pricing as $pricingData) {
                     StoreDeliveryPricing::create([
                         'store_id' => $store->id,
@@ -1226,7 +1226,7 @@ class AdminSellerCreationController extends Controller
             }
 
             $store = Store::with(['user', 'businessDetails', 'addresses', 'deliveryPricing', 'socialLinks', 'categories'])->findOrFail($request->store_id);
-            
+
             $steps = StoreOnboardingStep::where('store_id', $store->id)
                 ->orderBy('level')
                 ->get(['key', 'status', 'completed_at', 'rejection_reason'])
@@ -1294,7 +1294,7 @@ class AdminSellerCreationController extends Controller
             }
 
             $store = Store::with('user')->findOrFail($request->store_id);
-            
+
             // Find the onboarding step
             $step = StoreOnboardingStep::where('store_id', $store->id)
                 ->where('key', $request->field_key)
@@ -1334,12 +1334,12 @@ class AdminSellerCreationController extends Controller
                 'onboarding_percent' => $percent,
             ]);
 
-            // Send notification to seller
+            // Send notification to seller (both in-app and push notification)
             if ($store->user) {
                 $title = 'Onboarding Field Rejected';
                 $content = "Your {$fieldName} has been rejected. Reason: {$request->rejection_reason}. Please review and resubmit.";
-                
-                UserNotificationHelper::notify(
+
+                $notification = UserNotificationHelper::notify(
                     $store->user->id,
                     $title,
                     $content,
@@ -1351,6 +1351,14 @@ class AdminSellerCreationController extends Controller
                         'rejection_reason' => $request->rejection_reason,
                     ]
                 );
+
+                Log::info('KYC rejection notification sent to seller', [
+                    'seller_id' => $store->user->id,
+                    'store_id' => $store->id,
+                    'field_key' => $request->field_key,
+                    'notification_id' => $notification->id,
+                    'has_expo_token' => !empty($store->user->expo_push_token)
+                ]);
             }
 
             return ResponseHelper::success([
@@ -1378,7 +1386,7 @@ class AdminSellerCreationController extends Controller
     {
         try {
             $categories = Category::select('id', 'title', 'image')->get();
-            
+
             return ResponseHelper::success([
                 'categories' => $categories->map(function ($category) {
                     return [

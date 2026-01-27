@@ -37,6 +37,9 @@ use App\Http\Controllers\Api\Admin\AdminTermsController;
 use App\Http\Controllers\Api\Admin\AdminSellerHelpRequestController;
 use App\Http\Controllers\Api\Admin\AdminWithdrawalRequestController;
 use App\Http\Controllers\Api\Admin\AdminPostReportController;
+use App\Http\Controllers\Api\Admin\RoleController;
+use App\Http\Controllers\Api\Admin\PermissionController;
+use App\Http\Controllers\Api\Admin\AdminRoleController;
 
 Route::get('admin/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getAllBanners']);
 
@@ -203,7 +206,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/create-seller/level3/complete', [AdminSellerCreationController::class, 'level3Complete']);
     // Update Level 3 onboarding (edit physical store + utility + address + delivery + theme)
     Route::post('/create-seller/level3/update', [AdminSellerCreationController::class, 'level3Update']);
-    
+
     // Individual Step Routes (Legacy - for backward compatibility)
     // Level 1 - Basic information (name, email, phone, password)
     Route::post('/create-seller/level1/basic', [AdminSellerCreationController::class, 'level1Basic']);
@@ -225,7 +228,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/create-seller/level3/add-delivery', [AdminSellerCreationController::class, 'level3AddDelivery']);
     // Level 3 - Theme selection
     Route::post('/create-seller/level3/theme', [AdminSellerCreationController::class, 'level3Theme']);
-    
+
     // Utility Routes
     // Set seller approval status (approved, rejected, pending)
     Route::post('/create-seller/set-approval-status', [AdminSellerCreationController::class, 'setApprovalStatus']);
@@ -235,7 +238,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/create-seller/categories', [AdminSellerCreationController::class, 'getAllCategories']);
     // Reject a specific onboarding field with rejection reason
     Route::post('/create-seller/reject-field', [AdminSellerCreationController::class, 'rejectField']);
-    
+
     // Store Address Management
     // Get store addresses
     Route::get('/create-seller/addresses', [AdminSellerCreationController::class, 'getStoreAddresses']);
@@ -243,7 +246,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/create-seller/addresses/{addressId}', [AdminSellerCreationController::class, 'updateStoreAddress']);
     // Delete store address
     Route::delete('/create-seller/addresses/{addressId}', [AdminSellerCreationController::class, 'deleteStoreAddress']);
-    
+
     // Store Delivery Pricing Management
     // Get store delivery pricing
     Route::get('/create-seller/delivery-pricing', [AdminSellerCreationController::class, 'getStoreDeliveryPricing']);
@@ -612,7 +615,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // GENERAL ADMIN MODULES
     // ========================================
     // Import controllers for general modules
-    
+
 
     // ========================================
     // ALL USERS MANAGEMENT MODULE
@@ -627,7 +630,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/all-users/{userId}/status', [AdminAllUsersController::class, 'updateUserStatus']);
     // Get user analytics and trends
     Route::get('/all-users/analytics', [AdminAllUsersController::class, 'getUserAnalytics']);
-    
+
     // Create new user (admin can add users)
     Route::post('/all-users', [AdminAllUsersController::class, 'createUser']);
     // Update user details (admin can edit user information) - POST for file uploads
@@ -734,103 +737,103 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // REFERRAL MANAGEMENT ROUTES
     // ========================================
-    
+
     // Get referral dashboard with statistics and referrers list
     Route::get('/referrals', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralDashboard']);
-    
+
     // Get users referred by a specific referrer
     Route::get('/referrals/{userId}/referred-users', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferredUsers']);
-    
+
     // Get detailed referral information for a specific user
     Route::get('/referrals/{userId}/details', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralDetails']);
-    
+
     // Get referral settings (bonus amounts, percentages, etc.)
     Route::get('/referrals/settings', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralSettings']);
-    
+
     // Update referral settings
     Route::post('/referrals/settings', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralSettings']);
-    
+
     // Get referral analytics and trends
     Route::get('/referrals/analytics', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralAnalytics']);
-    
+
     // Update individual referral status
     Route::put('/referrals/{referralId}/status', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralStatus']);
-    
+
     // Bulk update referral status
     Route::put('/referrals/bulk-status', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'bulkUpdateReferralStatus']);
-    
+
     // Get referral FAQs
     Route::get('/referrals/faqs', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'getReferralFaqs']);
-    
+
     // Create referral FAQ
     Route::post('/referrals/faqs', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'createReferralFaq']);
-    
+
     // Update referral FAQ
     Route::put('/referrals/faqs/{faqId}', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'updateReferralFaq']);
-    
+
     // Delete referral FAQ
     Route::delete('/referrals/faqs/{faqId}', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'deleteReferralFaq']);
-    
+
     // Export referral data
     Route::get('/referrals/export', [\App\Http\Controllers\Api\Admin\AdminReferralController::class, 'exportReferralData']);
 
     // ==================== System Push Notifications ====================
-    
+
     // Get all notifications
     Route::get('/notifications', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getAllNotifications']);
-    
+
     // Create notification
     Route::post('/notifications', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'createNotification']);
-    
+
     // Get notification details
     Route::get('/notifications/{id}', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getNotificationDetails']);
-    
+
     // Update notification status
     Route::put('/notifications/{id}/status', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'updateNotificationStatus']);
-    
+
     // Delete notification
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'deleteNotification']);
-    
+
     // Get users for audience selection
     Route::get('/notifications/audience/users', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getUsersForAudience']);
-    
+
     // Get audience data with buyers and sellers arrays
     Route::get('/notifications/audience/data', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'getAudienceData']);
 
     // ==================== System Banners ====================
-    
+
     // Get all banners
-    
+
     // Create banner
     Route::post('/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'createBanner']);
-    
+
     // Get active banners
     Route::get('/banners/active', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getActiveBanners']);
-    
+
     // Get banner details
     Route::get('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerDetails']);
-    
+
     // Update banner
     Route::post('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'updateBanner']);
-    
+
     // Delete banner
     Route::delete('/banners/{id}', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'deleteBanner']);
-    
+
     // Toggle banner status
     Route::put('/banners/{id}/toggle-status', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'toggleBannerStatus']);
-    
+
     // Get banner analytics
     Route::get('/banners/analytics', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getBannerAnalytics']);
 
     // ==================== Admin Product & Service Management ====================
-    
+
     // Get all stores (name, picture, id only)
     Route::get('/stores', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'getStores']);
     Route::post('/stores-delete/{storeId}', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'deleteStore']);
-    
+
     // Create product for any store (admin)
     Route::post('/products', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createProduct']);
-    
+
     // Create service for any store (admin)
     Route::post('/services', [\App\Http\Controllers\Api\Admin\AdminProductServiceController::class, 'createService']);
 
@@ -967,4 +970,39 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // Add address for a user (admin can add addresses for users)
     Route::post('/all-users/{userId}/addresses', [AdminAllUsersController::class, 'addUserAddress']);
+
+    // ========================================
+    // RBAC - ROLE & PERMISSION MANAGEMENT
+    // ========================================
+    Route::prefix('rbac')->group(function () {
+        // Roles
+        Route::get('/roles', [RoleController::class, 'index']);
+        Route::get('/roles/{id}', [RoleController::class, 'show']);
+        Route::post('/roles', [RoleController::class, 'store']);
+        Route::put('/roles/{id}', [RoleController::class, 'update']);
+        Route::delete('/roles/{id}', [RoleController::class, 'destroy']);
+        Route::post('/roles/{id}/permissions', [RoleController::class, 'assignPermissions']);
+        Route::get('/roles/{id}/permissions', [RoleController::class, 'getPermissions']);
+
+        // Permissions
+        Route::get('/permissions', [PermissionController::class, 'index']);
+        Route::get('/permissions/{id}', [PermissionController::class, 'show']);
+        Route::post('/permissions', [PermissionController::class, 'store']);
+        Route::put('/permissions/{id}', [PermissionController::class, 'update']);
+        Route::delete('/permissions/{id}', [PermissionController::class, 'destroy']);
+        Route::get('/permissions/module/{module}', [PermissionController::class, 'getByModule']);
+
+        // User Role Assignment
+        Route::get('/users/{userId}/roles', [AdminRoleController::class, 'getUserRoles']);
+        Route::post('/users/{userId}/roles', [AdminRoleController::class, 'assignRole']);
+        Route::delete('/users/{userId}/roles/{roleId}', [AdminRoleController::class, 'revokeRole']);
+        Route::get('/users/{userId}/permissions', [AdminRoleController::class, 'getUserPermissions']);
+        Route::post('/users/{userId}/check-permission', [AdminRoleController::class, 'checkPermission']);
+
+        // Get current user's permissions (for frontend)
+        Route::get('/me/permissions', [AdminRoleController::class, 'getMyPermissions']);
+
+        // Modules (read-only config endpoint)
+        Route::get('/modules', [PermissionController::class, 'getModules']);
+    });
 });

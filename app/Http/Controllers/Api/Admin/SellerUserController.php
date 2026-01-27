@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Transaction;
+use App\Models\Subscription;
 use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -93,6 +94,18 @@ class SellerUserController extends Controller
 
             $users->getCollection()->transform(function ($user) {
                 $primaryStore = $user->store;
+                
+                // Get active subscription for the store
+                $activeSubscription = null;
+                if ($primaryStore) {
+                    $activeSubscription = Subscription::where('store_id', $primaryStore->id)
+                        ->where('status', 'active')
+                        ->where('end_date', '>=', now())
+                        ->with('plan')
+                        ->latest()
+                        ->first();
+                }
+                
                 return [
                     'id' => $user->id,
                     'store_id' => $primaryStore ? $primaryStore->id : null,
@@ -107,7 +120,18 @@ class SellerUserController extends Controller
                     'total_orders' => $this->getUserOrderCount($user->id),
                     'total_revenue' => $this->getUserRevenue($user->id),
                     'created_at' => $user->created_at ? $user->created_at->format('d-m-Y H:i:s') : null,
-                    'last_login' => $user->updated_at ? $user->updated_at->format('d-m-Y H:i:s') : null
+                    'last_login' => $user->updated_at ? $user->updated_at->format('d-m-Y H:i:s') : null,
+                    'subscription' => $activeSubscription ? [
+                        'id' => $activeSubscription->id,
+                        'plan_name' => $activeSubscription->plan ? $activeSubscription->plan->name : null,
+                        'plan_id' => $activeSubscription->plan_id,
+                        'status' => $activeSubscription->status,
+                        'start_date' => $activeSubscription->start_date ? $activeSubscription->start_date->format('Y-m-d') : null,
+                        'end_date' => $activeSubscription->end_date ? $activeSubscription->end_date->format('Y-m-d') : null,
+                        'price' => $activeSubscription->plan ? $activeSubscription->plan->price : null,
+                        'currency' => $activeSubscription->plan ? $activeSubscription->plan->currency : null,
+                        'duration_days' => $activeSubscription->plan ? $activeSubscription->plan->duration_days : null,
+                    ] : null
                 ];
             });
 

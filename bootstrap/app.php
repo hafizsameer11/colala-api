@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'store.access' => \App\Http\Middleware\StoreAccessMiddleware::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
         
         // Track user activity - only runs if user is authenticated (checks Auth::check() internally)
