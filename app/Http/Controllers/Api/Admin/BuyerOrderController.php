@@ -136,8 +136,9 @@ class BuyerOrderController extends Controller
             $totalStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery);
             $pendingStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery)
                 ->whereIn('status', ['pending', 'pending_acceptance', 'order_placed', 'processing']);
+            // Include both 'delivered' and 'completed' as completed orders
             $completedStoreOrdersQuery = StoreOrder::whereHas('order', $buyerOrderQuery)
-                ->where('status', 'completed');
+                ->whereIn('status', ['completed', 'delivered']);
             
             if ($period && $period !== 'all_time' && $period !== 'null') {
                 $tableName = (new StoreOrder())->getTable();

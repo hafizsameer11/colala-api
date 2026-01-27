@@ -221,8 +221,8 @@ class AdminDashboardController extends Controller
         // Build queries with period filter
         $userQuery = User::where('role', 'buyer');
         $orderQuery = Order::query();
-        // Fixed: Use StoreOrder with status='completed' instead of Order with payment_status='completed'
-        $completedOrderQuery = StoreOrder::where('status', 'completed')
+        // Fixed: Use StoreOrder with status='completed' or 'delivered' (both are considered completed)
+        $completedOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered'])
             ->whereHas('order.user', function ($q) {
                 $q->where('role', 'buyer');
             });
@@ -261,9 +261,9 @@ class AdminDashboardController extends Controller
             $previousOrders = Order::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            // Fixed: Use StoreOrder with status='completed' for previous period
+            // Fixed: Use StoreOrder with status='completed' or 'delivered' for previous period
             $tableName = (new StoreOrder())->getTable();
-            $previousCompletedOrders = StoreOrder::where('status', 'completed')
+            $previousCompletedOrders = StoreOrder::whereIn('status', ['completed', 'delivered'])
                 ->whereHas('order.user', function ($q) {
                     $q->where('role', 'buyer');
                 })
@@ -324,7 +324,8 @@ class AdminDashboardController extends Controller
         $storeQuery = Store::query();
         $activeStoreQuery = Store::where('status', 'active');
         $storeOrderQuery = StoreOrder::query();
-        $completedStoreOrderQuery = StoreOrder::where('status', 'completed');
+        // Include both 'delivered' and 'completed' as completed orders
+        $completedStoreOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered']);
 
         if ($dateRange) {
             $sellerQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
@@ -362,7 +363,8 @@ class AdminDashboardController extends Controller
             $previousStoreOrders = StoreOrder::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            $previousCompletedStoreOrders = StoreOrder::where('status', 'completed')
+            // Include both 'delivered' and 'completed' as completed orders for previous period
+            $previousCompletedStoreOrders = StoreOrder::whereIn('status', ['completed', 'delivered'])
                 ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
         }

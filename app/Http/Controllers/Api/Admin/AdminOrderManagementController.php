@@ -125,8 +125,9 @@ class AdminOrderManagementController extends Controller
             $totalOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter);
             $pendingOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
                 ->where('status', 'pending');
+            // Include both 'delivered' and 'completed' as completed orders
             $completedOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
-                ->where('status', 'completed');
+                ->whereIn('status', ['completed', 'delivered']);
             $outForDeliveryQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
                 ->where('status', 'out_for_delivery');
             $deliveredQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
@@ -532,7 +533,8 @@ class AdminOrderManagementController extends Controller
             $shippedOrdersQuery = StoreOrder::where('status', 'shipped');
             $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
             $deliveredOrdersQuery = StoreOrder::where('status', 'delivered');
-            $completedOrdersQuery = StoreOrder::where('status', 'completed');
+            // Include both 'delivered' and 'completed' as completed orders
+            $completedOrdersQuery = StoreOrder::whereIn('status', ['completed', 'delivered']);
             $disputedOrdersQuery = StoreOrder::where('status', 'disputed');
             $cancelledOrdersQuery = StoreOrder::where('status', 'cancelled');
 
@@ -560,11 +562,11 @@ class AdminOrderManagementController extends Controller
                 'cancelled_orders' => $cancelledOrdersQuery->count(),
             ];
 
-            // Monthly trends
+            // Monthly trends - include both 'delivered' and 'completed' as completed orders
             $monthlyStats = StoreOrder::selectRaw('
                 DATE_FORMAT(created_at, "%Y-%m") as month,
                 COUNT(*) as total_orders,
-                SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed_orders
+                SUM(CASE WHEN status IN ("completed", "delivered") THEN 1 ELSE 0 END) as completed_orders
             ')
             ->where('created_at', '>=', now()->subMonths(12))
             ->groupBy('month')
