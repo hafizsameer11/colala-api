@@ -293,6 +293,58 @@ class AdminUserController extends Controller
     }
 
     /**
+     * Get user activities with optional period filtering
+     */
+    public function userActivities(Request $request, $id)
+    {
+        try {
+            // Allow admin to view activities for any user
+            $user = User::withoutGlobalScopes()->findOrFail($id);
+
+            $query = UserActivity::where('user_id', $user->id);
+
+            // Validate and apply period parameter (same pattern as other routes)
+            $period = $request->get('period');
+            if ($period && $period !== 'all_time' && $period !== 'null') {
+                if (!$this->isValidPeriod($period)) {
+                    return ResponseHelper::error(
+                        'Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time',
+                        422
+                    );
+                }
+
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $query->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+
+            $perPage = (int) $request->get('per_page', 20);
+            $activities = $query->latest()->paginate($perPage);
+
+            $activities->getCollection()->transform(function ($activity) {
+                return [
+                    'id' => $activity->id,
+                    'description' => $activity->message,
+                    'created_at' => $activity->created_at->format('d/m/y - h:i A'),
+                ];
+            });
+
+            return ResponseHelper::success([
+                'user' => [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'email' => $user->email,
+                ],
+                'activities' => $activities,
+            ], 'User activities retrieved successfully');
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get user orders
      */
     public function userOrders(Request $request, $id)
