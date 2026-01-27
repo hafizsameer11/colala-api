@@ -81,23 +81,39 @@ class AccountOfficerController extends Controller
             $stores = $query->latest()->paginate($perPage);
 
             $formattedStores = $stores->map(function($store) {
-                // Find user_id properly - check multiple sources
-                $userId = null;
+                // Find user properly - check multiple sources
+                $user = null;
                 
-                // First, try to get from store's user_id column
-                if ($store->user_id) {
-                    $userId = $store->user_id;
+                // First, try to get from the loaded user relationship
+                if ($store->user) {
+                    $user = $store->user;
                 }
-                // If not found, try from the loaded user relationship
-                elseif ($store->user && $store->user->id) {
-                    $userId = $store->user->id;
+                // If not found, try to find user by store's user_id
+                elseif ($store->user_id) {
+                    $user = \App\Models\User::find($store->user_id);
                 }
                 // If still not found, try to find user by store_id (reverse relationship)
                 elseif ($store->id) {
                     $user = \App\Models\User::where('store_id', $store->id)->first();
-                    if ($user) {
-                        $userId = $user->id;
-                    }
+                }
+                
+                // Format user object
+                $userObject = null;
+                if ($user) {
+                    $userObject = [
+                        'id' => $user->id,
+                        'full_name' => $user->full_name ?? $user->name ?? null,
+                        'user_name' => $user->user_name ?? null,
+                        'email' => $user->email ?? null,
+                        'phone' => $user->phone ?? null,
+                        'role' => $user->role ?? null,
+                        'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
+                        'is_active' => $user->is_active ?? null,
+                        'country' => $user->country ?? null,
+                        'state' => $user->state ?? null,
+                        'user_code' => $user->user_code ?? null,
+                        'created_at' => $user->created_at ?? null,
+                    ];
                 }
                 
                 return [
@@ -106,9 +122,10 @@ class AccountOfficerController extends Controller
                     'store_email' => $store->store_email,
                     'store_phone' => $store->store_phone,
                     'status' => $store->status,
-                    'user_id' => $userId,
-                    'seller_name' => $store->user?->full_name ?? $store->user?->name ?? 'Unknown',
-                    'seller_email' => $store->user?->email,
+                    'user_id' => $user ? $user->id : null,
+                    'user' => $userObject,
+                    'seller_name' => $user ? ($user->full_name ?? $user->name ?? 'Unknown') : 'Unknown',
+                    'seller_email' => $user ? $user->email : null,
                     'created_at' => $store->created_at,
                     'account_officer' => $store->accountOfficer ? [
                         'id' => $store->accountOfficer->id,
