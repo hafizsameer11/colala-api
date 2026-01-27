@@ -42,7 +42,8 @@ class StoreOrder extends Model
     // Relationships
     public function order()
     {
-        return $this->belongsTo(Order::class);
+        // Include soft-deleted orders so admin can still see historical/deleted orders
+        return $this->belongsTo(Order::class)->withTrashed();
     }
 
     public function store()

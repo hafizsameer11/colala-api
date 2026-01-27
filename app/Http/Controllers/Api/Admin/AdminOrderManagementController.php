@@ -149,11 +149,22 @@ class AdminOrderManagementController extends Controller
                 'chat.dispute'
             ])->findOrFail($storeOrderId);
 
+            $order = $storeOrder->order;
+
+            // Derive status for admin view: if parent order is soft-deleted, show as "deleted"
+            $status = $storeOrder->status;
+            $isDeletedOrder = false;
+            if ($order && method_exists($order, 'trashed') && $order->trashed()) {
+                $status = 'deleted';
+                $isDeletedOrder = true;
+            }
+
             $orderData = [
                 'id' => $storeOrder->id,
-                'order_no' => $storeOrder->order->order_no,
-                'status' => $storeOrder->status,
-                'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                'order_no' => $order?->order_no ?? null,
+                'status' => $status,
+                'is_deleted' => $isDeletedOrder,
+                'status_color' => $this->getOrderStatusColor($status),
                 'store' => [
                     'id' => $storeOrder->store->id,
                     'name' => $storeOrder->store->store_name,
@@ -161,20 +172,20 @@ class AdminOrderManagementController extends Controller
                     'phone' => $storeOrder->store->store_phone,
                     'location' => $storeOrder->store->addresses->first()?->full_address
                 ],
-                'customer' => $storeOrder->order->user ? [
-                    'id' => $storeOrder->order->user->id,
-                    'name' => $storeOrder->order->user ? $storeOrder->order->user->full_name : 'Unknown Customer',
-                    'email' => $storeOrder->order->user->email,
-                    'phone' => $storeOrder->order->user->phone,
-                    'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
+                'customer' => $order && $order->user ? [
+                    'id' => $order->user->id,
+                    'name' => $order->user->full_name ?? 'Unknown Customer',
+                    'email' => $order->user->email,
+                    'phone' => $order->user->phone,
+                    'profile_picture' => $order->user->profile_picture ? asset('storage/' . $order->user->profile_picture) : null
                 ] : null,
-                'delivery_address' => $storeOrder->order->deliveryAddress ? [
-                    'id' => $storeOrder->order->deliveryAddress->id,
-                    'full_address' => $storeOrder->order->deliveryAddress->full_address,
-                    'state' => $storeOrder->order->deliveryAddress->state,
-                    'local_government' => $storeOrder->order->deliveryAddress->local_government,
-                    'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
-                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
+                'delivery_address' => $order && $order->deliveryAddress ? [
+                    'id' => $order->deliveryAddress->id,
+                    'full_address' => $order->deliveryAddress->full_address,
+                    'state' => $order->deliveryAddress->state,
+                    'local_government' => $order->deliveryAddress->local_government,
+                    'contact_name' => $order->deliveryAddress->contact_name,
+                    'contact_phone' => $order->deliveryAddress->contact_phone
                 ] : null,
                 'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
@@ -571,13 +582,21 @@ class AdminOrderManagementController extends Controller
     private function formatOrdersData($orders)
     {
         return $orders->map(function ($order) {
+            $parentOrder = $order->order;
+
+            // Override status for soft-deleted parent orders
+            $status = $order->status;
+            if ($parentOrder && method_exists($parentOrder, 'trashed') && $parentOrder->trashed()) {
+                $status = 'deleted';
+            }
+
             return [
                 'store_order_id' => $order->id,
-                'order_number' => $order->order ? $order->order->order_no : null,
+                'order_number' => $parentOrder ? $parentOrder->order_no : null,
                 'store_name' => $order->store ? $order->store->store_name : null,
                 'seller_name' => $order->store ? $order->store->store_name : null,
-                'customer_name' => $order->order && $order->order->user ? $order->order->user->full_name : 'Unknown Customer',
-                'status' => $order->status,
+                'customer_name' => $parentOrder && $parentOrder->user ? $parentOrder->user->full_name : 'Unknown Customer',
+                'status' => $status,
                 'items_count' => $order->items ? $order->items->count() : 0,
                 'total_amount' => $order->subtotal_with_shipping,
                 'created_at' => $order->created_at,
