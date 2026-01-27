@@ -249,6 +249,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all stores assigned to this user as Account Officer
+     */
+    public function assignedVendors()
+    {
+        return $this->hasMany(Store::class, 'account_officer_id');
+    }
+
+    /**
      * Scope to get only admin users
      */
     public function scopeAdmins($query)
@@ -258,6 +266,16 @@ class User extends Authenticatable
 
         return $query->whereIn('role', $adminRoles)
             ->orWhereHas('roles');
+    }
+
+    /**
+     * Scope a query to only include users with account_officer role
+     */
+    public function scopeAccountOfficers($query)
+    {
+        return $query->whereHas('roles', function($q) {
+            $q->where('slug', 'account_officer');
+        });
     }
 
     /**

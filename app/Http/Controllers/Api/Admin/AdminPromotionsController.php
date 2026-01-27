@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\BoostProduct;
 use App\Models\Product;
@@ -12,6 +13,7 @@ use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminPromotionsController extends Controller
 {
@@ -24,9 +26,16 @@ class AdminPromotionsController extends Controller
         try {
             $query = BoostProduct::with(['product.images', 'store.user']);
 
-            // Apply filters
+            // Apply filters (map frontend status to DB enum if needed)
             if ($request->has('status') && $request->status !== 'all') {
-                $query->where('status', $request->status);
+                $statusMapping = [
+                    'approved' => 'scheduled',
+                    'active' => 'running',
+                    'stopped' => 'paused',
+                    'rejected' => 'cancelled',
+                ];
+                $dbStatus = $statusMapping[$request->status] ?? $request->status;
+                $query->where('status', $dbStatus);
             }
 
             // Validate period parameter
@@ -66,7 +75,7 @@ class AdminPromotionsController extends Controller
 
             // Get summary statistics with period filtering
             $totalPromotionsQuery = BoostProduct::query();
-            $activePromotionsQuery = BoostProduct::where('status', 'active');
+            $activePromotionsQuery = BoostProduct::where('status', 'running'); // active -> running
             $pendingPromotionsQuery = BoostProduct::where('status', 'pending');
             $completedPromotionsQuery = BoostProduct::where('status', 'completed');
             
@@ -118,7 +127,8 @@ class AdminPromotionsController extends Controller
             $promotionData = [
                 'promotion_info' => [
                     'id' => $promotion->id,
-                    'status' => $promotion->status,
+                    'status' => $this->mapDbStatusToFrontend($promotion->status),
+                    'db_status' => $promotion->status, // Include raw DB status for reference
                     'start_date' => $promotion->start_date,
                     'duration' => $promotion->duration,
                     'budget' => $promotion->budget,
@@ -172,28 +182,268 @@ class AdminPromotionsController extends Controller
 
     /**
      * Update promotion status (approve, reject, stop)
+     * Maps frontend status values to database enum values
      */
     public function updatePromotionStatus(Request $request, $promotionId)
     {
         try {
             $request->validate([
-                'status' => 'required|in:pending,approved,active,stopped,rejected,completed',
+                'status' => 'required|in:pending,approved,active,stopped,rejected,completed,draft,scheduled,running,paused,cancelled',
                 'notes' => 'nullable|string|max:500',
             ]);
 
-            $promotion = BoostProduct::findOrFail($promotionId);
+            $promotion = BoostProduct::with(['store.user', 'product'])->findOrFail($promotionId);
             $oldStatus = $promotion->status;
             
+            // Map frontend status values to database enum values
+            $statusMapping = [
+                'approved' => 'scheduled',  // approved -> scheduled (ready to run)
+                'active' => 'running',      // active -> running
+                'stopped' => 'paused',      // stopped -> paused
+                'rejected' => 'cancelled',  // rejected -> cancelled
+                // These already match database enum
+                'pending' => 'pending',
+                'completed' => 'completed',
+                'draft' => 'draft',
+                'scheduled' => 'scheduled',
+                'running' => 'running',
+                'paused' => 'paused',
+                'cancelled' => 'cancelled',
+            ];
+            
+            $dbStatus = $statusMapping[$request->status] ?? $request->status;
+            
             $promotion->update([
-                'status' => $request->status,
+                'status' => $dbStatus,
             ]);
+
+            // Send notification to seller when promotion is approved
+            if ($request->status === 'approved' && $promotion->store && $promotion->store->user) {
+                try {
+                    $productName = $promotion->product?->name ?? 'your product';
+                    $notesText = $request->notes ? " Note: {$request->notes}" : '';
+                    
+                    UserNotificationHelper::notify(
+                        $promotion->store->user->id,
+                        'Promotion Approved',
+                        "Your product promotion for '{$productName}' has been approved and is now scheduled.{$notesText}",
+                        [
+                            'type' => 'promotion_approved',
+                            'promotion_id' => $promotion->id,
+                            'product_id' => $promotion->product_id,
+                            'store_id' => $promotion->store_id,
+                            'status' => $request->status,
+                            'notes' => $request->notes
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    // Log error but don't fail the status update
+                    Log::error('Failed to send promotion approval notification: ' . $e->getMessage(), [
+                        'promotion_id' => $promotionId,
+                        'seller_id' => $promotion->store->user->id ?? null
+                    ]);
+                }
+            }
+
+            // Send notification to seller when promotion is rejected
+            if ($request->status === 'rejected' && $promotion->store && $promotion->store->user) {
+                try {
+                    $productName = $promotion->product?->name ?? 'your product';
+                    $notesText = $request->notes ? " Reason: {$request->notes}" : '';
+                    
+                    UserNotificationHelper::notify(
+                        $promotion->store->user->id,
+                        'Promotion Rejected',
+                        "Your product promotion for '{$productName}' has been rejected.{$notesText}",
+                        [
+                            'type' => 'promotion_rejected',
+                            'promotion_id' => $promotion->id,
+                            'product_id' => $promotion->product_id,
+                            'store_id' => $promotion->store_id,
+                            'status' => $request->status,
+                            'notes' => $request->notes
+                        ]
+                    );
+                } catch (\Exception $e) {
+                    // Log error but don't fail the status update
+                    Log::error('Failed to send promotion rejection notification: ' . $e->getMessage(), [
+                        'promotion_id' => $promotionId,
+                        'seller_id' => $promotion->store->user->id ?? null
+                    ]);
+                }
+            }
 
             return ResponseHelper::success([
                 'promotion_id' => $promotion->id,
                 'old_status' => $oldStatus,
-                'new_status' => $request->status,
+                'new_status' => $request->status, // Return frontend status for consistency
+                'db_status' => $dbStatus, // Include actual DB status for debugging
                 'updated_at' => $promotion->updated_at,
             ], 'Promotion status updated successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Update promotion details (general edit route)
+     * Allows admin to edit: start_date, duration, budget, location, status, payment_method, payment_status
+     */
+    public function updatePromotion(Request $request, $promotionId)
+    {
+        try {
+            $request->validate([
+                'start_date' => 'nullable|date|after_or_equal:today',
+                'duration' => 'nullable|integer|min:1|max:365',
+                'budget' => 'nullable|numeric|min:0',
+                'location' => 'nullable|string|max:255',
+                'status' => 'nullable|in:pending,approved,active,stopped,rejected,completed,draft,scheduled,running,paused,cancelled',
+                'payment_method' => 'nullable|in:wallet,card,bank',
+                'payment_status' => 'nullable|in:pending,paid,failed,refunded',
+                'notes' => 'nullable|string|max:500', // Admin notes (not stored, just for notifications)
+            ]);
+
+            $promotion = BoostProduct::with(['store.user', 'product'])->findOrFail($promotionId);
+            $oldStatus = $promotion->status;
+            
+            $updateData = [];
+            
+            // Update start_date if provided
+            if ($request->has('start_date')) {
+                $updateData['start_date'] = $request->start_date;
+            }
+            
+            // Update duration if provided
+            if ($request->has('duration')) {
+                $updateData['duration'] = $request->duration;
+            }
+            
+            // Update budget if provided
+            if ($request->has('budget')) {
+                $updateData['budget'] = $request->budget;
+                // Recalculate total_amount if budget or duration changed
+                // total_amount = budget * duration + platform_fee (simplified calculation)
+                $duration = $updateData['duration'] ?? $promotion->duration;
+                $budget = $updateData['budget'] ?? $promotion->budget;
+                $platformFee = ($budget * $duration) * 0.1; // 10% platform fee
+                $updateData['total_amount'] = ($budget * $duration) + $platformFee;
+            } elseif ($request->has('duration')) {
+                // If only duration changed, recalculate total_amount
+                $duration = $request->duration;
+                $budget = $promotion->budget ?? 0;
+                $platformFee = ($budget * $duration) * 0.1;
+                $updateData['total_amount'] = ($budget * $duration) + $platformFee;
+            }
+            
+            // Update location if provided
+            if ($request->has('location')) {
+                $updateData['location'] = $request->location;
+            }
+            
+            // Update status if provided (with mapping)
+            if ($request->has('status')) {
+                $statusMapping = [
+                    'approved' => 'scheduled',
+                    'active' => 'running',
+                    'stopped' => 'paused',
+                    'rejected' => 'cancelled',
+                    'pending' => 'pending',
+                    'completed' => 'completed',
+                    'draft' => 'draft',
+                    'scheduled' => 'scheduled',
+                    'running' => 'running',
+                    'paused' => 'paused',
+                    'cancelled' => 'cancelled',
+                ];
+                $updateData['status'] = $statusMapping[$request->status] ?? $request->status;
+            }
+            
+            // Update payment_method if provided
+            if ($request->has('payment_method')) {
+                $updateData['payment_method'] = $request->payment_method;
+            }
+            
+            // Update payment_status if provided
+            if ($request->has('payment_status')) {
+                $updateData['payment_status'] = $request->payment_status;
+            }
+            
+            // Update the promotion
+            if (!empty($updateData)) {
+                $promotion->update($updateData);
+            }
+            
+            // Send notifications if status changed
+            if ($request->has('status') && $request->status !== $this->mapDbStatusToFrontend($oldStatus)) {
+                // Send notification to seller when promotion is approved
+                if ($request->status === 'approved' && $promotion->store && $promotion->store->user) {
+                    try {
+                        $productName = $promotion->product?->name ?? 'your product';
+                        $notesText = $request->notes ? " Note: {$request->notes}" : '';
+                        
+                        UserNotificationHelper::notify(
+                            $promotion->store->user->id,
+                            'Promotion Approved',
+                            "Your product promotion for '{$productName}' has been approved and is now scheduled.{$notesText}",
+                            [
+                                'type' => 'promotion_approved',
+                                'promotion_id' => $promotion->id,
+                                'product_id' => $promotion->product_id,
+                                'store_id' => $promotion->store_id,
+                                'status' => $request->status,
+                                'notes' => $request->notes
+                            ]
+                        );
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send promotion approval notification: ' . $e->getMessage());
+                    }
+                }
+                
+                // Send notification to seller when promotion is rejected
+                if ($request->status === 'rejected' && $promotion->store && $promotion->store->user) {
+                    try {
+                        $productName = $promotion->product?->name ?? 'your product';
+                        $notesText = $request->notes ? " Reason: {$request->notes}" : '';
+                        
+                        UserNotificationHelper::notify(
+                            $promotion->store->user->id,
+                            'Promotion Rejected',
+                            "Your product promotion for '{$productName}' has been rejected.{$notesText}",
+                            [
+                                'type' => 'promotion_rejected',
+                                'promotion_id' => $promotion->id,
+                                'product_id' => $promotion->product_id,
+                                'store_id' => $promotion->store_id,
+                                'status' => $request->status,
+                                'notes' => $request->notes
+                            ]
+                        );
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send promotion rejection notification: ' . $e->getMessage());
+                    }
+                }
+            }
+            
+            // Refresh to get updated values
+            $promotion->refresh();
+            
+            return ResponseHelper::success([
+                'promotion_id' => $promotion->id,
+                'updated_fields' => array_keys($updateData),
+                'promotion' => [
+                    'id' => $promotion->id,
+                    'status' => $this->mapDbStatusToFrontend($promotion->status),
+                    'db_status' => $promotion->status,
+                    'start_date' => $promotion->start_date,
+                    'duration' => $promotion->duration,
+                    'budget' => $promotion->budget,
+                    'total_amount' => $promotion->total_amount,
+                    'location' => $promotion->location,
+                    'payment_method' => $promotion->payment_method,
+                    'payment_status' => $promotion->payment_status,
+                    'updated_at' => $promotion->updated_at,
+                ]
+            ], 'Promotion updated successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
@@ -251,15 +501,15 @@ class AdminPromotionsController extends Controller
 
             switch ($action) {
                 case 'approve':
-                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'approved']);
+                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'scheduled']);
                     return ResponseHelper::success(null, 'Promotions approved successfully');
                 
                 case 'reject':
-                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'rejected']);
+                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'cancelled']);
                     return ResponseHelper::success(null, 'Promotions rejected successfully');
                 
                 case 'stop':
-                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'stopped']);
+                    BoostProduct::whereIn('id', $promotionIds)->update(['status' => 'paused']);
                     return ResponseHelper::success(null, 'Promotions stopped successfully');
                 
                 case 'extend':
@@ -285,16 +535,16 @@ class AdminPromotionsController extends Controller
         try {
             $stats = [
                 'total_promotions' => BoostProduct::count(),
-                'active_promotions' => BoostProduct::where('status', 'active')->count(),
+                'active_promotions' => BoostProduct::where('status', 'running')->count(), // active -> running
                 'pending_promotions' => BoostProduct::where('status', 'pending')->count(),
-                'approved_promotions' => BoostProduct::where('status', 'approved')->count(),
-                'rejected_promotions' => BoostProduct::where('status', 'rejected')->count(),
-                'stopped_promotions' => BoostProduct::where('status', 'stopped')->count(),
+                'approved_promotions' => BoostProduct::where('status', 'scheduled')->count(), // approved -> scheduled
+                'rejected_promotions' => BoostProduct::where('status', 'cancelled')->count(), // rejected -> cancelled
+                'stopped_promotions' => BoostProduct::where('status', 'paused')->count(), // stopped -> paused
                 'completed_promotions' => BoostProduct::where('status', 'completed')->count(),
-                'total_revenue' => BoostProduct::where('status', 'active')->sum('total_amount'),
-                'total_impressions' => BoostProduct::where('status', 'active')->sum('impressions'),
-                'total_clicks' => BoostProduct::where('status', 'active')->sum('clicks'),
-                'average_cpc' => BoostProduct::where('status', 'active')->avg('cpc'),
+                'total_revenue' => BoostProduct::where('status', 'running')->sum('total_amount'), // active -> running
+                'total_impressions' => BoostProduct::where('status', 'running')->sum('impressions'), // active -> running
+                'total_clicks' => BoostProduct::where('status', 'running')->sum('clicks'), // active -> running
+                'average_cpc' => BoostProduct::where('status', 'running')->avg('cpc'), // active -> running
             ];
 
             // Monthly trends
@@ -334,7 +584,8 @@ class AdminPromotionsController extends Controller
                 'seller_name' => $promotion->store?->user?->full_name,
                 'amount' => $promotion->total_amount,
                 'duration' => $promotion->duration,
-                'status' => $promotion->status,
+                'status' => $this->mapDbStatusToFrontend($promotion->status),
+                'db_status' => $promotion->status, // Include raw DB status for reference
                 'reach' => $promotion->reach,
                 'impressions' => $promotion->impressions,
                 'clicks' => $promotion->clicks,
@@ -347,16 +598,42 @@ class AdminPromotionsController extends Controller
     }
 
     /**
+     * Map database enum status to frontend-friendly status name
+     */
+    private function mapDbStatusToFrontend($dbStatus)
+    {
+        $statusMap = [
+            'running' => 'active',
+            'scheduled' => 'approved',
+            'paused' => 'stopped',
+            'cancelled' => 'rejected',
+        ];
+        
+        return $statusMap[$dbStatus] ?? $dbStatus;
+    }
+
+    /**
      * Get status color for UI
+     * Maps database enum values to frontend-friendly status names and colors
      */
     private function getStatusColor($status)
     {
-        return match($status) {
-            'active' => 'green',
-            'approved' => 'blue',
+        // Map DB enum values to frontend status names
+        $statusMap = [
+            'running' => 'active',
+            'scheduled' => 'approved',
+            'paused' => 'stopped',
+            'cancelled' => 'rejected',
+        ];
+        
+        $frontendStatus = $statusMap[$status] ?? $status;
+        
+        return match($frontendStatus) {
+            'active', 'running' => 'green',
+            'approved', 'scheduled' => 'blue',
             'pending' => 'yellow',
-            'rejected' => 'red',
-            'stopped' => 'gray',
+            'rejected', 'cancelled' => 'red',
+            'stopped', 'paused' => 'gray',
             'completed' => 'purple',
             default => 'blue'
         };

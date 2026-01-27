@@ -492,6 +492,20 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::post('/stores/bulk-action', [AdminStoreKYCController::class, 'bulkAction']);
     // Get KYC statistics and trends
     Route::get('/stores/kyc-statistics', [AdminStoreKYCController::class, 'getKYCStatistics']);
+    // Assign or unassign account officer to a store (Super Admin only)
+    Route::put('/stores/{storeId}/assign-account-officer', [AdminStoreKYCController::class, 'assignAccountOfficer']);
+
+    // ========================================
+    // ACCOUNT OFFICER VENDORS MODULE
+    // ========================================
+    // Get all account officers with vendor counts (Super Admin only)
+    Route::get('/account-officers', [\App\Http\Controllers\Api\Admin\AccountOfficerController::class, 'index']);
+    // Get dashboard stats for current Account Officer
+    Route::get('/account-officers/me/dashboard', [\App\Http\Controllers\Api\Admin\AccountOfficerController::class, 'myDashboard']);
+    // Get vendors assigned to a specific account officer
+    Route::get('/account-officers/{id}/vendors', [\App\Http\Controllers\Api\Admin\AccountOfficerController::class, 'getVendors']);
+    // Get vendors assigned to current user (Account Officer)
+    Route::get('/vendors/assigned-to-me', [\App\Http\Controllers\Api\Admin\AccountOfficerController::class, 'myVendors']);
 
     // ========================================
     // SUBSCRIPTION MANAGEMENT MODULE
@@ -526,6 +540,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/promotions', [AdminPromotionsController::class, 'getAllPromotions']);
     // Get detailed promotion information including performance metrics
     Route::get('/promotions/{promotionId}/details', [AdminPromotionsController::class, 'getPromotionDetails']);
+    // Update promotion details (general edit route - budget, duration, location, start_date, status, payment info)
+    Route::put('/promotions/{promotionId}', [AdminPromotionsController::class, 'updatePromotion']);
     // Update promotion status (approve, reject, stop, extend)
     Route::put('/promotions/{promotionId}/status', [AdminPromotionsController::class, 'updatePromotionStatus']);
     // Extend promotion duration and budget

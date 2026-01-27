@@ -19,7 +19,20 @@ class AdminStoreKYCController extends Controller
     public function getAllStores(Request $request)
     {
         try {
-            $query = Store::with(['user', 'businessDetails', 'addresses', 'deliveryPricing']);
+            $query = Store::withoutGlobalScopes()
+                ->with(['user', 'businessDetails', 'addresses', 'deliveryPricing', 'accountOfficer']);
+
+            // Account Officer sees only assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $query->where('account_officer_id', auth()->id());
+            }
+
+            // Super Admin can filter by account_officer_id
+            if ($request->has('account_officer_id') && 
+                auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $query->where('account_officer_id', $request->account_officer_id);
+            }
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -101,14 +114,24 @@ class AdminStoreKYCController extends Controller
     public function getStoreDetails($storeId)
     {
         try {
-            $store = Store::with([
-                'user',
-                'businessDetails',
-                'addresses',
-                'deliveryPricing',
-                'categories',
-                'socialLinks',
-            ])->findOrFail($storeId);
+            $store = Store::withoutGlobalScopes()
+                ->with([
+                    'user',
+                    'businessDetails',
+                    'addresses',
+                    'deliveryPricing',
+                    'categories',
+                    'socialLinks',
+                    'accountOfficer',
+                ])->findOrFail($storeId);
+
+            // Account Officer can only view assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                if ($store->account_officer_id !== auth()->id()) {
+                    return ResponseHelper::error('Unauthorized. You can only view stores assigned to you.', 403);
+                }
+            }
 
             $storeData = [
                 'store_info' => [
@@ -119,6 +142,11 @@ class AdminStoreKYCController extends Controller
                     'location' => $store->store_location,
                     'status' => $store->status,
                     'onboarding_level' => $store->onboarding_level ?? 0,
+                    'account_officer' => $store->accountOfficer ? [
+                        'id' => $store->accountOfficer->id,
+                        'name' => $store->accountOfficer->full_name ?? $store->accountOfficer->name,
+                        'email' => $store->accountOfficer->email,
+                    ] : null,
                     'created_at' => $store->created_at,
                     'updated_at' => $store->updated_at,
                 ],
@@ -298,6 +326,57 @@ class AdminStoreKYCController extends Controller
                     Store::whereIn('id', $storeIds)->update(['is_active' => false]);
                     return ResponseHelper::success(null, 'Stores deactivated successfully');
             }
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Assign or unassign account officer to a store
+     * PUT /api/admin/stores/{id}/assign-account-officer
+     * 
+     * Access: Super Admin only
+     */
+    public function assignAccountOfficer(Request $request, $storeId)
+    {
+        try {
+            // Only Super Admin can assign account officers
+            if (!auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                return ResponseHelper::error('Unauthorized. Only Super Admins can assign account officers.', 403);
+            }
+
+            $store = Store::withoutGlobalScopes()->findOrFail($storeId);
+            
+            $request->validate([
+                'account_officer_id' => 'nullable|exists:users,id'
+            ]);
+
+            // Verify user has account_officer role if provided
+            if ($request->account_officer_id) {
+                $user = User::findOrFail($request->account_officer_id);
+                if (!$user->hasRole('account_officer')) {
+                    return ResponseHelper::error('User must have Account Officer role', 422);
+                }
+            }
+
+            $store->account_officer_id = $request->account_officer_id;
+            $store->save();
+
+            // Load relationship for response
+            $store->load('accountOfficer');
+
+            return ResponseHelper::success([
+                'store_id' => $store->id,
+                'store_name' => $store->store_name,
+                'account_officer_id' => $store->account_officer_id,
+                'account_officer' => $store->accountOfficer ? [
+                    'id' => $store->accountOfficer->id,
+                    'name' => $store->accountOfficer->full_name ?? $store->accountOfficer->name,
+                    'email' => $store->accountOfficer->email,
+                ] : null,
+            ], $request->account_officer_id 
+                ? 'Account Officer assigned successfully' 
+                : 'Account Officer unassigned successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }

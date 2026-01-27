@@ -450,6 +450,7 @@ Permissions follow the pattern: `{module}.{action}`
 | `referrals` | Referral Management | Manage referral program settings |
 | `notifications` | Notifications | Create and manage system notifications |
 | `seller_help` | Seller Help Requests | Manage help requests from sellers |
+| `account_officer_vendors` | Account Officer Vendors | Manage vendors assigned to Account Officers |
 | `settings` | Settings | System configuration and admin management |
 
 ---
