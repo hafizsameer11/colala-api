@@ -11,14 +11,27 @@ use App\Models\OrderItem;
 use App\Models\OrderTracking;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Seller\OrderAcceptanceService;
 use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AdminOrderManagementController extends Controller
 {
     use PeriodFilterTrait;
+
+    /**
+     * @var OrderAcceptanceService
+     */
+    protected $acceptanceService;
+
+    public function __construct(OrderAcceptanceService $acceptanceService)
+    {
+        $this->acceptanceService = $acceptanceService;
+    }
     /**
      * Get all orders with filtering and pagination
      */
@@ -81,7 +94,7 @@ class AdminOrderManagementController extends Controller
             $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
             $deliveredQuery = StoreOrder::where('status', 'delivered');
             $disputedQuery = StoreOrder::where('status', 'disputed');
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalOrdersQuery, $period);
                 $this->applyPeriodFilter($pendingOrdersQuery, $period);
@@ -90,7 +103,7 @@ class AdminOrderManagementController extends Controller
                 $this->applyPeriodFilter($deliveredQuery, $period);
                 $this->applyPeriodFilter($disputedQuery, $period);
             }
-            
+
             $stats = [
                 'total_orders' => $totalOrdersQuery->count(),
                 'pending_orders' => $pendingOrdersQuery->count(),
@@ -317,6 +330,52 @@ class AdminOrderManagementController extends Controller
     }
 
     /**
+     * Admin: Accept a store order on behalf of the seller (including delivery fee & details)
+     *
+     * This mirrors the seller flow:
+     * - status must be `pending_acceptance`
+     * - sets delivery_fee (shipping_fee), estimated_delivery_date, delivery_method, delivery_notes
+     * - recalculates subtotal_with_shipping and parent Order totals
+     * - updates tracking and sends notification to buyer
+     */
+    public function acceptOrderOnBehalf(Request $request, $storeOrderId)
+    {
+        try {
+            $request->validate([
+                'delivery_fee' => 'required|numeric|min:0',
+                'estimated_delivery_date' => 'nullable|date|after:today',
+                'delivery_method' => 'nullable|string|max:255',
+                'delivery_notes' => 'nullable|string|max:500',
+            ]);
+
+            $storeOrder = StoreOrder::with(['order', 'items', 'store'])->find($storeOrderId);
+
+            if (!$storeOrder) {
+                return ResponseHelper::error('Store order not found', 404);
+            }
+
+            // Reuse core seller acceptance logic (no ownership check for admin)
+            $storeOrder = $this->acceptanceService->acceptOrder($storeOrder, $request->all());
+
+            return ResponseHelper::success(
+                $this->formatSingleStoreOrder($storeOrder),
+                'Order accepted successfully by admin on behalf of seller'
+            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Admin acceptOrderOnBehalf error: ' . $e->getMessage(), [
+                'store_order_id' => $storeOrderId ?? null,
+            ]);
+            return ResponseHelper::error('Failed to accept order: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get order tracking history
      */
     public function getOrderTracking($storeOrderId)
@@ -368,11 +427,11 @@ class AdminOrderManagementController extends Controller
                 case 'update_status':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => $request->status]);
                     return ResponseHelper::success(null, "Orders status updated to {$request->status}");
-                
+
                 case 'mark_delivered':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => 'delivered']);
                     return ResponseHelper::success(null, 'Orders marked as delivered');
-                
+
                 case 'mark_completed':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => 'completed']);
                     return ResponseHelper::success(null, 'Orders marked as completed');
@@ -393,7 +452,7 @@ class AdminOrderManagementController extends Controller
             if ($period && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
-            
+
             $totalOrdersQuery = StoreOrder::query();
             $pendingOrdersQuery = StoreOrder::where('status', 'pending');
             $processingOrdersQuery = StoreOrder::where('status', 'processing');
@@ -403,7 +462,7 @@ class AdminOrderManagementController extends Controller
             $completedOrdersQuery = StoreOrder::where('status', 'completed');
             $disputedOrdersQuery = StoreOrder::where('status', 'disputed');
             $cancelledOrdersQuery = StoreOrder::where('status', 'cancelled');
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalOrdersQuery, $period);
                 $this->applyPeriodFilter($pendingOrdersQuery, $period);
@@ -415,7 +474,7 @@ class AdminOrderManagementController extends Controller
                 $this->applyPeriodFilter($disputedOrdersQuery, $period);
                 $this->applyPeriodFilter($cancelledOrdersQuery, $period);
             }
-            
+
             $stats = [
                 'total_orders' => $totalOrdersQuery->count(),
                 'pending_orders' => $pendingOrdersQuery->count(),
@@ -446,6 +505,45 @@ class AdminOrderManagementController extends Controller
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Format a single store order for detailed response (mirrors seller acceptance response)
+     */
+    private function formatSingleStoreOrder(StoreOrder $storeOrder): array
+    {
+        return [
+            'id' => $storeOrder->id,
+            'order_no' => $storeOrder->order->order_no ?? null,
+            'status' => $storeOrder->status,
+            'items_subtotal' => $storeOrder->items_subtotal,
+            'delivery_fee' => $storeOrder->shipping_fee,
+            'shipping_fee' => $storeOrder->shipping_fee, // Backward compatibility
+            'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping,
+            'estimated_delivery_date' => $storeOrder->estimated_delivery_date,
+            'delivery_method' => $storeOrder->delivery_method,
+            'delivery_notes' => $storeOrder->delivery_notes,
+            'rejection_reason' => $storeOrder->rejection_reason,
+            'accepted_at' => $storeOrder->accepted_at ? $storeOrder->accepted_at->format('Y-m-d H:i:s') : null,
+            'rejected_at' => $storeOrder->rejected_at ? $storeOrder->rejected_at->format('Y-m-d H:i:s') : null,
+            'created_at' => $storeOrder->created_at ? $storeOrder->created_at->format('Y-m-d H:i:s') : null,
+            'customer' => [
+                'id' => $storeOrder->order->user->id ?? null,
+                'name' => $storeOrder->order->user->full_name ?? null,
+                'email' => $storeOrder->order->user->email ?? null,
+                'phone' => $storeOrder->order->user->phone ?? null,
+            ],
+            'items' => $storeOrder->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'name' => $item->name,
+                    'qty' => $item->qty,
+                    'unit_price' => $item->unit_price,
+                    'line_total' => $item->line_total,
+                ];
+            }),
+        ];
     }
 
     /**
@@ -495,7 +593,7 @@ class AdminOrderManagementController extends Controller
     {
         $order = $storeOrder->order;
         $store = $storeOrder->store;
-        
+
         $statusMessages = [
             'pending' => 'Your order is pending',
             'processing' => 'Your order is being processed',

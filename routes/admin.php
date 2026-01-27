@@ -435,6 +435,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [AdminOrderManagementController::class, 'getAllOrders']);
     // Get detailed order information including products and tracking
     Route::get('/orders/{storeOrderId}/details', [AdminOrderManagementController::class, 'getOrderDetails']);
+    // Admin accepts order on behalf of seller (sets delivery fee & delivery details)
+    Route::post('/orders/{storeOrderId}/accept', [AdminOrderManagementController::class, 'acceptOrderOnBehalf']);
     // Update order status (pending, processing, shipped, out_for_delivery, delivered, completed, disputed, cancelled)
     Route::put('/orders/{storeOrderId}/status', [AdminOrderManagementController::class, 'updateOrderStatus']);
     // Get order tracking history
