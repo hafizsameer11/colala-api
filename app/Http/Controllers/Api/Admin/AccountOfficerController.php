@@ -63,7 +63,8 @@ class AccountOfficerController extends Controller
 
             $query = Store::withoutGlobalScopes()
                 ->where('account_officer_id', $id)
-                ->with(['accountOfficer', 'user']);
+                ->with(['accountOfficer', 'user'])
+                ->select('stores.*'); // Ensure we select all store fields including user_id
 
             // Apply filters
             if ($status) {
@@ -80,13 +81,32 @@ class AccountOfficerController extends Controller
             $stores = $query->latest()->paginate($perPage);
 
             $formattedStores = $stores->map(function($store) {
+                // Find user_id properly - check multiple sources
+                $userId = null;
+                
+                // First, try to get from store's user_id column
+                if ($store->user_id) {
+                    $userId = $store->user_id;
+                }
+                // If not found, try from the loaded user relationship
+                elseif ($store->user && $store->user->id) {
+                    $userId = $store->user->id;
+                }
+                // If still not found, try to find user by store_id (reverse relationship)
+                elseif ($store->id) {
+                    $user = \App\Models\User::where('store_id', $store->id)->first();
+                    if ($user) {
+                        $userId = $user->id;
+                    }
+                }
+                
                 return [
                     'id' => $store->id,
                     'store_name' => $store->store_name,
                     'store_email' => $store->store_email,
                     'store_phone' => $store->store_phone,
                     'status' => $store->status,
-                    'user_id' => $store->user_id,
+                    'user_id' => $userId,
                     'seller_name' => $store->user?->full_name ?? $store->user?->name ?? 'Unknown',
                     'seller_email' => $store->user?->email,
                     'created_at' => $store->created_at,
