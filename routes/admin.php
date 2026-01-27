@@ -43,6 +43,8 @@ use App\Http\Controllers\Api\Admin\AdminRoleController;
 
 Route::get('admin/banners', [\App\Http\Controllers\Api\Admin\AdminBannerController::class, 'getAllBanners']);
 
+// Terms route without authentication (public access)
+Route::get('/admin/terms', [AdminTermsController::class, 'index']);
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
@@ -925,9 +927,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // TERMS & POLICIES MANAGEMENT MODULE
     // ========================================
-    // Get all terms and policies
-    Route::get('/terms', [AdminTermsController::class, 'index']);
-    // Update terms and policies
+    // Update terms and policies (requires auth)
     Route::put('/terms', [AdminTermsController::class, 'update']);
 
     // ========================================
