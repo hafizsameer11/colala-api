@@ -38,6 +38,14 @@ class SellerDetailsController extends Controller
                 'stores.categories'
             ])->findOrFail($id);
 
+            // Check raw store visibility (ignore out-of-scope sellers)
+            $rawStore = Store::withoutGlobalScopes()->where('user_id', $user->id)->first();
+
+            if ($rawStore && (int) $rawStore->visibility === 0) {
+                // Seller/store is marked as out of scope (visibility = 0)
+                return ResponseHelper::error('Seller is out of scope', 404);
+            }
+
             $primaryStore = $user->store;
             
             // Get wallet balances

@@ -162,6 +162,154 @@ class AdminSellerCreationController extends Controller
     }
 
     /**
+     * Level 1: Update existing Store Information (Basic + Media + Categories + Social)
+     * For admin editing an already created seller/store.
+     */
+    public function level1Update(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'store_id' => 'required|exists:stores,id',
+                'store_name' => 'sometimes|required|string|max:255',
+                'store_email' => 'sometimes|required|email',
+                'store_phone' => 'sometimes|required|string|max:20',
+                'store_location' => 'nullable|string|max:255',
+                'referral_code' => 'nullable|string|max:50',
+                'show_phone_on_profile' => 'boolean',
+                'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'categories' => 'nullable|array',
+                'categories.*' => 'exists:categories,id',
+                'social_links' => 'nullable|array',
+                'social_links.*.type' => 'required_with:social_links|string|in:instagram,facebook,twitter,linkedin,youtube',
+                'social_links.*.url' => 'required_with:social_links|url'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            DB::beginTransaction();
+
+            /** @var Store $store */
+            $store = Store::with('user', 'categories', 'socialLinks')->findOrFail($request->store_id);
+            $user = $store->user;
+
+            // Update user basic fields if provided
+            if ($user) {
+                $userData = [];
+                if ($request->filled('store_name')) {
+                    $userData['full_name'] = $request->store_name;
+                }
+                if ($request->filled('store_email')) {
+                    $userData['email'] = $request->store_email;
+                }
+                if ($request->filled('store_phone')) {
+                    $userData['phone'] = $request->store_phone;
+                }
+                if (!empty($userData)) {
+                    // Handle unique email update safely
+                    $rules = [];
+                    if (array_key_exists('email', $userData)) {
+                        $rules['email'] = 'unique:users,email,' . $user->id;
+                    }
+                    if (!empty($rules)) {
+                        $emailValidator = Validator::make($userData, $rules);
+                        if ($emailValidator->fails()) {
+                            return ResponseHelper::error($emailValidator->errors()->first(), 422);
+                        }
+                    }
+                    $user->update($userData);
+                }
+            }
+
+            // Update store basic fields
+            $storeData = [];
+            if ($request->filled('store_name')) {
+                $storeData['store_name'] = $request->store_name;
+            }
+            if ($request->filled('store_email')) {
+                $storeData['store_email'] = $request->store_email;
+            }
+            if ($request->filled('store_phone')) {
+                $storeData['store_phone'] = $request->store_phone;
+            }
+            if ($request->has('store_location')) {
+                $storeData['store_location'] = $request->store_location;
+            }
+            if ($request->has('referral_code')) {
+                $storeData['referral_code'] = $request->referral_code;
+            }
+            if ($request->has('show_phone_on_profile')) {
+                $storeData['show_phone_on_profile'] = $request->boolean('show_phone_on_profile', true);
+            }
+
+            // Handle file uploads
+            if ($request->hasFile('profile_image')) {
+                $storeData['profile_image'] = $request->file('profile_image')
+                    ->store("stores/{$store->id}", 'public');
+            }
+            if ($request->hasFile('banner_image')) {
+                $storeData['banner_image'] = $request->file('banner_image')
+                    ->store("stores/{$store->id}", 'public');
+            }
+
+            if (!empty($storeData)) {
+                $store->update($storeData);
+            }
+
+            // Handle categories
+            if ($request->has('categories')) {
+                $store->categories()->sync($request->categories ?? []);
+            }
+
+            // Handle social links
+            if ($request->has('social_links')) {
+                StoreSocialLink::where('store_id', $store->id)->delete();
+                foreach ($request->social_links ?? [] as $link) {
+                    StoreSocialLink::create([
+                        'store_id' => $store->id,
+                        'type' => $link['type'],
+                        'url' => $link['url']
+                    ]);
+                }
+            }
+
+            // Ensure Level 1 steps are marked done after edit
+            $this->markDone($store, 1, 'level1.basic');
+            $this->markDone($store, 1, 'level1.profile_media');
+            $this->markDone($store, 1, 'level1.categories_social');
+
+            DB::commit();
+
+            $store->refresh();
+
+            return ResponseHelper::success([
+                'store_id' => $store->id,
+                'store_name' => $store->store_name,
+                'store_email' => $store->store_email,
+                'store_phone' => $store->store_phone,
+                'store_location' => $store->store_location,
+                'referral_code' => $store->referral_code,
+                'profile_image' => $store->profile_image ? asset('storage/' . $store->profile_image) : null,
+                'banner_image' => $store->banner_image ? asset('storage/' . $store->banner_image) : null,
+                'categories' => $store->categories,
+                'social_links' => $store->socialLinks,
+                'progress' => [
+                    'level' => $store->onboarding_level,
+                    'percent' => $store->onboarding_percent,
+                    'status' => $store->onboarding_status
+                ]
+            ], 'Level 1 updated successfully');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Level 1: Basic Store Information (Legacy - for backward compatibility)
      */
     public function level1Basic(Request $request)
@@ -425,6 +573,76 @@ class AdminSellerCreationController extends Controller
     }
 
     /**
+     * Level 2: Update existing Business Information (Details + Documents)
+     * For admin editing level 2 data.
+     */
+    public function level2Update(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'store_id' => 'required|exists:stores,id',
+                'business_name' => 'sometimes|required|string|max:255',
+                'business_type' => 'sometimes|required|string|max:100',
+                'nin_number' => 'sometimes|required|string|max:20',
+                'cac_number' => 'nullable|string|max:50',
+                'nin_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+                'cac_document' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:2048',
+                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:5120'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            $store = Store::findOrFail($request->store_id);
+            $payload = [];
+
+            if ($request->filled('business_name')) {
+                $payload['registered_name'] = $request->business_name;
+            }
+            if ($request->filled('business_type')) {
+                $payload['business_type'] = $this->mapBusinessType($request->business_type);
+            }
+            if ($request->filled('nin_number')) {
+                $payload['nin_number'] = $request->nin_number;
+            }
+            if ($request->has('cac_number')) {
+                $payload['cac_number'] = $request->cac_number;
+            }
+
+            foreach (['nin_document', 'cac_document', 'utility_bill', 'store_video'] as $field) {
+                if ($request->hasFile($field)) {
+                    $payload[$field] = $request->file($field)->store("stores/{$store->id}", 'public');
+                }
+            }
+
+            if (!empty($payload)) {
+                StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], $payload);
+            }
+
+            $this->markDone($store, 2, 'level2.business_details');
+            $this->markDone($store, 2, 'level2.documents');
+
+            $details = StoreBusinessDetail::where('store_id', $store->id)->first();
+
+            return ResponseHelper::success([
+                'store_id' => $store->id,
+                'business_details' => $details,
+                'progress' => [
+                    'level' => $store->onboarding_level,
+                    'percent' => $store->onboarding_percent,
+                    'status' => $store->onboarding_status
+                ]
+            ], 'Level 2 updated successfully');
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Level 2: Business Details (Legacy - for backward compatibility)
      */
     public function level2BusinessDetails(Request $request)
@@ -626,6 +844,118 @@ class AdminSellerCreationController extends Controller
                     'status' => $store->onboarding_status
                 ]
             ], 'Level 3 completed successfully');
+
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Level 3: Update existing Store Setup (Physical + Utility + Addresses + Delivery + Theme)
+     * For admin editing level 3 data.
+     */
+    public function level3Update(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'store_id' => 'required|exists:stores,id',
+                'has_physical_store' => 'sometimes|required|boolean',
+                'store_video' => 'nullable|file|mimes:mp4,avi,mov|max:10240',
+                'utility_bill' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
+                'theme_color' => 'sometimes|required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+                'addresses' => 'nullable|array',
+                'addresses.*.state' => 'required_with:addresses|string|max:100',
+                'addresses.*.local_government' => 'required_with:addresses|string|max:100',
+                'addresses.*.full_address' => 'required_with:addresses|string|max:500',
+                'addresses.*.is_main' => 'boolean',
+                'addresses.*.opening_hours' => 'nullable|array',
+                'delivery_pricing' => 'nullable|array',
+                'delivery_pricing.*.state' => 'required_with:delivery_pricing|string|max:100',
+                'delivery_pricing.*.local_government' => 'required_with:delivery_pricing|string|max:100',
+                'delivery_pricing.*.variant' => 'required_with:delivery_pricing|string|max:50',
+                'delivery_pricing.*.price' => 'required_with:delivery_pricing|numeric|min:0',
+                'delivery_pricing.*.is_free' => 'boolean'
+            ]);
+
+            if ($validator->fails()) {
+                return ResponseHelper::error($validator->errors()->first(), 422);
+            }
+
+            $store = Store::findOrFail($request->store_id);
+            $data = [];
+
+            if ($request->has('has_physical_store')) {
+                $data['has_physical_store'] = $request->boolean('has_physical_store');
+            }
+
+            if ($request->hasFile('store_video')) {
+                $data['store_video'] = $request->file('store_video')->store("stores/{$store->id}", 'public');
+            }
+
+            if ($request->hasFile('utility_bill')) {
+                $data['utility_bill'] = $request->file('utility_bill')->store("stores/{$store->id}", 'public');
+            }
+
+            if (!empty($data)) {
+                StoreBusinessDetail::updateOrCreate(['store_id' => $store->id], $data);
+            }
+
+            if ($request->has('theme_color')) {
+                $store->update(['theme_color' => $request->theme_color]);
+            }
+
+            // Addresses: replace full set if provided
+            if ($request->has('addresses')) {
+                StoreAddress::where('store_id', $store->id)->delete();
+                foreach ($request->addresses ?? [] as $addressData) {
+                    StoreAddress::create([
+                        'store_id' => $store->id,
+                        'state' => $addressData['state'],
+                        'local_government' => $addressData['local_government'],
+                        'full_address' => $addressData['full_address'],
+                        'is_main' => $addressData['is_main'] ?? false,
+                        'opening_hours' => $addressData['opening_hours'] ?? []
+                    ]);
+                }
+            }
+
+            // Delivery pricing: replace full set if provided
+            if ($request->has('delivery_pricing')) {
+                StoreDeliveryPricing::where('store_id', $store->id)->delete();
+                foreach ($request->delivery_pricing ?? [] as $pricingData) {
+                    StoreDeliveryPricing::create([
+                        'store_id' => $store->id,
+                        'state' => $pricingData['state'],
+                        'local_government' => $pricingData['local_government'],
+                        'variant' => $this->mapDeliveryVariant($pricingData['variant']),
+                        'price' => $pricingData['price'],
+                        'is_free' => $pricingData['is_free'] ?? false
+                    ]);
+                }
+            }
+
+            // Mark level 3 steps done
+            $this->markDone($store, 3, 'level3.physical_store');
+            $this->markDone($store, 3, 'level3.utility_bill');
+            $this->markDone($store, 3, 'level3.addresses');
+            $this->markDone($store, 3, 'level3.delivery_pricing');
+            $this->markDone($store, 3, 'level3.theme');
+
+            $store->refresh();
+
+            return ResponseHelper::success([
+                'store_id' => $store->id,
+                'business_details' => StoreBusinessDetail::where('store_id', $store->id)->first(),
+                'theme_color' => $store->theme_color,
+                'addresses' => $store->addresses,
+                'delivery_pricing' => $store->deliveryPricing,
+                'progress' => [
+                    'level' => $store->onboarding_level,
+                    'percent' => $store->onboarding_percent,
+                    'status' => $store->onboarding_status
+                ]
+            ], 'Level 3 updated successfully');
 
         } catch (\Exception $e) {
             Log::error($e->getMessage());

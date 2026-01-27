@@ -136,15 +136,30 @@ class AdminProductsController extends Controller
     public function getProductDetails($productId)
     {
         try {
-            $product = Product::with([
-                'store.user',
-                'images',
-                'variants',
-                'reviews.user',
-                'boost',
-                'productStats',
-                'category'
-            ])->findOrFail($productId);
+            // Use withoutGlobalScopes() to bypass ALL global scopes including visibility filter
+            // Query explicitly to ensure scope is bypassed
+            $product = Product::withoutGlobalScopes()
+                ->where('id', $productId)
+                ->with([
+                    'store' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'store.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'images',
+                    'variants',
+                    'reviews.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'boost',
+                    'productStats',
+                    'category'
+                ])->first();
+            
+            if (!$product) {
+                return ResponseHelper::error('Product not found', 404);
+            }
 
             $productData = [
                 'product_info' => [
@@ -172,6 +187,7 @@ class AdminProductsController extends Controller
                     'store_name' => $product->store ? $product->store->store_name : null,
                     'seller_name' => $product->store ? $product->store->store_name : null,
                     'seller_email' => $product->store && $product->store->user ? $product->store->user->email : null,
+                    'seller_user_id' => $product->store && $product->store->user ? $product->store->user->id : null,
                     'store_location' => $product->store ? $product->store->store_location : null,
                     'profile_image' => $product->store && $product->store->profile_image ? asset('storage/' . $product->store->profile_image) : null,
                     'banner_image' => $product->store && $product->store->banner_image ? asset('storage/' . $product->store->banner_image) : null,
@@ -233,7 +249,7 @@ class AdminProductsController extends Controller
                 'is_unavailable' => 'boolean',
             ]);
 
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             $product->update([
                 'status' => $request->status,
@@ -265,7 +281,11 @@ class AdminProductsController extends Controller
                 'location' => 'nullable|string|max:255',
             ]);
 
-            $product = Product::with('store')->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->with([
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                }
+            ])->findOrFail($productId);
 
             // Check if product already has active boost
             $existingBoost = BoostProduct::where('product_id', $productId)
@@ -320,7 +340,7 @@ class AdminProductsController extends Controller
                 'status' => 'required|in:active,inactive',
             ]);
 
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             $product->update([
                 'name' => $request->name,
@@ -348,7 +368,7 @@ class AdminProductsController extends Controller
     public function deleteProduct($productId)
     {
         try {
-            $product = Product::findOrFail($productId);
+            $product = Product::withoutGlobalScopes()->findOrFail($productId);
             
             // Delete related data
             $product->images()->delete();

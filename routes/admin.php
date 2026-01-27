@@ -95,6 +95,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/users/{id}/chats/{chatId}/details', [AdminUserController::class, 'chatDetails']);
     // Send message in a chat
     Route::post('/users/{id}/chats/{chatId}/send', [AdminUserController::class, 'sendMessage']);
+    // Get user activities with optional period filter
+    Route::get('/users/{id}/activities', [AdminUserController::class, 'userActivities']);
     // Get user transactions with pagination
     Route::get('/users/{id}/transactions', [AdminUserController::class, 'userTransactions']);
     // Filter user transactions by status, type, etc.
@@ -147,6 +149,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/buyer-orders/{orderId}/status', [BuyerOrderController::class, 'updateOrderStatus']);
     // Get order tracking history
     Route::get('/buyer-orders/{orderId}/tracking', [BuyerOrderController::class, 'orderTracking']);
+    // Manually release escrow for a specific store order (admin override)
+    Route::post('/buyer-orders/{storeOrderId}/release-escrow', [BuyerOrderController::class, 'releaseEscrow']);
 
     // ========================================
     // BUYER TRANSACTION MANAGEMENT MODULE
@@ -189,10 +193,16 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // ========================================
     // Complete Level 1 onboarding (basic info + profile + categories + social) - Single API call
     Route::post('/create-seller/level1/complete', [AdminSellerCreationController::class, 'level1Complete']);
+    // Update Level 1 onboarding (edit basic info + profile + categories + social)
+    Route::post('/create-seller/level1/update', [AdminSellerCreationController::class, 'level1Update']);
     // Complete Level 2 onboarding (business details + documents) - Single API call
     Route::post('/create-seller/level2/complete', [AdminSellerCreationController::class, 'level2Complete']);
+    // Update Level 2 onboarding (edit business details + documents)
+    Route::post('/create-seller/level2/update', [AdminSellerCreationController::class, 'level2Update']);
     // Complete Level 3 onboarding (physical store + utility + address + delivery + theme) - Single API call
     Route::post('/create-seller/level3/complete', [AdminSellerCreationController::class, 'level3Complete']);
+    // Update Level 3 onboarding (edit physical store + utility + address + delivery + theme)
+    Route::post('/create-seller/level3/update', [AdminSellerCreationController::class, 'level3Update']);
     
     // Individual Step Routes (Legacy - for backward compatibility)
     // Level 1 - Basic information (name, email, phone, password)

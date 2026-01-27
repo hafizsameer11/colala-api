@@ -13,17 +13,21 @@ use App\Models\User;
 use App\Models\StoreReferralEarning;
 use App\Models\Store;
 use App\Models\StoreOrder;
-use App\Models\Escrow;
 use App\Models\StoreUser;
-use App\Models\Transaction;
+use App\Services\EscrowService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SellerOrderController extends Controller
 {
+    protected EscrowService $escrowService;
+
+    public function __construct(EscrowService $escrowService)
+    {
+        $this->escrowService = $escrowService;
+    }
     public function userStore()
     {
         $user = Auth::user();
@@ -109,7 +113,7 @@ class SellerOrderController extends Controller
                 // Award loyalty points and unlock escrow on first-time delivery confirmation
                 if (!$wasDelivered) {
                     // Unlock escrow funds and transfer to seller
-                    $this->unlockEscrowFunds($storeOrder);
+                    $this->escrowService->releaseForStoreOrder($storeOrder, null, 'Seller delivery code verification');
                     $setting = LoyaltySetting::where('store_id', $storeOrder->store_id)->first();
                     if ($setting && $setting->enable_order_points && (int)$setting->points_per_order > 0) {
                         $points = (int)$setting->points_per_order;
@@ -162,73 +166,4 @@ class SellerOrderController extends Controller
         }
     }
 
-    /**
-     * Unlock escrow funds and transfer to seller
-     */
-    private function unlockEscrowFunds(StoreOrder $storeOrder)
-    {
-        try {
-            return DB::transaction(function () use ($storeOrder) {
-                // Get escrow record for this specific store order (new flow)
-                $escrowRecord = Escrow::where('store_order_id', $storeOrder->id)
-                    ->where('status', 'locked')
-                    ->first();
-
-                // Fallback: Check old flow (by order_id) if no store_order_id escrow exists
-                if (!$escrowRecord) {
-                    $escrowRecord = Escrow::where('order_id', $storeOrder->order_id)
-                        ->where('status', 'locked')
-                        ->first();
-                }
-
-                if (!$escrowRecord) {
-                    return; // No escrow funds to unlock
-                }
-
-                $totalAmount = $escrowRecord->amount;
-                
-                // Get store owner
-                $store = Store::with('user')->find($storeOrder->store_id);
-                if (!$store || !$store->user) {
-                    throw new Exception('Store or store owner not found');
-                }
-
-                // Update escrow status to 'released'
-                $escrowRecord->update(['status' => 'released']);
-
-                // Create or update seller's wallet
-                $sellerWallet = Wallet::firstOrCreate(
-                    ['user_id' => $store->user->id],
-                    [
-                        'shopping_balance' => 0,
-                        'reward_balance' => 0,
-                        'referral_balance' => 0,
-                        'loyality_points' => 0
-                    ]
-                );
-
-                // Add funds to seller's shopping balance
-                $sellerWallet->increment('shopping_balance', $totalAmount);
-
-                // Create transaction record for seller
-                $txId = 'SELLER-' . now()->format('YmdHis') . '-' . str_pad((string)random_int(1, 999999), 6, '0', STR_PAD_LEFT);
-                Transaction::create([
-                    'tx_id' => $txId,
-                    'amount' => $totalAmount,
-                    'status' => 'successful',
-                    'type' => 'escrow_release',
-                    'order_id' => $storeOrder->order_id,
-                    'user_id' => $store->user->id,
-                ]);
-
-                return true;
-            });
-        } catch (Exception $e) {
-            // Log the error but don't fail the delivery confirmation
-            Log::error('Failed to unlock escrow funds: ' . $e->getMessage(), [
-                'store_order_id' => $storeOrder->id,
-                'order_id' => $storeOrder->order_id
-            ]);
-        }
-    }
 }
