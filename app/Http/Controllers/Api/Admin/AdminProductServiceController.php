@@ -283,7 +283,7 @@ class AdminProductServiceController extends Controller
                     $data['video'] = $videoPath;
                 }
 
-                // Create service
+                // Create service - set status to draft by default
                 $service = Service::create([
                     'store_id' => $data['store_id'],
                     'category_id' => $data['category_id'],
@@ -294,7 +294,7 @@ class AdminProductServiceController extends Controller
                     'price_from' => $data['price_from'] ?? null,
                     'price_to' => $data['price_to'] ?? null,
                     'discount_price' => $data['discount_price'] ?? null,
-                    'status' => $data['status'] ?? 'active',
+                    'status' => $data['status'] ?? 'draft',
                     'video' => $data['video'] ?? null,
                 ]);
 

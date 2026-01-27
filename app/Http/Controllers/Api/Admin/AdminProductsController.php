@@ -285,6 +285,16 @@ class AdminProductsController extends Controller
                 }
 
                 try {
+                    // Log seller info for debugging
+                    Log::info('Attempting to send product rejection notification', [
+                        'product_id' => $product->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'expo_token_length' => $seller->expo_push_token ? strlen($seller->expo_push_token) : 0,
+                        'rejection_reason' => $rejectionReason
+                    ]);
+
                     UserNotificationHelper::notify(
                         $seller->id,
                         $title,
@@ -300,13 +310,18 @@ class AdminProductsController extends Controller
                     Log::info('Product rejection notification sent to seller', [
                         'product_id' => $product->id,
                         'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
                         'rejection_reason' => $rejectionReason
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send product rejection notification', [
                         'product_id' => $product->id,
                         'seller_id' => $seller->id,
-                        'error' => $e->getMessage()
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                     // Don't fail the request if notification fails
                 }

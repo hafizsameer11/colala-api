@@ -154,6 +154,11 @@ class ProductService
 
 
             $data['store_id'] = $store->id;
+            
+            // Set status to draft by default when seller creates product
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
+            }
 
             /** Create main product */
             // Handle quantity: if provided directly, use it; otherwise calculate from variants

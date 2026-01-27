@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceStat;
@@ -12,6 +13,7 @@ use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminServicesController extends Controller
 {
@@ -196,19 +198,76 @@ class AdminServicesController extends Controller
                 'status' => 'required|in:active,inactive',
                 'is_sold' => 'boolean',
                 'is_unavailable' => 'boolean',
+                'rejection_reason' => 'nullable|string|max:1000',
             ]);
 
-            $service = Service::findOrFail($serviceId);
+            $service = Service::with(['store.user'])->findOrFail($serviceId);
             
-            $service->update([
+            $updateData = [
                 'status' => $request->status,
                 'is_sold' => $request->get('is_sold', $service->is_sold),
                 'is_unavailable' => $request->get('is_unavailable', $service->is_unavailable),
-            ]);
+            ];
+
+            // If status is inactive and rejection_reason is provided, save it
+            if ($request->status === 'inactive' && $request->has('rejection_reason')) {
+                $updateData['rejection_reason'] = $request->rejection_reason;
+            } elseif ($request->status === 'active') {
+                // Clear rejection reason when service is activated
+                $updateData['rejection_reason'] = null;
+            }
+
+            $service->update($updateData);
+
+            // Send notification to seller if service is marked as inactive
+            if ($request->status === 'inactive' && $service->store && $service->store->user) {
+                $seller = $service->store->user;
+                $rejectionReason = $request->rejection_reason ?? 'No reason provided';
+                
+                $title = 'Service Rejected';
+                $message = "Your service '{$service->name}' has been marked as inactive.";
+                
+                if ($request->rejection_reason) {
+                    $message .= "\n\nReason: {$rejectionReason}";
+                }
+
+                try {
+                    UserNotificationHelper::notify(
+                        $seller->id,
+                        $title,
+                        $message,
+                        [
+                            'type' => 'service_rejected',
+                            'service_id' => $service->id,
+                            'service_name' => $service->name,
+                            'rejection_reason' => $rejectionReason,
+                        ]
+                    );
+
+                    Log::info('Service rejection notification sent to seller', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'rejection_reason' => $rejectionReason
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send service rejection notification', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    // Don't fail the request if notification fails
+                }
+            }
 
             return ResponseHelper::success([
                 'service_id' => $service->id,
                 'status' => $service->status,
+                'rejection_reason' => $service->rejection_reason,
                 'is_sold' => $service->is_sold,
                 'is_unavailable' => $service->is_unavailable,
                 'updated_at' => $service->updated_at,
