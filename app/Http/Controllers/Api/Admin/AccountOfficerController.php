@@ -52,22 +52,11 @@ class AccountOfficerController extends Controller
      * Get vendors assigned to a specific account officer
      * GET /api/admin/account-officers/{id}/vendors
      * 
-     * Access: Super Admin OR Account Officer (if viewing own vendors)
+     * Access: All authenticated admins
      */
     public function getVendors($id, Request $request)
     {
         try {
-            $user = Auth::user();
-            
-            // Super Admin can view any account officer's vendors
-            // Account Officer can only view their own
-            $isSuperAdmin = $user->hasPermission('sellers.assign_account_officer');
-            $isAccountOfficer = $user->hasRole('account_officer');
-            
-            if (!$isSuperAdmin && (!$isAccountOfficer || $user->id != $id)) {
-                return ResponseHelper::error('Unauthorized', 403);
-            }
-
             $perPage = $request->get('per_page', 15);
             $status = $request->get('status');
             $search = $request->get('search');
