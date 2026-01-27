@@ -8,6 +8,7 @@ use App\Models\SystemPushNotification;
 use App\Models\SystemNotificationRecipient;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Jobs\SendScheduledNotificationJob;
 use App\Services\ExpoNotificationService;
 use App\Traits\PeriodFilterTrait;
 use Exception;
@@ -148,8 +149,22 @@ class AdminNotificationController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            // If not scheduled, send immediately
-            if (!$request->scheduled_for) {
+            // If scheduled, dispatch a job to send it at the scheduled time
+            if ($request->scheduled_for) {
+                $scheduledTime = \Carbon\Carbon::parse($request->scheduled_for);
+                $delay = $scheduledTime->diffInSeconds(now());
+                
+                // Dispatch job with delay to send at scheduled time
+                SendScheduledNotificationJob::dispatch($notification->id)
+                    ->delay($scheduledTime);
+                
+                Log::info('Scheduled notification job dispatched', [
+                    'notification_id' => $notification->id,
+                    'scheduled_for' => $scheduledTime,
+                    'delay_seconds' => $delay
+                ]);
+            } else {
+                // If not scheduled, send immediately
                 $this->sendNotification($notification);
             }
 
