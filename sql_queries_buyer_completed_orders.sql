@@ -115,3 +115,43 @@ WHERE (u.role = 'buyer' OR u.role IS NULL OR u.role = '')
 GROUP BY so.status
 ORDER BY count DESC;
 
+-- 9. DEBUG: Compare buyer vs seller completed orders to find the discrepancy
+-- This shows completed orders from seller stores and who placed them
+SELECT 
+    so.id as store_order_id,
+    so.status,
+    o.order_no,
+    u.id as order_user_id,
+    u.full_name as order_user_name,
+    u.role as order_user_role,
+    CASE WHEN s.id IS NOT NULL THEN 'HAS_STORE' ELSE 'NO_STORE' END as user_has_store,
+    st.id as store_id,
+    st.store_name,
+    st_user.id as store_owner_id,
+    st_user.role as store_owner_role
+FROM store_orders so
+INNER JOIN orders o ON so.order_id = o.id
+INNER JOIN users u ON o.user_id = u.id
+LEFT JOIN stores s ON u.id = s.user_id
+INNER JOIN stores st ON so.store_id = st.id
+INNER JOIN users st_user ON st.user_id = st_user.id
+WHERE so.status IN ('completed', 'delivered')
+  AND st_user.role = 'seller'  -- Only orders from seller stores
+ORDER BY so.created_at DESC;
+
+-- 10. Count completed orders by order user role (to see why buyer filter excludes some)
+SELECT 
+    u.role as order_user_role,
+    CASE WHEN s.id IS NOT NULL THEN 'HAS_STORE' ELSE 'NO_STORE' END as user_has_store,
+    COUNT(*) as completed_orders_count
+FROM store_orders so
+INNER JOIN orders o ON so.order_id = o.id
+INNER JOIN users u ON o.user_id = u.id
+LEFT JOIN stores s ON u.id = s.user_id
+INNER JOIN stores st ON so.store_id = st.id
+INNER JOIN users st_user ON st.user_id = st_user.id
+WHERE so.status IN ('completed', 'delivered')
+  AND st_user.role = 'seller'  -- Only orders from seller stores
+GROUP BY u.role, CASE WHEN s.id IS NOT NULL THEN 'HAS_STORE' ELSE 'NO_STORE' END
+ORDER BY completed_orders_count DESC;
+

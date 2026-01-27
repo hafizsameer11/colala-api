@@ -348,9 +348,16 @@ class AdminDashboardController extends Controller
         $sellerQuery = User::where('role', 'seller');
         $storeQuery = Store::query();
         $activeStoreQuery = Store::where('status', 'active');
-        $storeOrderQuery = StoreOrder::query();
+        // Only count StoreOrders from stores owned by sellers
+        $storeOrderQuery = StoreOrder::whereHas('store.user', function ($q) {
+            $q->where('role', 'seller');
+        });
         // Include both 'delivered' and 'completed' as completed orders
-        $completedStoreOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered']);
+        // Only count StoreOrders from stores owned by sellers
+        $completedStoreOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered'])
+            ->whereHas('store.user', function ($q) {
+                $q->where('role', 'seller');
+            });
 
         if ($dateRange) {
             $sellerQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
@@ -385,11 +392,19 @@ class AdminDashboardController extends Controller
                 ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            $previousStoreOrders = StoreOrder::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
-                ->count();
+            // Only count StoreOrders from stores owned by sellers for previous period
+            $previousStoreOrders = StoreOrder::whereHas('store.user', function ($q) {
+                $q->where('role', 'seller');
+            })
+            ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+            ->count();
             
             // Include both 'delivered' and 'completed' as completed orders for previous period
+            // Only count StoreOrders from stores owned by sellers
             $previousCompletedStoreOrders = StoreOrder::whereIn('status', ['completed', 'delivered'])
+                ->whereHas('store.user', function ($q) {
+                    $q->where('role', 'seller');
+                })
                 ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
         }
