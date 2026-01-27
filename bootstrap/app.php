@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'store.access' => \App\Http\Middleware\StoreAccessMiddleware::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'buyer.only' => \App\Http\Middleware\EnsureBuyerOnly::class,
         ]);
 
         // Track user activity - only runs if user is authenticated (checks Auth::check() internally)

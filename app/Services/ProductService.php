@@ -67,9 +67,12 @@ class ProductService
     }
 
     public function getAllforBuyer()
-    
     {
+        // Only return active products for buyers
         $products = Product::with(['variants.images', 'images', 'store'])
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->latest()
             ->get();
 
         // Record impression for each product

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductStat;
@@ -13,6 +14,7 @@ use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminProductsController extends Controller
 {
@@ -247,19 +249,73 @@ class AdminProductsController extends Controller
                 'status' => 'required|in:active,inactive',
                 'is_sold' => 'boolean',
                 'is_unavailable' => 'boolean',
+                'rejection_reason' => 'nullable|string|max:1000',
             ]);
 
-            $product = Product::withoutGlobalScopes()->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->with(['store.user'])
+                ->findOrFail($productId);
             
-            $product->update([
+            $updateData = [
                 'status' => $request->status,
                 'is_sold' => $request->get('is_sold', $product->is_sold),
                 'is_unavailable' => $request->get('is_unavailable', $product->is_unavailable),
-            ]);
+            ];
+
+            // If status is inactive and rejection_reason is provided, save it
+            if ($request->status === 'inactive' && $request->has('rejection_reason')) {
+                $updateData['rejection_reason'] = $request->rejection_reason;
+            } elseif ($request->status === 'active') {
+                // Clear rejection reason when product is activated
+                $updateData['rejection_reason'] = null;
+            }
+
+            $product->update($updateData);
+
+            // Send notification to seller if product is marked as inactive
+            if ($request->status === 'inactive' && $product->store && $product->store->user) {
+                $seller = $product->store->user;
+                $rejectionReason = $request->rejection_reason ?? 'No reason provided';
+                
+                $title = 'Product Rejected';
+                $message = "Your product '{$product->name}' has been marked as inactive.";
+                
+                if ($request->rejection_reason) {
+                    $message .= "\n\nReason: {$rejectionReason}";
+                }
+
+                try {
+                    UserNotificationHelper::notify(
+                        $seller->id,
+                        $title,
+                        $message,
+                        [
+                            'type' => 'product_rejected',
+                            'product_id' => $product->id,
+                            'product_name' => $product->name,
+                            'rejection_reason' => $rejectionReason,
+                        ]
+                    );
+
+                    Log::info('Product rejection notification sent to seller', [
+                        'product_id' => $product->id,
+                        'seller_id' => $seller->id,
+                        'rejection_reason' => $rejectionReason
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send product rejection notification', [
+                        'product_id' => $product->id,
+                        'seller_id' => $seller->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Don't fail the request if notification fails
+                }
+            }
 
             return ResponseHelper::success([
                 'product_id' => $product->id,
                 'status' => $product->status,
+                'rejection_reason' => $product->rejection_reason,
                 'is_sold' => $product->is_sold,
                 'is_unavailable' => $product->is_unavailable,
                 'updated_at' => $product->updated_at,
