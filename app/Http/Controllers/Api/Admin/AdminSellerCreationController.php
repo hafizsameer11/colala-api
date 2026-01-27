@@ -51,7 +51,7 @@ class AdminSellerCreationController extends Controller
                 'password' => 'required|string|min:8',
                 'store_location' => 'nullable|string|max:255',
                 'referral_code' => 'nullable|string|max:50',
-                'role' => 'nullable|string|in:seller,admin,moderator,super_admin',
+                'role' => 'nullable|string|in:seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
                 'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'show_phone_on_profile' => 'boolean',
@@ -81,8 +81,8 @@ class AdminSellerCreationController extends Controller
                 'is_active' => true
             ]);
 
-            // Assign RBAC role if it's an admin role
-            if (in_array($userRole, ['admin', 'moderator', 'super_admin'])) {
+            // Assign RBAC role if it's not 'seller' (all other roles are RBAC roles)
+            if ($userRole !== 'seller') {
                 try {
                     $rbacRole = \App\Models\Role::where('slug', $userRole)->where('is_active', true)->first();
                     if ($rbacRole) {
@@ -354,7 +354,7 @@ class AdminSellerCreationController extends Controller
                 'password' => 'required|string|min:8',
                 'store_location' => 'nullable|string|max:255',
                 'referral_code' => 'nullable|string|max:50',
-                'role' => 'nullable|string|in:seller,admin,moderator,super_admin',
+                'role' => 'nullable|string|in:seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
                 'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'show_phone_on_profile' => 'boolean'
@@ -379,8 +379,8 @@ class AdminSellerCreationController extends Controller
                 'is_active' => true
             ]);
 
-            // Assign RBAC role if it's an admin role
-            if (in_array($userRole, ['admin', 'moderator', 'super_admin'])) {
+            // Assign RBAC role if it's not 'seller' (all other roles are RBAC roles)
+            if ($userRole !== 'seller') {
                 try {
                     $rbacRole = \App\Models\Role::where('slug', $userRole)->where('is_active', true)->first();
                     if ($rbacRole) {
