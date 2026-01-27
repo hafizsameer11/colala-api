@@ -16,6 +16,7 @@ use App\Models\StoreOnboardingStep;
 use App\Models\Category;
 use App\Services\UserService;
 use App\Services\WalletService;
+use App\Services\AdminRoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -28,11 +29,13 @@ class AdminSellerCreationController extends Controller
 {
     protected $userService;
     protected $walletService;
+    protected $adminRoleService;
 
-    public function __construct(UserService $userService, WalletService $walletService)
+    public function __construct(UserService $userService, WalletService $walletService, AdminRoleService $adminRoleService)
     {
         $this->userService = $userService;
         $this->walletService = $walletService;
+        $this->adminRoleService = $adminRoleService;
     }
 
     /**
@@ -48,6 +51,7 @@ class AdminSellerCreationController extends Controller
                 'password' => 'required|string|min:8',
                 'store_location' => 'nullable|string|max:255',
                 'referral_code' => 'nullable|string|max:50',
+                'role' => 'nullable|string|in:seller,admin,moderator,super_admin',
                 'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'show_phone_on_profile' => 'boolean',
@@ -64,15 +68,43 @@ class AdminSellerCreationController extends Controller
 
             DB::beginTransaction();
 
+            // Get role from request or default to 'seller'
+            $userRole = $request->input('role', 'seller');
+
             // Create user account
             $user = User::create([
                 'full_name' => $request->store_name,
                 'email' => $request->store_email,
                 'phone' => $request->store_phone,
                 'password' => Hash::make($request->password),
-                'role' => 'seller',
+                'role' => $userRole,
                 'is_active' => true
             ]);
+
+            // Assign RBAC role if it's an admin role
+            if (in_array($userRole, ['admin', 'moderator', 'super_admin'])) {
+                try {
+                    $rbacRole = \App\Models\Role::where('slug', $userRole)->where('is_active', true)->first();
+                    if ($rbacRole) {
+                        // Use AdminRoleService to properly assign role (handles duplicates)
+                        $this->adminRoleService->assignRole(
+                            $user->id,
+                            $rbacRole->id,
+                            $request->user()?->id
+                        );
+                        Log::info("RBAC role '{$userRole}' assigned to user {$user->id}");
+                    } else {
+                        Log::warning("RBAC role '{$userRole}' not found. Please run the seeder first.");
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail user creation if RBAC assignment fails
+                    Log::warning('Failed to assign RBAC role to user: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                        'role' => $userRole,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // Create wallet for user
             $this->walletService->create([
@@ -322,6 +354,7 @@ class AdminSellerCreationController extends Controller
                 'password' => 'required|string|min:8',
                 'store_location' => 'nullable|string|max:255',
                 'referral_code' => 'nullable|string|max:50',
+                'role' => 'nullable|string|in:seller,admin,moderator,super_admin',
                 'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'banner_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'show_phone_on_profile' => 'boolean'
@@ -333,15 +366,43 @@ class AdminSellerCreationController extends Controller
 
             DB::beginTransaction();
 
+            // Get role from request or default to 'seller'
+            $userRole = $request->input('role', 'seller');
+
             // Create user account
             $user = User::create([
                 'full_name' => $request->store_name,
                 'email' => $request->store_email,
                 'phone' => $request->store_phone,
                 'password' => Hash::make($request->password),
-                'role' => 'seller',
+                'role' => $userRole,
                 'is_active' => true
             ]);
+
+            // Assign RBAC role if it's an admin role
+            if (in_array($userRole, ['admin', 'moderator', 'super_admin'])) {
+                try {
+                    $rbacRole = \App\Models\Role::where('slug', $userRole)->where('is_active', true)->first();
+                    if ($rbacRole) {
+                        // Use AdminRoleService to properly assign role (handles duplicates)
+                        $this->adminRoleService->assignRole(
+                            $user->id,
+                            $rbacRole->id,
+                            $request->user()?->id
+                        );
+                        Log::info("RBAC role '{$userRole}' assigned to user {$user->id}");
+                    } else {
+                        Log::warning("RBAC role '{$userRole}' not found. Please run the seeder first.");
+                    }
+                } catch (\Exception $e) {
+                    // Log error but don't fail user creation if RBAC assignment fails
+                    Log::warning('Failed to assign RBAC role to user: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                        'role' => $userRole,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // Create wallet for user
             $this->walletService->create([
