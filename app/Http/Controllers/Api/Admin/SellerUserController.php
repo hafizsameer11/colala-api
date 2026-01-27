@@ -14,6 +14,7 @@ use App\Models\Transaction;
 use App\Models\Subscription;
 use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -31,10 +32,9 @@ class SellerUserController extends Controller
                 ->whereHas('store'); // Only sellers with stores
 
             // Account Officer sees only sellers from assigned stores
-            if (auth()->user()->hasRole('account_officer') && 
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+            if (Auth::user()->role === 'account_officer') {
                 $query->whereHas('store', function ($storeQuery) {
-                    $storeQuery->where('account_officer_id', auth()->id());
+                    $storeQuery->where('account_officer_id', Auth::id());
                 });
             }
 
@@ -82,9 +82,8 @@ class SellerUserController extends Controller
             $newStoresQuery = User::where('role', 'seller')->whereHas('store');
             
             // Account Officer sees only stats from assigned stores
-            if (auth()->user()->hasRole('account_officer') && 
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
-                $accountOfficerId = auth()->id();
+            if (Auth::user()->role === 'account_officer') {
+                $accountOfficerId = Auth::id();
                 $totalStoresQuery->whereHas('store', function ($q) use ($accountOfficerId) {
                     $q->where('account_officer_id', $accountOfficerId);
                 });

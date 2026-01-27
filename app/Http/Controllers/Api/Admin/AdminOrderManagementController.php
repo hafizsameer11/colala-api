@@ -15,6 +15,7 @@ use App\Services\Seller\OrderAcceptanceService;
 use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -48,10 +49,9 @@ class AdminOrderManagementController extends Controller
             ]);
 
             // Account Officer sees only orders from assigned stores
-            if (auth()->user()->hasRole('account_officer') &&
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+            if (Auth::user()->role === 'account_officer') {
                 $query->whereHas('store', function ($storeQuery) {
-                    $storeQuery->where('account_officer_id', auth()->id());
+                    $storeQuery->where('account_officer_id', Auth::id());
                 });
             }
 
@@ -104,9 +104,8 @@ class AdminOrderManagementController extends Controller
             $disputedQuery = StoreOrder::where('status', 'disputed');
 
             // Account Officer sees only stats from assigned stores
-            if (auth()->user()->hasRole('account_officer') &&
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
-                $accountOfficerId = auth()->id();
+            if (Auth::user()->role === 'account_officer') {
+                $accountOfficerId = Auth::id();
                 $totalOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
                     $q->where('account_officer_id', $accountOfficerId);
                 });
