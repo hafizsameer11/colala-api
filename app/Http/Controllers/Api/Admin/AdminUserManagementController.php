@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\UserService;
@@ -25,15 +26,41 @@ class AdminUserManagementController extends Controller
     }
 
     /**
+     * Get all active admin role slugs from the roles table
+     */
+    private function getAdminRoles(): array
+    {
+        return Role::active()->pluck('slug')->toArray();
+    }
+
+    /**
      * Get all admin users with pagination and search
      */
     public function index(Request $request)
     {
         try {
-            // Build query: Only return users with admin roles (exclude seller, buyer, and null)
-            // Admin roles: admin, moderator, super_admin, support_agent, financial_manager, content_manager
-            $adminRoles = ['admin', 'moderator', 'super_admin', 'support_agent', 'financial_manager', 'content_manager'];
-            
+            // Get all active admin roles from the roles table dynamically
+            $adminRoles = Role::active()->pluck('slug')->toArray();
+
+            // If no active roles found, return empty result
+            if (empty($adminRoles)) {
+                return ResponseHelper::success([
+                    'current_page' => 1,
+                    'data' => [],
+                    'first_page_url' => $request->url() . '?page=1',
+                    'from' => null,
+                    'last_page' => 1,
+                    'last_page_url' => $request->url() . '?page=1',
+                    'links' => [],
+                    'next_page_url' => null,
+                    'path' => $request->url(),
+                    'per_page' => 15,
+                    'prev_page_url' => null,
+                    'to' => null,
+                    'total' => 0
+                ], 'No active admin roles found');
+            }
+
             $query = User::withoutGlobalScopes()
                 ->whereIn('role', $adminRoles)
                 ->with('wallet');
@@ -88,9 +115,10 @@ class AdminUserManagementController extends Controller
     public function stats()
     {
         try {
-            $totalAdmins = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->count();
-            $activeAdmins = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->where('is_active', true)->count();
-            $newAdmins = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->where('created_at', '>=', now()->subMonth())->count();
+            $adminRoles = $this->getAdminRoles();
+            $totalAdmins = User::whereIn('role', $adminRoles)->count();
+            $activeAdmins = User::whereIn('role', $adminRoles)->where('is_active', true)->count();
+            $newAdmins = User::whereIn('role', $adminRoles)->where('created_at', '>=', now()->subMonth())->count();
 
             // Calculate percentage increase (mock data for now)
             $totalIncrease = 5;
@@ -135,8 +163,9 @@ class AdminUserManagementController extends Controller
                 'search' => 'required|string|min:2'
             ]);
 
+            $adminRoles = $this->getAdminRoles();
             $search = $request->search;
-            $users = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->with('wallet')
+            $users = User::whereIn('role', $adminRoles)->with('wallet')
                 ->where(function ($q) use ($search) {
                     $q->where('full_name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%")
@@ -175,17 +204,18 @@ class AdminUserManagementController extends Controller
                 'action' => 'required|string|in:activate,deactivate,delete'
             ]);
 
+            $adminRoles = $this->getAdminRoles();
             $userIds = $request->user_ids;
             $action = $request->action;
 
             if ($action === 'activate') {
-                User::whereIn('role', ['admin', 'moderator', 'super_admin'])->whereIn('id', $userIds)->update(['is_active' => true]);
+                User::whereIn('role', $adminRoles)->whereIn('id', $userIds)->update(['is_active' => true]);
                 $message = "Admin users activated successfully";
             } elseif ($action === 'deactivate') {
-                User::whereIn('role', ['admin', 'moderator', 'super_admin'])->whereIn('id', $userIds)->update(['is_active' => false]);
+                User::whereIn('role', $adminRoles)->whereIn('id', $userIds)->update(['is_active' => false]);
                 $message = "Admin users deactivated successfully";
             } else {
-                User::whereIn('role', ['admin', 'moderator', 'super_admin'])->whereIn('id', $userIds)->delete();
+                User::whereIn('role', $adminRoles)->whereIn('id', $userIds)->delete();
                 $message = "Admin users deleted successfully";
             }
 
@@ -202,7 +232,8 @@ class AdminUserManagementController extends Controller
     public function showProfile($id)
     {
         try {
-            $user = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->with(['wallet', 'userActivities' => function($query) {
+            $adminRoles = $this->getAdminRoles();
+            $user = User::whereIn('role', $adminRoles)->with(['wallet', 'userActivities' => function($query) {
                 $query->latest()->limit(10);
             }])->findOrFail($id);
 
@@ -246,7 +277,8 @@ class AdminUserManagementController extends Controller
     public function userDetails($id)
     {
         try {
-            $user = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->with(['wallet'])
+            $adminRoles = $this->getAdminRoles();
+            $user = User::whereIn('role', $adminRoles)->with(['wallet'])
                 ->findOrFail($id);
 
             $userData = [
@@ -309,7 +341,7 @@ class AdminUserManagementController extends Controller
 
             // Use the same user service as registration
             $user = $this->userService->create($data);
-            
+
             // Create wallet for user (same as registration)
             $wallet = $this->walletService->create(['user_id' => $user->id]);
 
@@ -326,7 +358,8 @@ class AdminUserManagementController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $user = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->findOrFail($id);
+            $adminRoles = $this->getAdminRoles();
+            $user = User::whereIn('role', $adminRoles)->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'full_name' => 'sometimes|string|max:255',
@@ -345,7 +378,7 @@ class AdminUserManagementController extends Controller
             }
 
             $updateData = $request->all();
-            
+
             if (isset($updateData['password'])) {
                 $updateData['password'] = Hash::make($updateData['password']);
             }
@@ -365,7 +398,8 @@ class AdminUserManagementController extends Controller
     public function delete($id)
     {
         try {
-            $user = User::whereIn('role', ['admin', 'moderator', 'super_admin'])->findOrFail($id);
+            $adminRoles = $this->getAdminRoles();
+            $user = User::whereIn('role', $adminRoles)->findOrFail($id);
             $user->delete();
 
             return ResponseHelper::success(null, 'Admin user deleted successfully');

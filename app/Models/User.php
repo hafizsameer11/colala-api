@@ -253,7 +253,10 @@ class User extends Authenticatable
      */
     public function scopeAdmins($query)
     {
-        return $query->whereIn('role', ['admin', 'moderator', 'super_admin'])
+        // Get all active admin role slugs from the roles table dynamically
+        $adminRoles = Role::active()->pluck('slug')->toArray();
+
+        return $query->whereIn('role', $adminRoles)
             ->orWhereHas('roles');
     }
 
