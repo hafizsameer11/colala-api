@@ -48,6 +48,19 @@ class AdminOrderManagementController extends Controller
                 'deliveryPricing'
             ]);
 
+            // Filter to only buyer orders (users with role='buyer' and no store)
+            $query->whereHas('order', function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers (users with stores)
+                });
+            });
+
             // Account Officer sees only orders from assigned stores
             if (Auth::user()->role === 'account_officer') {
                 $query->whereHas('store', function ($storeQuery) {
@@ -96,12 +109,30 @@ class AdminOrderManagementController extends Controller
             $orders = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering
-            $totalOrdersQuery = StoreOrder::query();
-            $pendingOrdersQuery = StoreOrder::where('status', 'pending');
-            $completedOrdersQuery = StoreOrder::where('status', 'completed');
-            $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
-            $deliveredQuery = StoreOrder::where('status', 'delivered');
-            $disputedQuery = StoreOrder::where('status', 'disputed');
+            // Filter to only buyer orders (same as main query)
+            $buyerOrderFilter = function ($orderQuery) {
+                $orderQuery->whereHas('user', function ($userQuery) {
+                    $userQuery->withoutGlobalScopes()
+                        ->where(function ($q) {
+                            $q->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
+                });
+            };
+
+            $totalOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter);
+            $pendingOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
+                ->where('status', 'pending');
+            $completedOrdersQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
+                ->where('status', 'completed');
+            $outForDeliveryQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
+                ->where('status', 'out_for_delivery');
+            $deliveredQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
+                ->where('status', 'delivered');
+            $disputedQuery = StoreOrder::whereHas('order', $buyerOrderFilter)
+                ->where('status', 'disputed');
 
             // Account Officer sees only stats from assigned stores
             if (Auth::user()->role === 'account_officer') {
