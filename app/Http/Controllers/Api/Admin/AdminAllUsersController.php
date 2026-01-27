@@ -396,7 +396,7 @@ class AdminAllUsersController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'phone' => 'required|string|max:20|unique:users,phone',
                 'password' => 'required|string|min:8',
-                'role' => 'required|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
+                'role' => 'required|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager,account_officer',
                 'status' => 'nullable|in:active,inactive',
                 'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp',
             ]);
