@@ -23,6 +23,16 @@ class AdminTransactionManagementController extends Controller
         try {
             $query = Transaction::with(['user', 'order']);
 
+            // Account Officer sees only transactions from sellers in assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $query->whereHas('user.store', function ($storeQuery) {
+                    $storeQuery->where('account_officer_id', auth()->id());
+                })->whereHas('user', function ($userQuery) {
+                    $userQuery->where('role', 'seller');
+                });
+            }
+
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 $query->where('status', $request->status);
@@ -74,6 +84,32 @@ class AdminTransactionManagementController extends Controller
             $pendingTransactionsQuery = Transaction::where('status', 'pending');
             $successfulTransactionsQuery = Transaction::where('status', 'successful');
             $failedTransactionsQuery = Transaction::where('status', 'failed');
+            
+            // Account Officer sees only stats from assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $accountOfficerId = auth()->id();
+                $totalTransactionsQuery->whereHas('user.store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                })->whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                });
+                $pendingTransactionsQuery->whereHas('user.store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                })->whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                });
+                $successfulTransactionsQuery->whereHas('user.store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                })->whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                });
+                $failedTransactionsQuery->whereHas('user.store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                })->whereHas('user', function ($q) {
+                    $q->where('role', 'seller');
+                });
+            }
             
             if ($period) {
                 $this->applyPeriodFilter($totalTransactionsQuery, $period);

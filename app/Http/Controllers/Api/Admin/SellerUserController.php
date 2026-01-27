@@ -30,6 +30,14 @@ class SellerUserController extends Controller
                 ->where('role', 'seller')
                 ->whereHas('store'); // Only sellers with stores
 
+            // Account Officer sees only sellers from assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $query->whereHas('store', function ($storeQuery) {
+                    $storeQuery->where('account_officer_id', auth()->id());
+                });
+            }
+
             // Search functionality
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -72,6 +80,21 @@ class SellerUserController extends Controller
             $totalStoresQuery = User::where('role', 'seller')->whereHas('store');
             $activeStoresQuery = User::where('role', 'seller')->whereHas('store')->where('is_active', true);
             $newStoresQuery = User::where('role', 'seller')->whereHas('store');
+            
+            // Account Officer sees only stats from assigned stores
+            if (auth()->user()->hasRole('account_officer') && 
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $accountOfficerId = auth()->id();
+                $totalStoresQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $activeStoresQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $newStoresQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+            }
             
             if ($period) {
                 $this->applyPeriodFilter($totalStoresQuery, $period);

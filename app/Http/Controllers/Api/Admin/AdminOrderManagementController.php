@@ -47,6 +47,14 @@ class AdminOrderManagementController extends Controller
                 'deliveryPricing'
             ]);
 
+            // Account Officer sees only orders from assigned stores
+            if (auth()->user()->hasRole('account_officer') &&
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $query->whereHas('store', function ($storeQuery) {
+                    $storeQuery->where('account_officer_id', auth()->id());
+                });
+            }
+
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 $query->where('status', $request->status);
@@ -94,6 +102,30 @@ class AdminOrderManagementController extends Controller
             $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
             $deliveredQuery = StoreOrder::where('status', 'delivered');
             $disputedQuery = StoreOrder::where('status', 'disputed');
+
+            // Account Officer sees only stats from assigned stores
+            if (auth()->user()->hasRole('account_officer') &&
+                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+                $accountOfficerId = auth()->id();
+                $totalOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $pendingOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $completedOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $outForDeliveryQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $deliveredQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $disputedQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+            }
 
             if ($period) {
                 $this->applyPeriodFilter($totalOrdersQuery, $period);
