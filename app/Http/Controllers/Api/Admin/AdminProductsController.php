@@ -187,6 +187,7 @@ class AdminProductsController extends Controller
                     'store_name' => $product->store ? $product->store->store_name : null,
                     'seller_name' => $product->store ? $product->store->store_name : null,
                     'seller_email' => $product->store && $product->store->user ? $product->store->user->email : null,
+                    'seller_user_id' => $product->store && $product->store->user ? $product->store->user->id : null,
                     'store_location' => $product->store ? $product->store->store_location : null,
                     'profile_image' => $product->store && $product->store->profile_image ? asset('storage/' . $product->store->profile_image) : null,
                     'banner_image' => $product->store && $product->store->banner_image ? asset('storage/' . $product->store->banner_image) : null,

@@ -390,15 +390,32 @@ class BuyerOrderController extends Controller
             $orderIds = $request->order_ids;
             $action = $request->action;
 
+            /**
+             * Admin UI is currently sending `order_ids` as the public order numbers
+             * e.g. "COL-20251229-472506" instead of the numeric primary keys.
+             *
+             * To support both formats (numeric IDs and order_nos), we:
+             *  - Detect non-numeric values and treat them as order_nos
+             *  - Resolve them to internal numeric order IDs before running queries
+             */
+            $resolvedOrderIds = $orderIds;
+            $containsNonNumeric = collect($orderIds)->contains(function ($id) {
+                return !is_numeric($id);
+            });
+
+            if ($containsNonNumeric) {
+                $resolvedOrderIds = Order::whereIn('order_no', $orderIds)->pluck('id')->all();
+            }
+
             if ($action === 'update_status') {
                 $request->validate(['status' => 'required|string']);
-                StoreOrder::whereIn('order_id', $orderIds)->update(['status' => $request->status]);
+                StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => $request->status]);
                 $message = "Order status updated successfully";
             } elseif ($action === 'mark_completed') {
-                StoreOrder::whereIn('order_id', $orderIds)->update(['status' => 'completed']);
+                StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => 'completed']);
                 $message = "Orders marked as completed";
             } elseif ($action === 'mark_disputed') {
-                StoreOrder::whereIn('order_id', $orderIds)->update(['status' => 'disputed']);
+                StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => 'disputed']);
                 $message = "Orders marked as disputed";
             } else {
                 Order::whereHas('user', function ($q) {
@@ -409,7 +426,7 @@ class BuyerOrderController extends Controller
                                   ->orWhere('role', '');
                         })
                         ->whereDoesntHave('store'); // Exclude sellers
-                })->whereIn('id', $orderIds)->delete();
+                })->whereIn('id', $resolvedOrderIds)->delete();
                 $message = "Orders deleted successfully";
             }
 
