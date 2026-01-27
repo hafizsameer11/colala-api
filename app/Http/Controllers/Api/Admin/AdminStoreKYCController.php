@@ -335,16 +335,11 @@ class AdminStoreKYCController extends Controller
      * Assign or unassign account officer to a store
      * PUT /api/admin/stores/{id}/assign-account-officer
      * 
-     * Access: Super Admin only
+     * Access: Admin users
      */
     public function assignAccountOfficer(Request $request, $storeId)
     {
         try {
-            // Only Super Admin can assign account officers
-            if (!auth()->user()->hasPermission('sellers.assign_account_officer')) {
-                return ResponseHelper::error('Unauthorized. Only Super Admins can assign account officers.', 403);
-            }
-
             $store = Store::withoutGlobalScopes()->findOrFail($storeId);
             
             $request->validate([
