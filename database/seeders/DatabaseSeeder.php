@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             // CategorySeeder::class,
             ServiceCategorySeeder::class,
             // BrandSeeder::class,
+            RolePermissionSeeder::class, // RBAC: Roles and Permissions
         ]);
     }
 }
