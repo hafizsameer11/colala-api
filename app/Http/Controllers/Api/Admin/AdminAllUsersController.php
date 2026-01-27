@@ -11,14 +11,23 @@ use App\Models\LoyaltyPoint;
 use App\Models\Order;
 use App\Models\Store;
 use App\Traits\PeriodFilterTrait;
+use App\Services\AdminRoleService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class AdminAllUsersController extends Controller
 {
     use PeriodFilterTrait;
+
+    protected $adminRoleService;
+
+    public function __construct(AdminRoleService $adminRoleService)
+    {
+        $this->adminRoleService = $adminRoleService;
+    }
     /**
      * Get all users with filtering and pagination
      */
@@ -202,7 +211,7 @@ class AdminAllUsersController extends Controller
     {
         try {
             $user = User::with('addresses')->findOrFail($userId);
-            
+
             $addresses = $user->addresses->map(function ($address) {
                 return [
                     'id' => $address->id,
@@ -242,7 +251,7 @@ class AdminAllUsersController extends Controller
             ]);
 
             $user = User::findOrFail($userId);
-            
+
             $user->update([
                 'status' => $request->status,
             ]);
@@ -270,7 +279,7 @@ class AdminAllUsersController extends Controller
             }
 
             $dateRange = $this->getDateRange($period);
-            
+
             // Use period if provided, otherwise fall back to date_from/date_to
             if ($dateRange) {
                 $dateFrom = $dateRange['start']->format('Y-m-d');
@@ -355,7 +364,7 @@ class AdminAllUsersController extends Controller
             if ($user->wallet) {
                 $escrowBalance = Escrow::where('user_id', $user->id)->where('status', 'locked')->sum('amount');
             }
-            
+
             return [
                 'id' => $user->id,
                 'full_name' => $user->full_name,
@@ -387,7 +396,7 @@ class AdminAllUsersController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'phone' => 'required|string|max:20|unique:users,phone',
                 'password' => 'required|string|min:8',
-                'role' => 'required|in:buyer,seller,admin',
+                'role' => 'required|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
                 'status' => 'nullable|in:active,inactive',
                 'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp',
             ]);
@@ -408,6 +417,30 @@ class AdminAllUsersController extends Controller
             }
 
             $user = User::create($userData);
+
+            // Assign RBAC role if it's not 'buyer' or 'seller'
+            $userRole = $request->role;
+            if ($userRole !== 'buyer' && $userRole !== 'seller') {
+                try {
+                    $rbacRole = \App\Models\Role::where('slug', $userRole)->where('is_active', true)->first();
+                    if ($rbacRole) {
+                        $this->adminRoleService->assignRole(
+                            $user->id,
+                            $rbacRole->id,
+                            $request->user()?->id
+                        );
+                        Log::info("RBAC role '{$userRole}' assigned to user {$user->id}");
+                    } else {
+                        Log::warning("RBAC role '{$userRole}' not found. Please run the seeder first.");
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Failed to assign RBAC role to user: ' . $e->getMessage(), [
+                        'user_id' => $user->id,
+                        'role' => $userRole,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // Create wallet for the user
             $user->wallet()->create([
@@ -447,12 +480,14 @@ class AdminAllUsersController extends Controller
                 'email' => 'sometimes|email|unique:users,email,' . $userId,
                 'phone' => 'sometimes|string|max:20|unique:users,phone,' . $userId,
                 'password' => 'sometimes|string|min:8',
-                'role' => 'sometimes|in:buyer,seller,admin',
+                'role' => 'sometimes|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
                 'status' => 'sometimes|in:active,inactive',
                 'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             ]);
 
             $updateData = $request->only(['full_name', 'email', 'phone', 'role', 'status']);
+            $oldRole = $user->role;
+            $newRole = $request->input('role');
 
             // Handle password update
             if ($request->has('password')) {
@@ -465,12 +500,50 @@ class AdminAllUsersController extends Controller
                 if ($user->profile_picture) {
                     Storage::disk('public')->delete($user->profile_picture);
                 }
-                
+
                 $profilePath = $request->file('profile_picture')->store('profiles', 'public');
                 $updateData['profile_picture'] = $profilePath;
             }
 
             $user->update($updateData);
+
+            // Handle RBAC role assignment if role changed
+            if ($newRole && $newRole !== $oldRole) {
+                // Remove old RBAC roles if user had admin roles
+                if (in_array($oldRole, ['admin', 'moderator', 'super_admin', 'support_agent', 'financial_manager', 'content_manager'])) {
+                    try {
+                        $oldRbacRole = \App\Models\Role::where('slug', $oldRole)->first();
+                        if ($oldRbacRole) {
+                            $this->adminRoleService->revokeRole($user->id, $oldRbacRole->id);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to revoke old RBAC role: ' . $e->getMessage());
+                    }
+                }
+
+                // Assign new RBAC role if it's not 'buyer' or 'seller'
+                if ($newRole !== 'buyer' && $newRole !== 'seller') {
+                    try {
+                        $rbacRole = \App\Models\Role::where('slug', $newRole)->where('is_active', true)->first();
+                        if ($rbacRole) {
+                            $this->adminRoleService->assignRole(
+                                $user->id,
+                                $rbacRole->id,
+                                $request->user()?->id
+                            );
+                            Log::info("RBAC role '{$newRole}' assigned to user {$user->id} (updated from '{$oldRole}')");
+                        } else {
+                            Log::warning("RBAC role '{$newRole}' not found. Please run the seeder first.");
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to assign RBAC role to user: ' . $e->getMessage(), [
+                            'user_id' => $user->id,
+                            'role' => $newRole,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
 
             return ResponseHelper::success([
                 'user' => [
@@ -547,7 +620,7 @@ class AdminAllUsersController extends Controller
                 'label', 'phone', 'line1', 'line2', 'city', 'state', 'country', 'zipcode', 'is_default'
             ]);
             $data['user_id'] = $user->id;
-            
+
             // Set city to null if not provided
             if (!isset($data['city']) || empty($data['city'])) {
                 $data['city'] = null;
