@@ -28,19 +28,32 @@ class EscrowService
     {
         try {
             return DB::transaction(function () use ($storeOrder, $performedByAdminId, $reason) {
-                // Get escrow record for this specific store order (new flow)
-                $escrowRecord = Escrow::where('store_order_id', $storeOrder->id)
+                // Get ALL escrow records for this specific store order
+                // Escrows can be created:
+                // 1. At store_order level (order_item_id = NULL) - single escrow per store_order
+                // 2. Per order_item (order_item_id set) - multiple escrows per store_order
+                $escrowRecords = Escrow::where('store_order_id', $storeOrder->id)
                     ->where('status', 'locked')
-                    ->first();
+                    ->get();
 
-                // Fallback: Check old flow (by order_id) if no store_order_id escrow exists
-                if (!$escrowRecord) {
-                    $escrowRecord = Escrow::where('order_id', $storeOrder->order_id)
-                        ->where('status', 'locked')
-                        ->first();
+                // Fallback: Check old flow (by order_id and order_item) if no store_order_id escrows exist
+                if ($escrowRecords->isEmpty()) {
+                    // Load items if not already loaded
+                    if (!$storeOrder->relationLoaded('items')) {
+                        $storeOrder->load('items');
+                    }
+                    
+                    // Get all order items for this store order
+                    $orderItemIds = $storeOrder->items->pluck('id')->toArray();
+                    if (!empty($orderItemIds)) {
+                        $escrowRecords = Escrow::where('order_id', $storeOrder->order_id)
+                            ->whereIn('order_item_id', $orderItemIds)
+                            ->where('status', 'locked')
+                            ->get();
+                    }
                 }
 
-                if (!$escrowRecord) {
+                if ($escrowRecords->isEmpty()) {
                     // No escrow funds to unlock
                     Log::info('No locked escrow found for store order', [
                         'store_order_id' => $storeOrder->id,
@@ -51,7 +64,8 @@ class EscrowService
                     return false;
                 }
 
-                $totalAmount = $escrowRecord->amount;
+                // Sum up all escrow amounts for this store order
+                $totalAmount = $escrowRecords->sum('amount');
 
                 // Get store owner
                 $store = Store::with('user')->find($storeOrder->store_id);
@@ -59,8 +73,9 @@ class EscrowService
                     throw new Exception('Store or store owner not found');
                 }
 
-                // Update escrow status to 'released'
-                $escrowRecord->update(['status' => 'released']);
+                // Update ALL escrow records status to 'released'
+                Escrow::whereIn('id', $escrowRecords->pluck('id')->toArray())
+                    ->update(['status' => 'released']);
 
                 // Create or update seller's wallet
                 $sellerWallet = Wallet::firstOrCreate(
@@ -91,7 +106,8 @@ class EscrowService
                 Log::info('Escrow funds released', [
                     'store_order_id'       => $storeOrder->id,
                     'order_id'             => $storeOrder->order_id,
-                    'amount'               => $totalAmount,
+                    'escrow_count'         => $escrowRecords->count(),
+                    'total_amount'         => $totalAmount,
                     'performed_by_admin_id'=> $performedByAdminId,
                     'reason'               => $reason,
                 ]);

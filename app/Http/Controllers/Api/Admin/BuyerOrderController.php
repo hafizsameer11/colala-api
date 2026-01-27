@@ -480,6 +480,26 @@ class BuyerOrderController extends Controller
                 return ResponseHelper::error('Escrow can only be released for paid orders.', 400);
             }
 
+            // Check if escrow exists and its status
+            $escrowExists = \App\Models\Escrow::where('store_order_id', $storeOrderId)->exists();
+            if (!$escrowExists) {
+                // Fallback: check by order_id for old flow
+                $escrowExists = \App\Models\Escrow::where('order_id', $storeOrder->order_id)->exists();
+            }
+
+            if (!$escrowExists) {
+                return ResponseHelper::error('No escrow found for this store order. Escrow may not have been created during checkout.', 400);
+            }
+
+            // Check if escrow is already released
+            $alreadyReleased = \App\Models\Escrow::where('store_order_id', $storeOrderId)
+                ->where('status', 'released')
+                ->exists();
+            
+            if ($alreadyReleased) {
+                return ResponseHelper::error('Escrow for this store order has already been released.', 400);
+            }
+
             $adminId = optional($request->user())->id;
 
             $released = $this->escrowService->releaseForStoreOrder(
@@ -489,7 +509,7 @@ class BuyerOrderController extends Controller
             );
 
             if (!$released) {
-                return ResponseHelper::error('No locked escrow found for this order or release failed. Check logs for details.', 400);
+                return ResponseHelper::error('No locked escrow found for this store order. Escrow may have already been released or does not exist.', 400);
             }
 
             return ResponseHelper::success([
