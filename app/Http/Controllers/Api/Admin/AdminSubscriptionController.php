@@ -328,42 +328,77 @@ class AdminSubscriptionController extends Controller
     /**
      * Get subscription statistics
      */
-    public function getSubscriptionStatistics()
+    public function getSubscriptionStatistics(Request $request)
     {
         try {
+            // Validate period parameter
+            $period = $request->get('period');
+            if ($period && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
+            }
+            
+            $totalSubscriptionsQuery = Subscription::query();
+            $activeSubscriptionsQuery = Subscription::where('status', 'active');
+            $expiredSubscriptionsQuery = Subscription::where('status', 'expired');
+            $cancelledSubscriptionsQuery = Subscription::where('status', 'cancelled');
+            $suspendedSubscriptionsQuery = Subscription::where('status', 'suspended');
+            $revenueQuery = Subscription::where('status', 'active')
+                ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($activeSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($expiredSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($cancelledSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($suspendedSubscriptionsQuery, $period);
+                $this->applyPeriodFilter($revenueQuery, $period, 'subscriptions.created_at');
+            }
+            
             $stats = [
-                'total_subscriptions' => Subscription::count(),
-                'active_subscriptions' => Subscription::where('status', 'active')->count(),
-                'expired_subscriptions' => Subscription::where('status', 'expired')->count(),
-                'cancelled_subscriptions' => Subscription::where('status', 'cancelled')->count(),
-                'suspended_subscriptions' => Subscription::where('status', 'suspended')->count(),
-                'total_revenue' => Subscription::where('status', 'active')
-                    ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
-                    ->sum('subscription_plans.price'),
+                'total_subscriptions' => $totalSubscriptionsQuery->count(),
+                'active_subscriptions' => $activeSubscriptionsQuery->count(),
+                'expired_subscriptions' => $expiredSubscriptionsQuery->count(),
+                'cancelled_subscriptions' => $cancelledSubscriptionsQuery->count(),
+                'suspended_subscriptions' => $suspendedSubscriptionsQuery->count(),
+                'total_revenue' => $revenueQuery->sum('subscription_plans.price'),
             ];
 
             // Plan breakdown
-            $planBreakdown = Subscription::selectRaw('
+            $planBreakdownQuery = Subscription::selectRaw('
                 subscription_plans.name as plan_name,
                 COUNT(*) as subscription_count,
                 SUM(subscription_plans.price) as total_revenue
             ')
             ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
-            ->where('subscriptions.status', 'active')
-            ->groupBy('subscription_plans.id', 'subscription_plans.name')
-            ->get();
+            ->where('subscriptions.status', 'active');
+            
+            if ($period) {
+                $this->applyPeriodFilter($planBreakdownQuery, $period, 'subscriptions.created_at');
+            }
+            
+            $planBreakdown = $planBreakdownQuery->groupBy('subscription_plans.id', 'subscription_plans.name')
+                ->get();
 
             // Monthly trends
-            $monthlyStats = Subscription::selectRaw('
+            $monthlyStatsQuery = Subscription::selectRaw('
                 DATE_FORMAT(created_at, "%Y-%m") as month,
                 COUNT(*) as new_subscriptions,
                 SUM(subscription_plans.price) as monthly_revenue
             ')
             ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
-            ->where('subscriptions.created_at', '>=', now()->subMonths(12))
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get();
+            ->where('subscriptions.created_at', '>=', now()->subMonths(12));
+            
+            if ($period && $period !== 'all_time') {
+                // Apply period filter to monthly trends if not all_time
+                $dateRange = $this->getDateRange($period);
+                if ($dateRange) {
+                    $monthlyStatsQuery->whereBetween('subscriptions.created_at', [$dateRange['start'], $dateRange['end']]);
+                }
+            }
+            
+            $monthlyStats = $monthlyStatsQuery->groupBy('month')
+                ->orderBy('month')
+                ->get();
 
             return ResponseHelper::success([
                 'current_stats' => $stats,

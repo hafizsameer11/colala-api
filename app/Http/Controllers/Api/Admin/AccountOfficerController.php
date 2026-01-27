@@ -16,16 +16,11 @@ class AccountOfficerController extends Controller
      * Get all account officers with vendor counts
      * GET /api/admin/account-officers
      * 
-     * Access: Super Admin only (has sellers.assign_account_officer permission)
+     * Access: All authenticated admins
      */
     public function index()
     {
         try {
-            // Check permission - only Super Admin can view all account officers
-            if (!auth()->user()->hasPermission('sellers.assign_account_officer')) {
-                return ResponseHelper::error('Unauthorized. Only Super Admins can view account officers.', 403);
-            }
-
             $accountOfficers = User::accountOfficers()
                 ->withCount(['assignedVendors as vendor_count'])
                 ->withCount(['assignedVendors as active_vendors' => function($q) {
