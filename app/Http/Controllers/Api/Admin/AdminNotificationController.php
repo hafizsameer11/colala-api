@@ -168,6 +168,7 @@ class AdminNotificationController extends Controller
 
     /**
      * Send a notification immediately
+     * Can be called from command or controller
      */
     public function sendNotification($notification)
     {
