@@ -47,7 +47,7 @@ class SellerDetailsController extends Controller
             }
 
             $primaryStore = $user->store;
-            
+
             // Get wallet balances
             $wallet = $user->wallet;
             $escrowBalance = Escrow::where('user_id', $user->id)->sum('amount');
@@ -169,13 +169,15 @@ class SellerDetailsController extends Controller
             $orders = $query->latest()->paginate(15);
 
             $orders->getCollection()->transform(function ($storeOrder) {
-                $firstItem = $storeOrder->items->first();
+                $order = $storeOrder->order;
+                $customer = $order?->user;
+
                 return [
                     'id' => $storeOrder->id,
-                    'order_no' => $storeOrder->order->order_no,
-                    'customer_name' => $storeOrder->order->user->full_name,
-                    'customer_email' => $storeOrder->order->user->email,
-                    'store_name' => $storeOrder->store->store_name,
+                    'order_no' => $order?->order_no ?? null,
+                    'customer_name' => $customer?->full_name ?? 'Unknown Customer',
+                    'customer_email' => $customer?->email ?? null,
+                    'store_name' => $storeOrder->store->store_name ?? null,
                     'subtotal' => 'N' . number_format($storeOrder->items_subtotal, 0),
                     'delivery_fee' => 'N' . number_format($storeOrder->shipping_fee, 0),
                     'discount' => 'N' . number_format($storeOrder->discount, 0),
@@ -183,19 +185,22 @@ class SellerDetailsController extends Controller
                     'status' => ucfirst($storeOrder->status),
                     'status_color' => $this->getOrderStatusColor($storeOrder->status),
                     'items_count' => $storeOrder->items->count(),
-                    'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                    'created_at' => $storeOrder->created_at ? $storeOrder->created_at->format('d-m-Y H:i:s') : null,
                     'items' => $storeOrder->items->map(function ($item) {
+                        $quantity = $item->qty ?? $item->quantity ?? 0;
+                        $lineTotal = $item->price * $quantity;
+
                         return [
                             'id' => $item->id,
                             'product_name' => $item->product->name ?? 'Unknown Product',
-                            'quantity' => $item->qty ?? $item->quantity,
+                            'quantity' => $quantity,
                             'price' => 'N' . number_format($item->price, 0),
-                            'total' => 'N' . number_format(($item->price * ($item->qty ?? $item->quantity)), 0)
+                            'total' => 'N' . number_format($lineTotal, 0),
                         ];
                     }),
                     'tracking' => $storeOrder->orderTracking->isNotEmpty() ? [
                         'status' => $storeOrder->orderTracking->first()->status,
-                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
+                        'updated_at' => $storeOrder->orderTracking->first()->updated_at?->format('d-m-Y H:i:s'),
                     ] : null,
                 ];
             });
@@ -658,7 +663,7 @@ class SellerDetailsController extends Controller
             }
 
             $user = User::where('role', 'seller')->findOrFail($id);
-            
+
             if ($request->action === 'block') {
                 $user->update(['is_active' => false]);
                 $message = 'Seller blocked successfully';
@@ -707,7 +712,7 @@ class SellerDetailsController extends Controller
     private function getStoreStatistics($userId)
     {
         $store = Store::where('user_id', $userId)->first();
-        
+
         if (!$store) {
             return [
                 'total_products' => 0,
