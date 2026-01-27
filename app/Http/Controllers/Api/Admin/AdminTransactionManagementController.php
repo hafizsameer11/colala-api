@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class AdminTransactionManagementController extends Controller
@@ -24,10 +25,9 @@ class AdminTransactionManagementController extends Controller
             $query = Transaction::with(['user', 'order']);
 
             // Account Officer sees only transactions from sellers in assigned stores
-            if (auth()->user()->hasRole('account_officer') && 
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
+            if (Auth::user()->role === 'account_officer') {
                 $query->whereHas('user.store', function ($storeQuery) {
-                    $storeQuery->where('account_officer_id', auth()->id());
+                    $storeQuery->where('account_officer_id', Auth::id());
                 })->whereHas('user', function ($userQuery) {
                     $userQuery->where('role', 'seller');
                 });
@@ -86,9 +86,8 @@ class AdminTransactionManagementController extends Controller
             $failedTransactionsQuery = Transaction::where('status', 'failed');
             
             // Account Officer sees only stats from assigned stores
-            if (auth()->user()->hasRole('account_officer') && 
-                !auth()->user()->hasPermission('sellers.assign_account_officer')) {
-                $accountOfficerId = auth()->id();
+            if (Auth::user()->role === 'account_officer') {
+                $accountOfficerId = Auth::id();
                 $totalTransactionsQuery->whereHas('user.store', function ($q) use ($accountOfficerId) {
                     $q->where('account_officer_id', $accountOfficerId);
                 })->whereHas('user', function ($q) {
