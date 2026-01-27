@@ -212,14 +212,14 @@ class AdminDisputeController extends Controller
             ]);
 
             $dispute = Dispute::findOrFail($disputeId);
-            
+
             $oldStatus = $dispute->status;
             $dispute->status = $request->status;
-            
+
             if ($request->has('resolution_notes')) {
                 $dispute->resolution_notes = $request->resolution_notes;
             }
-            
+
             if ($request->has('won_by')) {
                 $dispute->won_by = $request->won_by;
             }
@@ -294,20 +294,20 @@ class AdminDisputeController extends Controller
             ]);
 
             $dispute = Dispute::with(['storeOrder.order', 'storeOrder.store.user', 'user'])->findOrFail($disputeId);
-            
+
             if (!$dispute->storeOrder) {
                 return ResponseHelper::error('Store order not found for this dispute.', 404);
             }
 
             $storeOrder = $dispute->storeOrder;
             $order = $storeOrder->order;
-            
+
             // Check if order payment status is after payment
             $isPaid = $order && $order->payment_status === 'paid';
-            
+
             $escrowReleased = false;
             $escrowAmount = 0;
-            
+
             // Handle escrow release based on winner if order is paid
             if ($isPaid) {
                 // Get escrow record
@@ -324,7 +324,7 @@ class AdminDisputeController extends Controller
 
                 if ($escrowRecord) {
                     $escrowAmount = $escrowRecord->amount;
-                    
+
                     if ($request->won_by === 'seller') {
                         // Release escrow to seller
                         $escrowReleased = $this->escrowService->releaseForStoreOrder(
@@ -353,6 +353,22 @@ class AdminDisputeController extends Controller
             $dispute->resolved_at = now();
             $dispute->save();
 
+            // Update store order status based on resolution
+            // If order was disputed, change it to completed or delivered based on normal flow
+            if ($storeOrder->status === 'disputed') {
+                // Determine the appropriate status after resolution
+                // If seller wins, order is completed (fulfilled)
+                // If buyer wins, order is also completed (closed/refunded)
+                // We can also check if it was previously delivered, but completed is safer
+                $newOrderStatus = 'completed';
+
+                // If the order was previously delivered or out_for_delivery, keep it as delivered
+                // Otherwise set to completed
+                // Note: We don't have previous status stored, so we'll use completed as default
+                // which is appropriate for resolved disputes
+                $storeOrder->update(['status' => $newOrderStatus]);
+            }
+
             // Get buyer and seller for notifications
             $buyer = $dispute->user;
             $seller = $storeOrder->store->user ?? null;
@@ -360,9 +376,9 @@ class AdminDisputeController extends Controller
             // Send notifications
             $winnerName = $request->won_by === 'buyer' ? 'You (Buyer)' : ($request->won_by === 'seller' ? 'Seller' : 'Admin');
             $resolutionMessage = "Dispute #{$disputeId} has been resolved in favor of {$winnerName}.";
-            
+
             if ($isPaid && $escrowReleased) {
-                $resolutionMessage .= " Escrow amount of N" . number_format($escrowAmount, 2) . " has been " . 
+                $resolutionMessage .= " Escrow amount of N" . number_format($escrowAmount, 2) . " has been " .
                     ($request->won_by === 'buyer' ? 'refunded to your wallet' : 'released to seller') . ".";
             }
 
@@ -491,11 +507,11 @@ class AdminDisputeController extends Controller
 
             $dispute = Dispute::findOrFail($disputeId);
             $dispute->status = 'closed';
-            
+
             if ($request->has('resolution_notes')) {
                 $dispute->resolution_notes = $request->resolution_notes;
             }
-            
+
             $dispute->closed_at = now();
             $dispute->save();
 

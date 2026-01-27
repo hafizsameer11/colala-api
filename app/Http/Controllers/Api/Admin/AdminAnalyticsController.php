@@ -42,18 +42,43 @@ class AdminAnalyticsController extends Controller
                 $dateTo = $request->get('date_to', now()->format('Y-m-d'));
             }
 
-            // Site Statistics
+            // Site Statistics with period filtering
+            $totalUsersQuery = User::query();
+            $totalSellersQuery = User::where('role', 'seller');
+            $totalBuyersQuery = User::where('role', 'buyer');
+            $totalOrdersQuery = Order::query();
+            $activeOrdersQuery = \App\Models\StoreOrder::where('status', 'active');
+            $completedOrdersQuery = \App\Models\StoreOrder::where('status', 'completed');
+            $totalProductsQuery = Product::query();
+            $totalChatsQuery = Chat::query();
+            $totalPostsQuery = Post::query();
+            $totalRevenueQuery = Transaction::where('status', 'successful');
+
+            // Apply period filter if provided
+            if ($period) {
+                $this->applyPeriodFilter($totalUsersQuery, $period);
+                $this->applyPeriodFilter($totalSellersQuery, $period);
+                $this->applyPeriodFilter($totalBuyersQuery, $period);
+                $this->applyPeriodFilter($totalOrdersQuery, $period);
+                $this->applyPeriodFilter($activeOrdersQuery, $period);
+                $this->applyPeriodFilter($completedOrdersQuery, $period);
+                $this->applyPeriodFilter($totalProductsQuery, $period);
+                $this->applyPeriodFilter($totalChatsQuery, $period);
+                $this->applyPeriodFilter($totalPostsQuery, $period);
+                $this->applyPeriodFilter($totalRevenueQuery, $period);
+            }
+
             $siteStats = [
-                'total_users' => User::count(),
-                'total_sellers' => User::where('role', 'seller')->count(),
-                'total_buyers' => User::where('role', 'buyer')->count(),
-                'total_orders' => Order::count(),
-                'active_orders' => \App\Models\StoreOrder::where('status', 'active')->count(),
-                'completed_orders' => \App\Models\StoreOrder::where('status', 'completed')->count(),
-                'total_products' => Product::count(),
-                'total_chats' => Chat::count(),
-                'total_posts' => Post::count(),
-                'total_revenue' => Transaction::where('status', 'successful')->sum('amount'),
+                'total_users' => $totalUsersQuery->count(),
+                'total_sellers' => $totalSellersQuery->count(),
+                'total_buyers' => $totalBuyersQuery->count(),
+                'total_orders' => $totalOrdersQuery->count(),
+                'active_orders' => $activeOrdersQuery->count(),
+                'completed_orders' => $completedOrdersQuery->count(),
+                'total_products' => $totalProductsQuery->count(),
+                'total_chats' => $totalChatsQuery->count(),
+                'total_posts' => $totalPostsQuery->count(),
+                'total_revenue' => $totalRevenueQuery->sum('amount'),
             ];
 
             // User registration trends
@@ -93,10 +118,18 @@ class AdminAnalyticsController extends Controller
             ->orderBy('date')
             ->get();
 
-            // Top performing stores
-            $topStores = Store::withCount(['orders', 'products'])
-                ->withSum('orders', 'subtotal_with_shipping')
-                ->orderByDesc('orders_sum_subtotal_with_shipping')
+            // Top performing stores (with period filtering if applicable)
+            $topStoresQuery = Store::withCount(['orders', 'products'])
+                ->withSum('orders', 'subtotal_with_shipping');
+            
+            // Apply period filter to orders relationship if period is provided
+            if ($period && $dateRange) {
+                $topStoresQuery->whereHas('orders', function($q) use ($dateRange) {
+                    $q->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                });
+            }
+            
+            $topStores = $topStoresQuery->orderByDesc('orders_sum_subtotal_with_shipping')
                 ->limit(10)
                 ->get();
 
@@ -110,23 +143,51 @@ class AdminAnalyticsController extends Controller
             ->groupBy('categories.id', 'categories.title')
             ->get();
 
-            // Chat analytics
+            // Chat analytics with period filtering
+            $totalChatsQuery = Chat::query();
+            $unreadChatsQuery = Chat::whereHas('messages', function($q) {
+                $q->where('is_read', false);
+            });
+            $disputeChatsQuery = Chat::where('type', 'dispute');
+            $supportChatsQuery = Chat::where('type', 'support');
+            $generalChatsQuery = Chat::where('type', 'general');
+
+            // Apply period filter if provided
+            if ($period) {
+                $this->applyPeriodFilter($totalChatsQuery, $period);
+                $this->applyPeriodFilter($unreadChatsQuery, $period);
+                $this->applyPeriodFilter($disputeChatsQuery, $period);
+                $this->applyPeriodFilter($supportChatsQuery, $period);
+                $this->applyPeriodFilter($generalChatsQuery, $period);
+            }
+
             $chatAnalytics = [
-                'total_chats' => Chat::count(),
-                'unread_chats' => Chat::whereHas('messages', function($q) {
-                    $q->where('is_read', false);
-                })->count(),
-                'dispute_chats' => Chat::where('type', 'dispute')->count(),
-                'support_chats' => Chat::where('type', 'support')->count(),
-                'general_chats' => Chat::where('type', 'general')->count(),
+                'total_chats' => $totalChatsQuery->count(),
+                'unread_chats' => $unreadChatsQuery->count(),
+                'dispute_chats' => $disputeChatsQuery->count(),
+                'support_chats' => $supportChatsQuery->count(),
+                'general_chats' => $generalChatsQuery->count(),
             ];
 
-            // Social media analytics
+            // Social media analytics with period filtering
+            $totalPostsQuery = Post::query();
+            $totalLikesQuery = DB::table('post_likes');
+            $totalCommentsQuery = DB::table('post_comments');
+            $totalSharesQuery = DB::table('post_shares');
+
+            // Apply period filter if provided
+            if ($period && $dateRange) {
+                $totalPostsQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                $totalLikesQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                $totalCommentsQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+                $totalSharesQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            }
+
             $socialAnalytics = [
-                'total_posts' => Post::count(),
-                'total_likes' => DB::table('post_likes')->count(),
-                'total_comments' => DB::table('post_comments')->count(),
-                'total_shares' => DB::table('post_shares')->count(),
+                'total_posts' => $totalPostsQuery->count(),
+                'total_likes' => $totalLikesQuery->count(),
+                'total_comments' => $totalCommentsQuery->count(),
+                'total_shares' => $totalSharesQuery->count(),
             ];
 
             return ResponseHelper::success([
@@ -146,6 +207,7 @@ class AdminAnalyticsController extends Controller
                 'category_breakdown' => $categoryStats,
                 'chat_analytics' => $chatAnalytics,
                 'social_analytics' => $socialAnalytics,
+                'period' => $period ?? null,
                 'date_range' => [
                     'from' => $dateFrom,
                     'to' => $dateTo
