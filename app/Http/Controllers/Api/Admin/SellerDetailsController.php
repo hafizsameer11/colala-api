@@ -16,6 +16,7 @@ use App\Models\Chat;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Announcement;
+use App\Models\StoreOnboardingStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -60,6 +61,32 @@ class SellerDetailsController extends Controller
 
             // Get store statistics
             $storeStats = $this->getStoreStatistics($user->id);
+
+            // Get onboarding progress/levels data if store exists
+            $onboarding = null;
+            if ($primaryStore) {
+                $steps = StoreOnboardingStep::where('store_id', $primaryStore->id)
+                    ->orderBy('level')
+                    ->get(['key', 'level', 'status', 'completed_at', 'rejection_reason'])
+                    ->map(function ($step) {
+                        return [
+                            'key' => $step->key,
+                            'level' => $step->level,
+                            'status' => $step->status,
+                            'completed_at' => $step->completed_at,
+                            'rejection_reason' => $step->rejection_reason,
+                            'is_rejected' => $step->status === 'rejected',
+                        ];
+                    });
+
+                $onboarding = [
+                    'store_id' => $primaryStore->id,
+                    'level' => $primaryStore->onboarding_level,
+                    'percent' => $primaryStore->onboarding_percent,
+                    'status' => $primaryStore->onboarding_status,
+                    'steps' => $steps,
+                ];
+            }
 
             $sellerDetails = [
                 'user_info' => [
@@ -114,6 +141,7 @@ class SellerDetailsController extends Controller
                     'loyalty_points' => $wallet ? $wallet->loyality_points : 0
                 ],
                 'statistics' => $storeStats,
+                'onboarding' => $onboarding,
                 'recent_activities' => $recentActivities->map(function ($activity) {
                     return [
                         'id' => $activity->id,
