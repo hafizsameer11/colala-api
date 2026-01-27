@@ -147,6 +147,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::put('/buyer-orders/{orderId}/status', [BuyerOrderController::class, 'updateOrderStatus']);
     // Get order tracking history
     Route::get('/buyer-orders/{orderId}/tracking', [BuyerOrderController::class, 'orderTracking']);
+    // Manually release escrow for a specific store order (admin override)
+    Route::post('/buyer-orders/{storeOrderId}/release-escrow', [BuyerOrderController::class, 'releaseEscrow']);
 
     // ========================================
     // BUYER TRANSACTION MANAGEMENT MODULE

@@ -184,8 +184,11 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::with([
-                'store:id,store_name,store_email,store_phone,store_location,profile_image,banner_image',
+            $product = Product::withoutGlobalScopes()->with([
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes()
+                      ->select('id', 'store_name', 'store_email', 'store_phone', 'store_location', 'profile_image', 'banner_image');
+                },
                 'category:id,title,image,color',
                 'images',
                 'variants.images',
@@ -413,7 +416,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
             
             $updateData = ['status' => $request->status];
             
@@ -454,7 +459,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
 
             $product->visibility = 0;
             $product->save();
@@ -657,7 +664,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
             $data = $request->validated();
             
             return DB::transaction(function () use ($product, $data) {
@@ -741,7 +750,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
             
             // Check if product already has an active boost
             $existingBoost = BoostProduct::where('product_id', $productId)
@@ -806,7 +817,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
 
             // Get detailed stats
             $stats = ProductStat::where('product_id', $productId)
@@ -873,7 +886,9 @@ class SellerProductController extends Controller
                 return ResponseHelper::error('No store found for this seller', 404);
             }
 
-            $product = Product::where('store_id', $store->id)->findOrFail($productId);
+            $product = Product::withoutGlobalScopes()
+                ->where('store_id', $store->id)
+                ->findOrFail($productId);
             $product->update(['quantity' => $request->quantity]);
             
             return ResponseHelper::success([

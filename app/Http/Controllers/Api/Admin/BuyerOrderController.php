@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\OrderTracking;
 use App\Models\User;
+use App\Services\EscrowService;
 use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,13 @@ use Illuminate\Support\Facades\Validator;
 class BuyerOrderController extends Controller
 {
     use PeriodFilterTrait;
+
+    protected EscrowService $escrowService;
+
+    public function __construct(EscrowService $escrowService)
+    {
+        $this->escrowService = $escrowService;
+    }
     /**
      * Get all store orders with comprehensive details and summary stats
      */
@@ -412,8 +420,21 @@ class BuyerOrderController extends Controller
                 StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => $request->status]);
                 $message = "Order status updated successfully";
             } elseif ($action === 'mark_completed') {
+                // Mark as completed
                 StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => 'completed']);
-                $message = "Orders marked as completed";
+
+                // Attempt to release escrow for each affected store order
+                $storeOrders = StoreOrder::whereIn('order_id', $resolvedOrderIds)->get();
+                $adminId = optional($request->user())->id;
+                foreach ($storeOrders as $storeOrder) {
+                    $this->escrowService->releaseForStoreOrder(
+                        $storeOrder,
+                        $adminId,
+                        'Admin bulk mark_completed'
+                    );
+                }
+
+                $message = "Orders marked as completed (escrow released where applicable)";
             } elseif ($action === 'mark_disputed') {
                 StoreOrder::whereIn('order_id', $resolvedOrderIds)->update(['status' => 'disputed']);
                 $message = "Orders marked as disputed";
@@ -431,6 +452,49 @@ class BuyerOrderController extends Controller
             }
 
             return ResponseHelper::success(null, $message);
+        } catch (\Exception $e) {
+            Log::error($e->getMessage());
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Manually release escrow for a specific store order (admin override).
+     *
+     * @param Request $request
+     * @param int     $storeOrderId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function releaseEscrow(Request $request, $storeOrderId)
+    {
+        try {
+            $data = $request->validate([
+                'reason' => 'nullable|string|max:1000',
+            ]);
+
+            $storeOrder = StoreOrder::with(['order', 'store'])->findOrFail($storeOrderId);
+
+            // Basic safety checks: only allow release for paid orders
+            if (!$storeOrder->order || $storeOrder->order->payment_status !== 'paid') {
+                return ResponseHelper::error('Escrow can only be released for paid orders.', 400);
+            }
+
+            $adminId = optional($request->user())->id;
+
+            $released = $this->escrowService->releaseForStoreOrder(
+                $storeOrder,
+                $adminId,
+                $data['reason'] ?? 'Admin manual escrow release'
+            );
+
+            if (!$released) {
+                return ResponseHelper::error('No locked escrow found for this order or release failed. Check logs for details.', 400);
+            }
+
+            return ResponseHelper::success([
+                'store_order_id' => $storeOrder->id,
+                'order_id'       => $storeOrder->order_id,
+            ], 'Escrow released successfully.');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
             return ResponseHelper::error($e->getMessage(), 500);
