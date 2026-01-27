@@ -393,21 +393,29 @@ class AdminAllUsersController extends Controller
         try {
             $request->validate([
                 'full_name' => 'required|string|max:255',
+                'user_name' => 'nullable|string|max:255|unique:users,user_name',
                 'email' => 'required|email|unique:users,email',
                 'phone' => 'required|string|max:20|unique:users,phone',
                 'password' => 'required|string|min:8',
                 'role' => 'required|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager,account_officer',
+                'country' => 'nullable|string|max:255',
+                'state' => 'nullable|string|max:255',
+                'referral_code' => 'nullable|string|max:50',
                 'status' => 'nullable|in:active,inactive',
                 'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp',
             ]);
 
             $userData = [
                 'full_name' => $request->full_name,
+                'user_name' => $request->user_name ?? null,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'password' => bcrypt($request->password),
                 'role' => $request->role,
-                'status' => $request->status ?? 'active',
+                'country' => $request->country ?? null,
+                'state' => $request->state ?? null,
+                'referral_code' => $request->referral_code ?? null,
+                'is_active' => $request->status !== 'inactive',
             ];
 
             // Handle profile picture upload
@@ -480,7 +488,7 @@ class AdminAllUsersController extends Controller
                 'email' => 'sometimes|email|unique:users,email,' . $userId,
                 'phone' => 'sometimes|string|max:20|unique:users,phone,' . $userId,
                 'password' => 'sometimes|string|min:8',
-                'role' => 'sometimes|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager',
+                'role' => 'sometimes|string|in:buyer,seller,admin,moderator,super_admin,support_agent,financial_manager,content_manager,account_officer',
                 'status' => 'sometimes|in:active,inactive',
                 'profile_picture' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             ]);
