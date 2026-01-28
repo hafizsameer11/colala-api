@@ -196,7 +196,7 @@ class AdminServicesController extends Controller
     {
         try {
             $request->validate([
-                'status' => 'required|in:active,inactive',
+                'status' => 'required|in:draft,active,inactive',
                 'is_sold' => 'boolean',
                 'is_unavailable' => 'boolean',
                 'rejection_reason' => 'nullable|string|max:1000',
@@ -213,8 +213,8 @@ class AdminServicesController extends Controller
             // If status is inactive and rejection_reason is provided, save it
             if ($request->status === 'inactive' && $request->has('rejection_reason')) {
                 $updateData['rejection_reason'] = $request->rejection_reason;
-            } elseif ($request->status === 'active') {
-                // Clear rejection reason when service is activated
+            } elseif ($request->status === 'active' || $request->status === 'draft') {
+                // Clear rejection reason when service is activated or set to draft
                 $updateData['rejection_reason'] = null;
             }
 
@@ -614,7 +614,7 @@ class AdminServicesController extends Controller
                 'price_from' => 'required|numeric|min:0',
                 'price_to' => 'required|numeric|min:0|gte:price_from',
                 'discount_price' => 'nullable|numeric|min:0',
-                'status' => 'required|in:active,inactive',
+                'status' => 'required|in:draft,active,inactive',
             ]);
 
             $service->update([
