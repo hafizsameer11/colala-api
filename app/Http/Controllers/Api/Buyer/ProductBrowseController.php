@@ -44,23 +44,26 @@ class ProductBrowseController extends Controller
 public function productDetails($productId)
 {
     try {
-        $product = Product::with([
-            'store' => function ($q) {
-                $q->withCount('followers')
-                  ->withSum('soldItems', 'qty');
-            },
-            'store.soldItems',
-            'store.socialLinks',
-            'store.categories',
-            'category',
-            'images',
-            'variations',
-            'reviews',
-            'boost', // include relation
-        ])->find($productId);
+        // Only allow active products for buyers
+        $product = Product::where('status', 'active')
+            ->where('is_unavailable', false)
+            ->with([
+                'store' => function ($q) {
+                    $q->withCount('followers')
+                      ->withSum('soldItems', 'qty');
+                },
+                'store.soldItems',
+                'store.socialLinks',
+                'store.categories',
+                'category',
+                'images',
+                'variations',
+                'reviews',
+                'boost', // include relation
+            ])->find($productId);
 
         if (!$product) {
-            return ResponseHelper::error('Product not found', 404);
+            return ResponseHelper::error('Product not found or not available', 404);
         }
 
         // Record click/view event for product details

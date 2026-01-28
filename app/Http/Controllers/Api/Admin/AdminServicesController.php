@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\ServiceMedia;
 use App\Models\ServiceStat;
 use App\Models\Store;
 use App\Models\User;
@@ -12,6 +14,7 @@ use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AdminServicesController extends Controller
 {
@@ -193,26 +196,141 @@ class AdminServicesController extends Controller
     {
         try {
             $request->validate([
-                'status' => 'required|in:active,inactive',
+                'status' => 'required|in:draft,active,inactive',
                 'is_sold' => 'boolean',
                 'is_unavailable' => 'boolean',
+                'rejection_reason' => 'nullable|string|max:1000',
             ]);
 
-            $service = Service::findOrFail($serviceId);
+            $service = Service::with(['store.user'])->findOrFail($serviceId);
             
-            $service->update([
+            $updateData = [
                 'status' => $request->status,
                 'is_sold' => $request->get('is_sold', $service->is_sold),
                 'is_unavailable' => $request->get('is_unavailable', $service->is_unavailable),
-            ]);
+            ];
+
+            // If status is inactive and rejection_reason is provided, save it
+            if ($request->status === 'inactive' && $request->has('rejection_reason')) {
+                $updateData['rejection_reason'] = $request->rejection_reason;
+            } elseif ($request->status === 'active' || $request->status === 'draft') {
+                // Clear rejection reason when service is activated or set to draft
+                $updateData['rejection_reason'] = null;
+            }
+
+            $service->update($updateData);
+
+            // Send notification to seller if service is marked as inactive
+            if ($request->status === 'inactive' && $service->store && $service->store->user) {
+                $seller = $service->store->user;
+                $rejectionReason = $request->rejection_reason ?? 'No reason provided';
+                
+                $title = 'Service Rejected';
+                $message = "Your service '{$service->name}' has been marked as inactive.";
+                
+                if ($request->rejection_reason) {
+                    $message .= "\n\nReason: {$rejectionReason}";
+                }
+
+                try {
+                    UserNotificationHelper::notify(
+                        $seller->id,
+                        $title,
+                        $message,
+                        [
+                            'type' => 'service_rejected',
+                            'service_id' => $service->id,
+                            'service_name' => $service->name,
+                            'rejection_reason' => $rejectionReason,
+                        ]
+                    );
+
+                    Log::info('Service rejection notification sent to seller', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'rejection_reason' => $rejectionReason
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send service rejection notification', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    // Don't fail the request if notification fails
+                }
+            }
 
             return ResponseHelper::success([
                 'service_id' => $service->id,
                 'status' => $service->status,
+                'rejection_reason' => $service->rejection_reason,
                 'is_sold' => $service->is_sold,
                 'is_unavailable' => $service->is_unavailable,
                 'updated_at' => $service->updated_at,
             ], 'Service status updated successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Approve service (set status to active)
+     */
+    public function approveService(Request $request, $serviceId)
+    {
+        try {
+            $service = Service::with(['store.user'])->findOrFail($serviceId);
+            
+            $service->update([
+                'status' => 'active',
+                'rejection_reason' => null, // Clear any previous rejection reason
+            ]);
+
+            // Send notification to seller when service is approved
+            if ($service->store && $service->store->user) {
+                $seller = $service->store->user;
+                
+                $title = 'Service Approved';
+                $message = "Your service '{$service->name}' has been approved and is now active.";
+
+                try {
+                    UserNotificationHelper::notify(
+                        $seller->id,
+                        $title,
+                        $message,
+                        [
+                            'type' => 'service_approved',
+                            'service_id' => $service->id,
+                            'service_name' => $service->name,
+                        ]
+                    );
+
+                    Log::info('Service approval notification sent to seller', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send service approval notification', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't fail the request if notification fails
+                }
+            }
+
+            return ResponseHelper::success([
+                'service_id' => $service->id,
+                'status' => $service->status,
+                'updated_at' => $service->updated_at,
+            ], 'Service approved successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
@@ -225,32 +343,116 @@ class AdminServicesController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255',
-                'short_description' => 'required|string|max:500',
-                'full_description' => 'required|string',
-                'price_from' => 'required|numeric|min:0',
-                'price_to' => 'required|numeric|min:0|gte:price_from',
+                'name' => 'nullable|string|max:255',
+                'short_description' => 'nullable|string|max:500',
+                'full_description' => 'nullable|string',
+                'price_from' => 'nullable|numeric|min:0',
+                'price_to' => 'nullable|numeric|min:0',
                 'discount_price' => 'nullable|numeric|min:0',
-                'status' => 'required|in:active,inactive',
+                'status' => 'nullable|in:draft,active,inactive',
+                'service_category_id' => 'nullable|exists:service_categories,id',
+                'is_sold' => 'nullable|boolean',
+                'is_unavailable' => 'nullable|boolean',
+                'media' => 'nullable|array',
+                'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,webm|max:10240', // 10MB max
+                'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:10240',
             ]);
+            
+            // Handle category_id - if provided, treat it as service_category_id
+            if ($request->has('category_id') && !$request->has('service_category_id')) {
+                $request->merge(['service_category_id' => $request->category_id]);
+            }
 
             $service = Service::findOrFail($serviceId);
             
-            $service->update([
-                'name' => $request->name,
-                'short_description' => $request->short_description,
-                'full_description' => $request->full_description,
-                'price_from' => $request->price_from,
-                'price_to' => $request->price_to,
-                'discount_price' => $request->discount_price,
-                'status' => $request->status,
-            ]);
+            // Build update data only with provided fields
+            $updateData = [];
+            
+            if ($request->has('name')) {
+                $updateData['name'] = $request->name;
+            }
+            if ($request->has('short_description')) {
+                $updateData['short_description'] = $request->short_description;
+            }
+            if ($request->has('full_description')) {
+                $updateData['full_description'] = $request->full_description;
+            }
+            if ($request->has('price_from')) {
+                $updateData['price_from'] = $request->price_from;
+            }
+            if ($request->has('price_to')) {
+                $updateData['price_to'] = $request->price_to;
+                // Validate price_to >= price_from if both are provided
+                if ($request->has('price_from') && $request->price_to < $request->price_from) {
+                    return ResponseHelper::error('price_to must be greater than or equal to price_from', 422);
+                }
+            }
+            if ($request->has('discount_price')) {
+                $updateData['discount_price'] = $request->discount_price;
+            }
+            if ($request->has('status')) {
+                $updateData['status'] = $request->status;
+                // Clear rejection reason when status is set to active
+                if ($request->status === 'active') {
+                    $updateData['rejection_reason'] = null;
+                }
+            }
+            // Services use service_category_id, not category_id
+            if ($request->has('service_category_id')) {
+                $updateData['service_category_id'] = $request->service_category_id;
+            }
+            if ($request->has('is_sold')) {
+                $updateData['is_sold'] = $request->is_sold;
+            }
+            if ($request->has('is_unavailable')) {
+                $updateData['is_unavailable'] = $request->is_unavailable;
+            }
+            
+            // Handle video upload
+            if ($request->hasFile('video')) {
+                $videoPath = $request->file('video')->store('services/videos', 'public');
+                $updateData['video'] = $videoPath;
+            }
+            
+            $service->update($updateData);
+
+            // Handle media uploads (images/videos)
+            if ($request->hasFile('media')) {
+                foreach ($request->file('media') as $file) {
+                    $path = $file->store('services', 'public');
+                    $type = str_contains($file->getClientMimeType(), 'video') ? 'video' : 'image';
+                    
+                    ServiceMedia::create([
+                        'service_id' => $service->id,
+                        'type' => $type,
+                        'path' => $path,
+                    ]);
+                }
+            }
+
+            // Reload service with media relationship
+            $service->load('media');
 
             return ResponseHelper::success([
                 'service_id' => $service->id,
                 'name' => $service->name,
+                'short_description' => $service->short_description,
+                'full_description' => $service->full_description,
                 'price_from' => $service->price_from,
                 'price_to' => $service->price_to,
+                'discount_price' => $service->discount_price,
+                'status' => $service->status,
+                'category_id' => $service->category_id,
+                'service_category_id' => $service->service_category_id,
+                'video' => $service->video,
+                'media' => $service->media->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'type' => $media->type,
+                        'path' => $media->path,
+                        'url' => asset('storage/' . $media->path),
+                    ];
+                }),
                 'updated_at' => $service->updated_at,
             ], 'Service updated successfully');
         } catch (Exception $e) {
@@ -412,7 +614,7 @@ class AdminServicesController extends Controller
                 'price_from' => 'required|numeric|min:0',
                 'price_to' => 'required|numeric|min:0|gte:price_from',
                 'discount_price' => 'nullable|numeric|min:0',
-                'status' => 'required|in:active,inactive',
+                'status' => 'required|in:draft,active,inactive',
             ]);
 
             $service->update([

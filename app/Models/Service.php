@@ -9,6 +9,7 @@ class Service extends Model
      protected $fillable = [
         'store_id','category_id','name','short_description',
         'full_description','price_from','price_to','discount_price','status',
+        'rejection_reason',
             'service_category_id', // ✅
             'video',
             'is_sold',

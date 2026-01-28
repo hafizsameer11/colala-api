@@ -67,9 +67,12 @@ class ProductService
     }
 
     public function getAllforBuyer()
-    
     {
+        // Only return active products for buyers
         $products = Product::with(['variants.images', 'images', 'store'])
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->latest()
             ->get();
 
         // Record impression for each product
@@ -151,6 +154,11 @@ class ProductService
 
 
             $data['store_id'] = $store->id;
+            
+            // Set status to draft by default when seller creates product
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
+            }
 
             // Set default status to 'draft' if not provided
             if (!isset($data['status'])) {

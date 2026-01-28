@@ -27,6 +27,11 @@ class ServiceService
         }
         $data['store_id']=$store->id;
         
+        // Set status to draft by default when seller creates service
+        if (!isset($data['status'])) {
+            $data['status'] = 'draft';
+        }
+        
         //check if have video 
           if (!empty($data['video'])) {
             $path = $data['video']->store('services', 'public');
@@ -64,18 +69,25 @@ class ServiceService
     }
     public function relatedServices($categoryId)
     {
+        // Only return active services for buyers
         return Service::with('media','subServices')
             ->where('service_category_id', $categoryId)
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
             ->get();
     }
     public function getById($id)
     {
+        // Only allow active services for buyers
         return Service::with(['media','subServices','store' => function ($q) {
                 $q->withCount('followers')
                   ->withSum('soldItems', 'qty');
             },
             'store.soldItems',
-            'store.socialLinks',])->findOrFail((int)$id);
+            'store.socialLinks',])
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
+            ->findOrFail((int)$id);
     }
 
     public function update(int $id, array $data)
@@ -88,7 +100,10 @@ class ServiceService
 
     public function getAll()
 {
+    // Only return active services for buyers
     return Service::with(['media','subServices','store'])
+        ->where('status', 'active')
+        ->where('is_unavailable', false)
         ->withCount([
             'stats as views'       => fn($q) => $q->where('event_type', 'view'),
             'stats as impressions' => fn($q) => $q->where('event_type', 'impression'),

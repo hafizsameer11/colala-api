@@ -610,10 +610,12 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/services', [AdminServicesController::class, 'getAllServices']);
     // Get detailed service information with stats and sub-services
     Route::get('/services/{serviceId}/details', [AdminServicesController::class, 'getServiceDetails']);
-    // Update service status (active, inactive, sold, unavailable)
+    // Approve service (set status to active and notify seller)
+    Route::post('/services/{serviceId}/approve', [AdminServicesController::class, 'approveService']);
+    // Update service status (active, inactive, sold, unavailable) - can include rejection_reason
     Route::put('/services/{serviceId}/status', [AdminServicesController::class, 'updateServiceStatus']);
-    // Update service information
-    Route::put('/services/{serviceId}', [AdminServicesController::class, 'updateService']);
+    // Update service information (edit service details)
+    Route::post('/services/{serviceId}', [AdminServicesController::class, 'updateService']);
     // Delete service and all related data
     Route::delete('/services/{serviceId}', [AdminServicesController::class, 'deleteService']);
     // Get service analytics and insights

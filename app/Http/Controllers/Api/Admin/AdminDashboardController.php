@@ -219,12 +219,25 @@ class AdminDashboardController extends Controller
         $dateRange = $this->getDateRange($period);
         
         // Build queries with period filter
-        $userQuery = User::where('role', 'buyer');
+        // Accept buyers: role='buyer' OR role IS NULL OR role='', and exclude users with stores (sellers)
+        $userQuery = User::where(function ($q) {
+            $q->where('role', 'buyer')
+              ->orWhereNull('role')
+              ->orWhere('role', '');
+        })->whereDoesntHave('store');
+        
         $orderQuery = Order::query();
-        // Fixed: Use StoreOrder with status='completed' instead of Order with payment_status='completed'
-        $completedOrderQuery = StoreOrder::where('status', 'completed')
+        // Fixed: Use StoreOrder with status='completed' or 'delivered' (both are considered completed)
+        // Match SQL query logic: accept buyer role OR NULL OR empty, and exclude sellers
+        $completedOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered'])
             ->whereHas('order.user', function ($q) {
-                $q->where('role', 'buyer');
+                $q->withoutGlobalScopes()
+                    ->where(function ($query) {
+                        $query->where('role', 'buyer')
+                              ->orWhereNull('role')
+                              ->orWhere('role', '');
+                    })
+                    ->whereDoesntHave('store'); // Exclude sellers (users with stores)
             });
         $transactionQuery = Transaction::query();
 
@@ -254,18 +267,30 @@ class AdminDashboardController extends Controller
         $previousTransactions = 0;
 
         if ($dateRange) {
-            $previousUsers = User::where('role', 'buyer')
-                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
-                ->count();
+            $previousUsers = User::where(function ($q) {
+                $q->where('role', 'buyer')
+                  ->orWhereNull('role')
+                  ->orWhere('role', '');
+            })
+            ->whereDoesntHave('store')
+            ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+            ->count();
             
             $previousOrders = Order::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            // Fixed: Use StoreOrder with status='completed' for previous period
+            // Fixed: Use StoreOrder with status='completed' or 'delivered' for previous period
+            // Match SQL query logic: accept buyer role OR NULL OR empty, and exclude sellers
             $tableName = (new StoreOrder())->getTable();
-            $previousCompletedOrders = StoreOrder::where('status', 'completed')
+            $previousCompletedOrders = StoreOrder::whereIn('status', ['completed', 'delivered'])
                 ->whereHas('order.user', function ($q) {
-                    $q->where('role', 'buyer');
+                    $q->withoutGlobalScopes()
+                        ->where(function ($query) {
+                            $query->where('role', 'buyer')
+                                  ->orWhereNull('role')
+                                  ->orWhere('role', '');
+                        })
+                        ->whereDoesntHave('store'); // Exclude sellers
                 })
                 ->whereBetween($tableName . '.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
@@ -323,8 +348,16 @@ class AdminDashboardController extends Controller
         $sellerQuery = User::where('role', 'seller');
         $storeQuery = Store::query();
         $activeStoreQuery = Store::where('status', 'active');
-        $storeOrderQuery = StoreOrder::query();
-        $completedStoreOrderQuery = StoreOrder::where('status', 'completed');
+        // Only count StoreOrders from stores owned by sellers
+        $storeOrderQuery = StoreOrder::whereHas('store.user', function ($q) {
+            $q->where('role', 'seller');
+        });
+        // Include both 'delivered' and 'completed' as completed orders
+        // Only count StoreOrders from stores owned by sellers
+        $completedStoreOrderQuery = StoreOrder::whereIn('status', ['completed', 'delivered'])
+            ->whereHas('store.user', function ($q) {
+                $q->where('role', 'seller');
+            });
 
         if ($dateRange) {
             $sellerQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
@@ -359,10 +392,19 @@ class AdminDashboardController extends Controller
                 ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            $previousStoreOrders = StoreOrder::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
-                ->count();
+            // Only count StoreOrders from stores owned by sellers for previous period
+            $previousStoreOrders = StoreOrder::whereHas('store.user', function ($q) {
+                $q->where('role', 'seller');
+            })
+            ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+            ->count();
             
-            $previousCompletedStoreOrders = StoreOrder::where('status', 'completed')
+            // Include both 'delivered' and 'completed' as completed orders for previous period
+            // Only count StoreOrders from stores owned by sellers
+            $previousCompletedStoreOrders = StoreOrder::whereIn('status', ['completed', 'delivered'])
+                ->whereHas('store.user', function ($q) {
+                    $q->where('role', 'seller');
+                })
                 ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
         }

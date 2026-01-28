@@ -20,6 +20,7 @@ class Product extends Model
         'has_variants',
         'video',
         'status',
+        'rejection_reason',
         'coupon_code',
         'discount',
         'loyality_points_applicable',

@@ -603,6 +603,11 @@ class SellerProductController extends Controller
             $data = $request->validated();
             $data['store_id'] = $store->id;
 
+            // Set status to draft by default when creating product
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
+            }
+
             return DB::transaction(function () use ($data) {
                 // Create main product
                 $product = Product::create($data);

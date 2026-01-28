@@ -13,9 +13,10 @@ use Carbon\Carbon;
 class ProductBrowseService {
  public function byCategory(int $categoryId): array
     {
-        // ✅ All products in the category
+        // ✅ All products in the category - only active products for buyers
         $allProducts = Product::where('category_id', $categoryId)
-            // ->where('status', 'active')
+            ->where('status', 'active')
+            ->where('is_unavailable', false)
             ->with(['images', 'store'])
             ->latest()
             ->paginate(20);
@@ -25,9 +26,10 @@ class ProductBrowseService {
             ProductStatHelper::record($product->id, 'impression');
         }
 
-        // ✅ New arrivals (created this month)
+        // ✅ New arrivals (created this month) - only active products
         $newArrivals = Product::where('category_id', $categoryId)
             ->where('status', 'active')
+            ->where('is_unavailable', false)
             ->whereMonth('created_at', Carbon::now()->month)
             ->whereYear('created_at', Carbon::now()->year)
             ->with(['images', 'store'])
@@ -40,9 +42,10 @@ class ProductBrowseService {
             ProductStatHelper::record($product->id, 'impression');
         }
 
-        // ✅ Trending products (latest 4)
+        // ✅ Trending products (latest 4) - only active products
         $trendingProducts = Product::where('category_id', $categoryId)
             ->where('status', 'active')
+            ->where('is_unavailable', false)
             ->with(['images', 'store'])
             ->latest()
             ->take(4)
