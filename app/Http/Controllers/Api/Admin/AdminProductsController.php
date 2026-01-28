@@ -175,9 +175,12 @@ class AdminProductsController extends Controller
                     'is_sold' => $product->is_sold,
                     'is_unavailable' => $product->is_unavailable,
                     'brand' => $product->brand ?? null,
+                    'tag1' => $product->tag1 ?? null,
+                    'tag2' => $product->tag2 ?? null,
+                    'tag3' => $product->tag3 ?? null,
                     'created_at' => $product->created_at,
                     'updated_at' => $product->updated_at,
-                    'video'=>$product->video,
+                    'video' => $product->video,
                 ],
                 'category' => $product->category ? [
                     'id' => $product->category->id,
