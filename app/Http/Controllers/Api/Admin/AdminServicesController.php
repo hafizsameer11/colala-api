@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
+use App\Models\ServiceMedia;
 use App\Models\ServiceStat;
 use App\Models\Store;
 use App\Models\User;
@@ -352,6 +353,9 @@ class AdminServicesController extends Controller
                 'service_category_id' => 'nullable|exists:service_categories,id',
                 'is_sold' => 'nullable|boolean',
                 'is_unavailable' => 'nullable|boolean',
+                'media' => 'nullable|array',
+                'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,webm|max:10240', // 10MB max
+                'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:10240',
             ]);
             
             // Handle category_id - if provided, treat it as service_category_id
@@ -404,7 +408,30 @@ class AdminServicesController extends Controller
                 $updateData['is_unavailable'] = $request->is_unavailable;
             }
             
+            // Handle video upload
+            if ($request->hasFile('video')) {
+                $videoPath = $request->file('video')->store('services/videos', 'public');
+                $updateData['video'] = $videoPath;
+            }
+            
             $service->update($updateData);
+
+            // Handle media uploads (images/videos)
+            if ($request->hasFile('media')) {
+                foreach ($request->file('media') as $file) {
+                    $path = $file->store('services', 'public');
+                    $type = str_contains($file->getClientMimeType(), 'video') ? 'video' : 'image';
+                    
+                    ServiceMedia::create([
+                        'service_id' => $service->id,
+                        'type' => $type,
+                        'path' => $path,
+                    ]);
+                }
+            }
+
+            // Reload service with media relationship
+            $service->load('media');
 
             return ResponseHelper::success([
                 'service_id' => $service->id,
@@ -417,6 +444,15 @@ class AdminServicesController extends Controller
                 'status' => $service->status,
                 'category_id' => $service->category_id,
                 'service_category_id' => $service->service_category_id,
+                'video' => $service->video,
+                'media' => $service->media->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'type' => $media->type,
+                        'path' => $media->path,
+                        'url' => asset('storage/' . $media->path),
+                    ];
+                }),
                 'updated_at' => $service->updated_at,
             ], 'Service updated successfully');
         } catch (Exception $e) {
