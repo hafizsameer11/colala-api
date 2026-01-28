@@ -589,7 +589,11 @@ class AdminStoreKYCController extends Controller
                 }
                 Subscription::where('store_id', $store->id)->delete();
                 StoreReferralEarning::where('store_id', $store->id)->delete();
-                BulkUploadJob::where('store_id', $store->id)->delete();
+
+                // Bulk upload jobs are linked by user_id (owner), not store_id
+                if ($owner) {
+                    BulkUploadJob::where('user_id', $owner->id)->delete();
+                }
                 StoreUser::where('store_id', $store->id)->delete();
 
                 // Support tickets/messages scoped by store owner (optional, but helps avoid noise)
