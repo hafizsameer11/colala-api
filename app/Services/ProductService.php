@@ -156,14 +156,7 @@ class ProductService
             $data['store_id'] = $store->id;
             
             // Set status to draft by default when seller creates product
-            if (!isset($data['status'])) {
-                $data['status'] = 'draft';
-            }
-
-            // Set default status to 'draft' if not provided
-            if (!isset($data['status'])) {
-                $data['status'] = 'draft';
-            }
+           $data['status'] = 'draft';
            
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll set it after variant processing
