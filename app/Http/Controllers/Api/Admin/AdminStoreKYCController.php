@@ -7,6 +7,46 @@ use App\Http\Controllers\Controller;
 use App\Models\Store;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Models\StoreOrder;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderTracking;
+use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\ProductVariant;
+use App\Models\ProductStat;
+use App\Models\ProductEmbedding;
+use App\Models\BoostProduct;
+use App\Models\Service;
+use App\Models\ServiceMedia;
+use App\Models\ServiceStat;
+use App\Models\SubService;
+use App\Models\Escrow;
+use App\Models\Dispute;
+use App\Models\DisputeChat;
+use App\Models\DisputeChatMessage;
+use App\Models\Chat;
+use App\Models\ChatMessage;
+use App\Models\StoreReview;
+use App\Models\ProductReview;
+use App\Models\StoreOnboardingStep;
+use App\Models\StoreAddress;
+use App\Models\StoreDeliveryPricing;
+use App\Models\StoreBusinessDetail;
+use App\Models\StoreSocialLink;
+use App\Models\StoreVisitor;
+use App\Models\StoreFollow;
+use App\Models\Announcement;
+use App\Models\Banner;
+use App\Models\AddOnService;
+use App\Models\AddOnServiceChat;
+use App\Models\Subscription;
+use App\Models\StoreReferralEarning;
+use App\Models\SavedItem;
+use App\Models\BulkUploadJob;
+use App\Models\StoreUser;
+use App\Models\SupportTicket;
+use App\Models\SupportMessage;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -411,6 +451,149 @@ class AdminStoreKYCController extends Controller
                 'current_stats' => $stats,
                 'monthly_trends' => $monthlyStats,
             ]);
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Hard delete a store and all major related data.
+     *
+     * WARNING: This is a destructive operation intended for admin use only.
+     * It attempts to remove the store and its main relationships (products, services,
+     * orders, chats, disputes, onboarding, etc.) to minimize orphaned references.
+     *
+     * DELETE /api/admin/stores/{storeId}/hard-delete
+     */
+    public function hardDeleteStore(Request $request, $storeId)
+    {
+        try {
+            DB::transaction(function () use ($storeId) {
+                // Load store (ignoring visibility scope) with owner
+                $store = Store::withoutGlobalScopes()->with('user')->findOrFail($storeId);
+                $owner = $store->user;
+
+                // -------- PRODUCTS & RELATED --------
+                $productIds = Product::withoutGlobalScopes()
+                    ->where('store_id', $store->id)
+                    ->pluck('id')
+                    ->all();
+
+                if (!empty($productIds)) {
+                    // Product-related tables
+                    ProductImage::whereIn('product_id', $productIds)->delete();
+                    ProductVariant::whereIn('product_id', $productIds)->delete();
+                    ProductStat::whereIn('product_id', $productIds)->delete();
+                    ProductEmbedding::whereIn('product_id', $productIds)->delete();
+                    BoostProduct::whereIn('product_id', $productIds)->delete();
+
+                    // Reviews & saved items
+                    ProductReview::whereIn('product_id', $productIds)->delete();
+                    SavedItem::whereIn('product_id', $productIds)->delete();
+
+                    // Order items for these products
+                    OrderItem::whereIn('product_id', $productIds)->delete();
+
+                    Product::withoutGlobalScopes()
+                        ->whereIn('id', $productIds)
+                        ->delete();
+                }
+
+                // -------- SERVICES & RELATED --------
+                $serviceIds = Service::where('store_id', $store->id)->pluck('id')->all();
+                if (!empty($serviceIds)) {
+                    ServiceMedia::whereIn('service_id', $serviceIds)->delete();
+                    ServiceStat::whereIn('service_id', $serviceIds)->delete();
+                    SubService::whereIn('service_id', $serviceIds)->delete();
+                    Service::whereIn('id', $serviceIds)->delete();
+                }
+
+                // -------- STORE ORDERS, ORDERS, ESCROW, DISPUTES --------
+                $storeOrderIds = StoreOrder::where('store_id', $store->id)->pluck('id')->all();
+                $orderIds = [];
+                if (!empty($storeOrderIds)) {
+                    $orderIds = StoreOrder::whereIn('id', $storeOrderIds)
+                        ->pluck('order_id')
+                        ->filter()
+                        ->unique()
+                        ->all();
+
+                    // Order tracking
+                    OrderTracking::whereIn('store_order_id', $storeOrderIds)->delete();
+
+                    // Escrow records
+                    Escrow::whereIn('store_order_id', $storeOrderIds)->delete();
+                    if (!empty($orderIds)) {
+                        Escrow::whereIn('order_id', $orderIds)->delete();
+                    }
+
+                    // Disputes & dispute chats/messages
+                    $disputes = Dispute::whereIn('store_order_id', $storeOrderIds)->get();
+                    $disputeIds = $disputes->pluck('id')->all();
+                    $disputeChatIds = DisputeChat::whereIn('dispute_id', $disputeIds)->pluck('id')->all();
+                    if (!empty($disputeChatIds)) {
+                        DisputeChatMessage::whereIn('dispute_chat_id', $disputeChatIds)->delete();
+                        DisputeChat::whereIn('id', $disputeChatIds)->delete();
+                    }
+                    if (!empty($disputeIds)) {
+                        Dispute::whereIn('id', $disputeIds)->delete();
+                    }
+
+                    // Finally delete store orders
+                    StoreOrder::whereIn('id', $storeOrderIds)->delete();
+                }
+
+                if (!empty($orderIds)) {
+                    // Delete orders that belonged only to this store (new flow is one store per order)
+                    Order::whereIn('id', $orderIds)->delete();
+                    // Delete transactions linked to those orders
+                    Transaction::whereIn('order_id', $orderIds)->delete();
+                }
+
+                // -------- CHATS --------
+                $chatIds = Chat::where('store_id', $store->id)->pluck('id')->all();
+                if (!empty($chatIds)) {
+                    ChatMessage::whereIn('chat_id', $chatIds)->delete();
+                    Chat::whereIn('id', $chatIds)->delete();
+                }
+
+                // -------- REVIEWS --------
+                StoreReview::where('store_id', $store->id)->delete();
+
+                // -------- STORE-LEVEL ENTITIES --------
+                StoreOnboardingStep::where('store_id', $store->id)->delete();
+                StoreAddress::where('store_id', $store->id)->delete();
+                StoreDeliveryPricing::where('store_id', $store->id)->delete();
+                StoreBusinessDetail::where('store_id', $store->id)->delete();
+                StoreSocialLink::where('store_id', $store->id)->delete();
+                StoreVisitor::where('store_id', $store->id)->delete();
+                StoreFollow::where('store_id', $store->id)->delete();
+                Announcement::where('store_id', $store->id)->delete();
+                Banner::where('store_id', $store->id)->delete();
+                AddOnService::where('store_id', $store->id)->delete();
+                AddOnServiceChat::where('store_id', $store->id)->delete();
+                Subscription::where('store_id', $store->id)->delete();
+                StoreReferralEarning::where('store_id', $store->id)->delete();
+                BulkUploadJob::where('store_id', $store->id)->delete();
+                StoreUser::where('store_id', $store->id)->delete();
+
+                // Support tickets/messages scoped by store owner (optional, but helps avoid noise)
+                if ($owner) {
+                    $supportTicketIds = SupportTicket::where('user_id', $owner->id)->pluck('id')->all();
+                    if (!empty($supportTicketIds)) {
+                        SupportMessage::whereIn('ticket_id', $supportTicketIds)->delete();
+                        SupportTicket::whereIn('id', $supportTicketIds)->delete();
+                    }
+                }
+
+                // Finally, delete the store itself
+                $store->delete();
+                // NOTE: We are not deleting the owner user or wallet; that data may be needed
+                // for audit/history elsewhere. If you want to remove the user as well, that
+                // should be a separate explicit operation.
+            });
+
+            return ResponseHelper::success(null, 'Store and related data hard-deleted successfully');
         } catch (Exception $e) {
             return ResponseHelper::error($e->getMessage(), 500);
         }
