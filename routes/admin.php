@@ -615,7 +615,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Update service status (active, inactive, sold, unavailable) - can include rejection_reason
     Route::put('/services/{serviceId}/status', [AdminServicesController::class, 'updateServiceStatus']);
     // Update service information (edit service details)
-    Route::put('/services/{serviceId}', [AdminServicesController::class, 'updateService']);
+    Route::post('/services/{serviceId}', [AdminServicesController::class, 'updateService']);
     // Delete service and all related data
     Route::delete('/services/{serviceId}', [AdminServicesController::class, 'deleteService']);
     // Get service analytics and insights

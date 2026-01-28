@@ -342,32 +342,79 @@ class AdminServicesController extends Controller
     {
         try {
             $request->validate([
-                'name' => 'required|string|max:255',
-                'short_description' => 'required|string|max:500',
-                'full_description' => 'required|string',
-                'price_from' => 'required|numeric|min:0',
-                'price_to' => 'required|numeric|min:0|gte:price_from',
+                'name' => 'nullable|string|max:255',
+                'short_description' => 'nullable|string|max:500',
+                'full_description' => 'nullable|string',
+                'price_from' => 'nullable|numeric|min:0',
+                'price_to' => 'nullable|numeric|min:0',
                 'discount_price' => 'nullable|numeric|min:0',
-                'status' => 'required|in:active,inactive',
+                'status' => 'nullable|in:draft,active,inactive',
+                'category_id' => 'nullable|exists:categories,id',
+                'service_category_id' => 'nullable|exists:service_categories,id',
+                'is_sold' => 'nullable|boolean',
+                'is_unavailable' => 'nullable|boolean',
             ]);
 
             $service = Service::findOrFail($serviceId);
             
-            $service->update([
-                'name' => $request->name,
-                'short_description' => $request->short_description,
-                'full_description' => $request->full_description,
-                'price_from' => $request->price_from,
-                'price_to' => $request->price_to,
-                'discount_price' => $request->discount_price,
-                'status' => $request->status,
-            ]);
+            // Build update data only with provided fields
+            $updateData = [];
+            
+            if ($request->has('name')) {
+                $updateData['name'] = $request->name;
+            }
+            if ($request->has('short_description')) {
+                $updateData['short_description'] = $request->short_description;
+            }
+            if ($request->has('full_description')) {
+                $updateData['full_description'] = $request->full_description;
+            }
+            if ($request->has('price_from')) {
+                $updateData['price_from'] = $request->price_from;
+            }
+            if ($request->has('price_to')) {
+                $updateData['price_to'] = $request->price_to;
+                // Validate price_to >= price_from if both are provided
+                if ($request->has('price_from') && $request->price_to < $request->price_from) {
+                    return ResponseHelper::error('price_to must be greater than or equal to price_from', 422);
+                }
+            }
+            if ($request->has('discount_price')) {
+                $updateData['discount_price'] = $request->discount_price;
+            }
+            if ($request->has('status')) {
+                $updateData['status'] = $request->status;
+                // Clear rejection reason when status is set to active
+                if ($request->status === 'active') {
+                    $updateData['rejection_reason'] = null;
+                }
+            }
+            if ($request->has('category_id')) {
+                $updateData['category_id'] = $request->category_id;
+            }
+            if ($request->has('service_category_id')) {
+                $updateData['service_category_id'] = $request->service_category_id;
+            }
+            if ($request->has('is_sold')) {
+                $updateData['is_sold'] = $request->is_sold;
+            }
+            if ($request->has('is_unavailable')) {
+                $updateData['is_unavailable'] = $request->is_unavailable;
+            }
+            
+            $service->update($updateData);
 
             return ResponseHelper::success([
                 'service_id' => $service->id,
                 'name' => $service->name,
+                'short_description' => $service->short_description,
+                'full_description' => $service->full_description,
                 'price_from' => $service->price_from,
                 'price_to' => $service->price_to,
+                'discount_price' => $service->discount_price,
+                'status' => $service->status,
+                'category_id' => $service->category_id,
+                'service_category_id' => $service->service_category_id,
                 'updated_at' => $service->updated_at,
             ], 'Service updated successfully');
         } catch (Exception $e) {
