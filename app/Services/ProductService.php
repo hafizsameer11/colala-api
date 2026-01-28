@@ -152,8 +152,11 @@ class ProductService
 
             $data['store_id'] = $store->id;
 
-            /** Create main product */
-            // Handle quantity: if provided directly, use it; otherwise calculate from variants
+            // Set default status to 'draft' if not provided
+            if (!isset($data['status'])) {
+                $data['status'] = 'draft';
+            }
+           
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll set it after variant processing
             
