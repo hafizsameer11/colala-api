@@ -579,8 +579,14 @@ class AdminStoreKYCController extends Controller
                 StoreFollow::where('store_id', $store->id)->delete();
                 Announcement::where('store_id', $store->id)->delete();
                 Banner::where('store_id', $store->id)->delete();
-                AddOnService::where('store_id', $store->id)->delete();
-                AddOnServiceChat::where('store_id', $store->id)->delete();
+                if ($owner) {
+                    // Add-on services are linked by seller_id (owner user id)
+                    $addOnServiceIds = AddOnService::where('seller_id', $owner->id)->pluck('id')->all();
+                    if (!empty($addOnServiceIds)) {
+                        AddOnServiceChat::whereIn('add_on_service_id', $addOnServiceIds)->delete();
+                        AddOnService::whereIn('id', $addOnServiceIds)->delete();
+                    }
+                }
                 Subscription::where('store_id', $store->id)->delete();
                 StoreReferralEarning::where('store_id', $store->id)->delete();
                 BulkUploadJob::where('store_id', $store->id)->delete();
