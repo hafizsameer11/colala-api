@@ -278,6 +278,64 @@ class AdminServicesController extends Controller
     }
 
     /**
+     * Approve service (set status to active)
+     */
+    public function approveService(Request $request, $serviceId)
+    {
+        try {
+            $service = Service::with(['store.user'])->findOrFail($serviceId);
+            
+            $service->update([
+                'status' => 'active',
+                'rejection_reason' => null, // Clear any previous rejection reason
+            ]);
+
+            // Send notification to seller when service is approved
+            if ($service->store && $service->store->user) {
+                $seller = $service->store->user;
+                
+                $title = 'Service Approved';
+                $message = "Your service '{$service->name}' has been approved and is now active.";
+
+                try {
+                    UserNotificationHelper::notify(
+                        $seller->id,
+                        $title,
+                        $message,
+                        [
+                            'type' => 'service_approved',
+                            'service_id' => $service->id,
+                            'service_name' => $service->name,
+                        ]
+                    );
+
+                    Log::info('Service approval notification sent to seller', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'seller_email' => $seller->email,
+                        'has_expo_token' => !empty($seller->expo_push_token),
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send service approval notification', [
+                        'service_id' => $service->id,
+                        'seller_id' => $seller->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Don't fail the request if notification fails
+                }
+            }
+
+            return ResponseHelper::success([
+                'service_id' => $service->id,
+                'status' => $service->status,
+                'updated_at' => $service->updated_at,
+            ], 'Service approved successfully');
+        } catch (Exception $e) {
+            return ResponseHelper::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Update service information
      */
     public function updateService(Request $request, $serviceId)
