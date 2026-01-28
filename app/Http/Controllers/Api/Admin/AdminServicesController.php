@@ -349,11 +349,15 @@ class AdminServicesController extends Controller
                 'price_to' => 'nullable|numeric|min:0',
                 'discount_price' => 'nullable|numeric|min:0',
                 'status' => 'nullable|in:draft,active,inactive',
-                'category_id' => 'nullable|exists:categories,id',
                 'service_category_id' => 'nullable|exists:service_categories,id',
                 'is_sold' => 'nullable|boolean',
                 'is_unavailable' => 'nullable|boolean',
             ]);
+            
+            // Handle category_id - if provided, treat it as service_category_id
+            if ($request->has('category_id') && !$request->has('service_category_id')) {
+                $request->merge(['service_category_id' => $request->category_id]);
+            }
 
             $service = Service::findOrFail($serviceId);
             
@@ -389,9 +393,7 @@ class AdminServicesController extends Controller
                     $updateData['rejection_reason'] = null;
                 }
             }
-            if ($request->has('category_id')) {
-                $updateData['category_id'] = $request->category_id;
-            }
+            // Services use service_category_id, not category_id
             if ($request->has('service_category_id')) {
                 $updateData['service_category_id'] = $request->service_category_id;
             }
