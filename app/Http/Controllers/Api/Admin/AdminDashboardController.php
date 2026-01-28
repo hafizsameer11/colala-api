@@ -221,13 +221,19 @@ class AdminDashboardController extends Controller
         // Build queries with period filter
         $userQuery = User::where('role', 'buyer');
         $orderQuery = Order::query();
-        $completedOrderQuery = Order::where('payment_status', 'completed');
+        // Fixed: Use StoreOrder with status='completed' instead of Order with payment_status='completed'
+        $completedOrderQuery = StoreOrder::where('status', 'completed')
+            ->whereHas('order.user', function ($q) {
+                $q->where('role', 'buyer');
+            });
         $transactionQuery = Transaction::query();
 
         if ($dateRange) {
+            $tableName = (new StoreOrder())->getTable();
             $userQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
             $orderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
-            $completedOrderQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+            // Apply date filter to StoreOrder created_at
+            $completedOrderQuery->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
             $transactionQuery->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
         }
 
@@ -255,8 +261,13 @@ class AdminDashboardController extends Controller
             $previousOrders = Order::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
-            $previousCompletedOrders = Order::where('payment_status', 'completed')
-                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+            // Fixed: Use StoreOrder with status='completed' for previous period
+            $tableName = (new StoreOrder())->getTable();
+            $previousCompletedOrders = StoreOrder::where('status', 'completed')
+                ->whereHas('order.user', function ($q) {
+                    $q->where('role', 'buyer');
+                })
+                ->whereBetween($tableName . '.created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
             
             try {

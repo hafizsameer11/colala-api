@@ -144,13 +144,24 @@ class CheckoutService
                     ProductStatHelper::record($L['product_id'], 'order');
                 }
 
-                // Create chat
-                Chat::firstOrCreate([
-                    'store_order_id' => $so->id,
-                    'user_id'        => $cart->user_id,
-                    'store_id'       => $S['store_id'],
-                    'type' => 'order'
-                ]);
+                // Find or create chat - one chat per buyer-seller pair
+                // Check if chat already exists between this buyer and seller (any type)
+                $chat = Chat::where('user_id', $cart->user_id)
+                    ->where('store_id', $S['store_id'])
+                    ->first();
+                
+                if (!$chat) {
+                    // Create new chat if it doesn't exist
+                    // One chat handles all conversations between buyer and seller
+                    $chat = Chat::create([
+                        'user_id' => $cart->user_id,
+                        'store_id' => $S['store_id'],
+                        'type' => 'order',
+                        'store_order_id' => $so->id, // Link to current order for reference
+                    ]);
+                }
+                // If chat exists, we reuse it - one chat per buyer-seller pair
+                // The chat can handle conversations about multiple orders
 
                 // Send notification to this store
                 $store = Store::with('user')->find($S['store_id']);

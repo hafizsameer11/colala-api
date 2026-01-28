@@ -64,43 +64,77 @@ class AdminBalanceController extends Controller
 
             $users = $query->latest()->paginate($request->get('per_page', 20));
 
-            // Get summary statistics
+            // Get summary statistics with period filtering
+            $totalShoppingBalanceQuery = Wallet::query();
+            $totalRewardBalanceQuery = Wallet::query();
+            $totalReferralBalanceQuery = Wallet::query();
+            $totalLoyaltyPointsQuery = Wallet::query();
+            $totalEscrowBalanceQuery = Escrow::where('status', 'active');
+            $buyerShoppingBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'buyer');
+            });
+            $sellerShoppingBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'seller');
+            });
+            $buyerRewardBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'buyer');
+            });
+            $sellerRewardBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'seller');
+            });
+            $buyerReferralBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'buyer');
+            });
+            $sellerReferralBalanceQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'seller');
+            });
+            $buyerLoyaltyPointsQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'buyer');
+            });
+            $sellerLoyaltyPointsQuery = Wallet::whereHas('user', function ($q) {
+                $q->where('role', 'seller');
+            });
+            $buyerEscrowBalanceQuery = Escrow::whereHas('user', function ($q) {
+                $q->where('role', 'buyer');
+            })->where('status', 'active');
+            $sellerEscrowBalanceQuery = Escrow::whereHas('user', function ($q) {
+                $q->where('role', 'seller');
+            })->where('status', 'active');
+            
+            if ($period) {
+                $this->applyPeriodFilter($totalShoppingBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalRewardBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalReferralBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalLoyaltyPointsQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($totalEscrowBalanceQuery, $period);
+                $this->applyPeriodFilter($buyerShoppingBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($sellerShoppingBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($buyerRewardBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($sellerRewardBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($buyerReferralBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($sellerReferralBalanceQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($buyerLoyaltyPointsQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($sellerLoyaltyPointsQuery, $period, 'wallets.created_at');
+                $this->applyPeriodFilter($buyerEscrowBalanceQuery, $period);
+                $this->applyPeriodFilter($sellerEscrowBalanceQuery, $period);
+            }
+            
             $stats = [
-                'total_shopping_balance' => Wallet::sum('shopping_balance'),
-                'total_reward_balance' => Wallet::sum('reward_balance'),
-                'total_referral_balance' => Wallet::sum('referral_balance'),
-                'total_loyalty_points' => Wallet::sum('loyality_points'),
-                'total_escrow_balance' => Escrow::where('status', 'active')->sum('amount'),
-                'buyer_shopping_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->sum('shopping_balance'),
-                'seller_shopping_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'seller');
-                })->sum('shopping_balance'),
-                'buyer_reward_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->sum('reward_balance'),
-                'seller_reward_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'seller');
-                })->sum('reward_balance'),
-                'buyer_referral_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->sum('referral_balance'),
-                'seller_referral_balance' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'seller');
-                })->sum('referral_balance'),
-                'buyer_loyalty_points' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->sum('loyality_points'),
-                'seller_loyalty_points' => Wallet::whereHas('user', function ($q) {
-                    $q->where('role', 'seller');
-                })->sum('loyality_points'),
-                'buyer_escrow_balance' => Escrow::whereHas('user', function ($q) {
-                    $q->where('role', 'buyer');
-                })->where('status', 'active')->sum('amount'),
-                'seller_escrow_balance' => Escrow::whereHas('user', function ($q) {
-                    $q->where('role', 'seller');
-                })->where('status', 'active')->sum('amount'),
+                'total_shopping_balance' => $totalShoppingBalanceQuery->sum('shopping_balance'),
+                'total_reward_balance' => $totalRewardBalanceQuery->sum('reward_balance'),
+                'total_referral_balance' => $totalReferralBalanceQuery->sum('referral_balance'),
+                'total_loyalty_points' => $totalLoyaltyPointsQuery->sum('loyality_points'),
+                'total_escrow_balance' => $totalEscrowBalanceQuery->sum('amount'),
+                'buyer_shopping_balance' => $buyerShoppingBalanceQuery->sum('shopping_balance'),
+                'seller_shopping_balance' => $sellerShoppingBalanceQuery->sum('shopping_balance'),
+                'buyer_reward_balance' => $buyerRewardBalanceQuery->sum('reward_balance'),
+                'seller_reward_balance' => $sellerRewardBalanceQuery->sum('reward_balance'),
+                'buyer_referral_balance' => $buyerReferralBalanceQuery->sum('referral_balance'),
+                'seller_referral_balance' => $sellerReferralBalanceQuery->sum('referral_balance'),
+                'buyer_loyalty_points' => $buyerLoyaltyPointsQuery->sum('loyality_points'),
+                'seller_loyalty_points' => $sellerLoyaltyPointsQuery->sum('loyality_points'),
+                'buyer_escrow_balance' => $buyerEscrowBalanceQuery->sum('amount'),
+                'seller_escrow_balance' => $sellerEscrowBalanceQuery->sum('amount'),
             ];
 
             return ResponseHelper::success([

@@ -23,17 +23,40 @@ use Illuminate\Support\Facades\DB;
 class SellerProductController extends Controller
 {
     /**
+     * Resolve seller context from either seller user ID or store ID.
+     *
+     * @param  int|string  $identifier  Seller user ID OR store ID
+     * @return array{user:\App\Models\User, store:\App\Models\Store}|null
+     */
+    private function resolveSellerAndStore($identifier): ?array
+    {
+        // 1) Try as seller user ID
+        $user = User::where('role', 'seller')->find($identifier);
+        if ($user && $user->store) {
+            return ['user' => $user, 'store' => $user->store];
+        }
+
+        // 2) Fallback: treat as store ID
+        $store = Store::with('user')->find($identifier);
+        if ($store && $store->user && $store->user->role === 'seller') {
+            return ['user' => $store->user, 'store' => $store];
+        }
+
+        return null;
+    }
+
+    /**
      * Get all products for a specific seller
      */
     public function getSellerProducts(Request $request, $userId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $query = Product::with([
                 'store:id,store_name,store_email,store_phone',
@@ -107,7 +130,7 @@ class SellerProductController extends Controller
             $products->getCollection()->transform(function ($product) {
                 $mainImage = $product->images->where('is_main', true)->first();
                 $isSponsored = $product->boost && $product->boost->status === 'active';
-                
+
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -177,12 +200,12 @@ class SellerProductController extends Controller
     public function getProductDetails($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()->with([
                 'store' => function ($q) {
@@ -328,12 +351,12 @@ class SellerProductController extends Controller
     public function getProductStatistics($userId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $totalProducts = Product::where('store_id', $store->id)->count();
             $activeProducts = Product::where('store_id', $store->id)->where('status', 'active')->count();
@@ -409,27 +432,27 @@ class SellerProductController extends Controller
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
 
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
                 ->findOrFail($productId);
-            
+
             $updateData = ['status' => $request->status];
-            
+
             if ($request->has('is_sold')) {
                 $updateData['is_sold'] = $request->is_sold;
             }
-            
+
             if ($request->has('is_unavailable')) {
                 $updateData['is_unavailable'] = $request->is_unavailable;
             }
-            
+
             $product->update($updateData);
 
             return ResponseHelper::success([
@@ -452,12 +475,12 @@ class SellerProductController extends Controller
     public function deleteProduct($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
@@ -513,12 +536,12 @@ class SellerProductController extends Controller
     public function getProductAnalytics(Request $request, $userId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $dateFrom = $request->get('date_from', now()->subDays(30)->format('Y-m-d'));
             $dateTo = $request->get('date_to', now()->format('Y-m-d'));
@@ -570,23 +593,23 @@ class SellerProductController extends Controller
     public function createProduct(ProductCreateUpdateRequest $request, $userId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $data = $request->validated();
             $data['store_id'] = $store->id;
-            
+
             return DB::transaction(function () use ($data) {
                 // Create main product
                 $product = Product::create($data);
-                
+
                 // Set initial quantity based on variants or default to 0
                 $initialQuantity = 0;
-                
+
                 // Handle product video
                 if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
                     $videoPath = $data['video']->store('products/videos', 'public');
@@ -618,7 +641,7 @@ class SellerProductController extends Controller
                             'discount_price' => $variantData['discount_price'] ?? null,
                             'stock' => $variantData['stock'] ?? 0,
                         ]);
-                        
+
                         // Add to total quantity
                         $initialQuantity += $variantData['stock'] ?? 0;
 
@@ -635,7 +658,7 @@ class SellerProductController extends Controller
                         }
                     }
                 }
-                
+
                 // Update product quantity
                 $product->update(['quantity' => $initialQuantity]);
 
@@ -657,18 +680,18 @@ class SellerProductController extends Controller
     public function updateProduct(ProductCreateUpdateRequest $request, $userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
                 ->findOrFail($productId);
             $data = $request->validated();
-            
+
             return DB::transaction(function () use ($product, $data) {
                 // Update main product
                 $product->update($data);
@@ -743,35 +766,35 @@ class SellerProductController extends Controller
     public function boostProduct(BoostProductRequest $request, $userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
                 ->findOrFail($productId);
-            
+
             // Check if product already has an active boost
             $existingBoost = BoostProduct::where('product_id', $productId)
                 ->where('status', 'active')
                 ->first();
-                
+
             if ($existingBoost) {
                 return ResponseHelper::error('Product already has an active boost', 400);
             }
 
             $data = $request->validated();
-            
+
             // Calculate boost totals (simplified calculation)
             $dailyBudget = $data['budget'];
             $duration = $data['duration'];
             $subtotal = $dailyBudget * $duration;
             $platformFee = $subtotal * 0.1; // 10% platform fee
             $totalAmount = $subtotal + $platformFee;
-            
+
             $boost = BoostProduct::create([
                 'product_id' => $productId,
                 'store_id' => $store->id,
@@ -783,8 +806,8 @@ class SellerProductController extends Controller
                 'platform_fee' => $platformFee,
                 'total_amount' => $totalAmount,
                 'start_date' => $data['start_date'] ?? now(),
-                'end_date' => $data['start_date'] ? 
-                    \Carbon\Carbon::parse($data['start_date'])->addDays($duration) : 
+                'end_date' => $data['start_date'] ?
+                    \Carbon\Carbon::parse($data['start_date'])->addDays($duration) :
                     now()->addDays($duration),
                 'status' => 'pending',
                 'payment_method' => $data['payment_method'] ?? 'wallet',
@@ -792,7 +815,7 @@ class SellerProductController extends Controller
                 'estimated_clicks' => $dailyBudget * 10, // Mock calculation
                 'estimated_cpc' => $dailyBudget / 10 // Mock calculation
             ]);
-            
+
             return ResponseHelper::success([
                 'boost' => $boost,
                 'message' => 'Product boost created successfully'
@@ -810,12 +833,12 @@ class SellerProductController extends Controller
     public function getProductStats($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
@@ -879,18 +902,18 @@ class SellerProductController extends Controller
                 return ResponseHelper::error($validator->errors()->first(), 422);
             }
 
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::withoutGlobalScopes()
                 ->where('store_id', $store->id)
                 ->findOrFail($productId);
             $product->update(['quantity' => $request->quantity]);
-            
+
             return ResponseHelper::success([
                 'product_id' => $product->id,
                 'quantity' => $product->quantity,
@@ -909,19 +932,19 @@ class SellerProductController extends Controller
     public function markProductAsSold($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::where('store_id', $store->id)->findOrFail($productId);
             $product->update([
                 'is_sold' => true,
                 'is_unavailable' => false
             ]);
-            
+
             return ResponseHelper::success([
                 'product_id' => $product->id,
                 'is_sold' => $product->is_sold,
@@ -941,19 +964,19 @@ class SellerProductController extends Controller
     public function markProductAsUnavailable($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::where('store_id', $store->id)->findOrFail($productId);
             $product->update([
                 'is_unavailable' => true,
                 'is_sold' => false
             ]);
-            
+
             return ResponseHelper::success([
                 'product_id' => $product->id,
                 'is_sold' => $product->is_sold,
@@ -973,19 +996,19 @@ class SellerProductController extends Controller
     public function markProductAsAvailable($userId, $productId)
     {
         try {
-            $user = User::where('role', 'seller')->findOrFail($userId);
-            $store = $user->store;
-
-            if (!$store) {
-                return ResponseHelper::error('No store found for this seller', 404);
+            $context = $this->resolveSellerAndStore($userId);
+            if (!$context) {
+                return ResponseHelper::error('Seller or store not found', 404);
             }
+            $user = $context['user'];
+            $store = $context['store'];
 
             $product = Product::where('store_id', $store->id)->findOrFail($productId);
             $product->update([
                 'is_sold' => false,
                 'is_unavailable' => false
             ]);
-            
+
             return ResponseHelper::success([
                 'product_id' => $product->id,
                 'is_sold' => $product->is_sold,

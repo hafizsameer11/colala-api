@@ -16,6 +16,7 @@ class Store extends Model
     use HasRelationships; // ✅ very important
     protected $fillable = [
         'user_id',
+        'account_officer_id',
         'store_name',
         'store_email',
         'store_phone',
@@ -59,6 +60,22 @@ class Store extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the account officer assigned to this store
+     */
+    public function accountOfficer()
+    {
+        return $this->belongsTo(User::class, 'account_officer_id');
+    }
+
+    /**
+     * Scope a query to only include stores assigned to a specific account officer
+     */
+    public function scopeAssignedTo($query, $userId)
+    {
+        return $query->where('account_officer_id', $userId);
     }
 
     /**

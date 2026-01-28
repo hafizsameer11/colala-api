@@ -23,7 +23,6 @@ class CreateDisputeRequest extends FormRequest
       public function rules(): array
     {
         return [
-            'chat_id'        => 'required|exists:chats,id',
             'store_order_id' => 'required|exists:store_orders,id',
             'category'       => 'required|string|max:255',
             'details'        => 'nullable|string',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Helpers\ResponseHelper;
+use App\Helpers\UserNotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Dispute;
 use App\Models\DisputeChat;
@@ -11,6 +12,10 @@ use App\Models\Chat;
 use App\Models\StoreOrder;
 use App\Models\User;
 use App\Models\Store;
+use App\Models\Escrow;
+use App\Models\Wallet;
+use App\Models\Transaction;
+use App\Services\EscrowService;
 use App\Traits\PeriodFilterTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +25,13 @@ use Illuminate\Support\Facades\Storage;
 class AdminDisputeController extends Controller
 {
     use PeriodFilterTrait;
+
+    protected $escrowService;
+
+    public function __construct(EscrowService $escrowService)
+    {
+        $this->escrowService = $escrowService;
+    }
     /**
      * Get all disputes with filtering and pagination
      */
@@ -200,14 +212,14 @@ class AdminDisputeController extends Controller
             ]);
 
             $dispute = Dispute::findOrFail($disputeId);
-            
+
             $oldStatus = $dispute->status;
             $dispute->status = $request->status;
-            
+
             if ($request->has('resolution_notes')) {
                 $dispute->resolution_notes = $request->resolution_notes;
             }
-            
+
             if ($request->has('won_by')) {
                 $dispute->won_by = $request->won_by;
             }
@@ -271,7 +283,7 @@ class AdminDisputeController extends Controller
     }
 
     /**
-     * Resolve dispute
+     * Resolve dispute with escrow release handling
      */
     public function resolveDispute(Request $request, $disputeId)
     {
@@ -281,22 +293,205 @@ class AdminDisputeController extends Controller
                 'won_by' => 'required|in:buyer,seller,admin',
             ]);
 
-            $dispute = Dispute::findOrFail($disputeId);
+            $dispute = Dispute::with(['storeOrder.order', 'storeOrder.store.user', 'user'])->findOrFail($disputeId);
+
+            if (!$dispute->storeOrder) {
+                return ResponseHelper::error('Store order not found for this dispute.', 404);
+            }
+
+            $storeOrder = $dispute->storeOrder;
+            $order = $storeOrder->order;
+
+            // Check if order payment status is after payment
+            $isPaid = $order && $order->payment_status === 'paid';
+
+            $escrowReleased = false;
+            $escrowAmount = 0;
+
+            // Handle escrow release based on winner if order is paid
+            if ($isPaid) {
+                // Get escrow record
+                $escrowRecord = Escrow::where('store_order_id', $storeOrder->id)
+                    ->where('status', 'locked')
+                    ->first();
+
+                // Fallback: Check old flow (by order_id) if no store_order_id escrow exists
+                if (!$escrowRecord) {
+                    $escrowRecord = Escrow::where('order_id', $storeOrder->order_id)
+                        ->where('status', 'locked')
+                        ->first();
+                }
+
+                if ($escrowRecord) {
+                    $escrowAmount = $escrowRecord->amount;
+
+                    if ($request->won_by === 'seller') {
+                        // Release escrow to seller
+                        $escrowReleased = $this->escrowService->releaseForStoreOrder(
+                            $storeOrder,
+                            $request->user()->id,
+                            "Dispute resolved in favor of seller - Dispute #{$disputeId}"
+                        );
+                    } elseif ($request->won_by === 'buyer') {
+                        // Refund escrow to buyer
+                        $escrowReleased = $this->refundEscrowToBuyer(
+                            $escrowRecord,
+                            $storeOrder,
+                            $dispute->user,
+                            $request->user()->id,
+                            "Dispute resolved in favor of buyer - Dispute #{$disputeId}"
+                        );
+                    }
+                    // If won_by is 'admin', escrow can be handled separately or left as is
+                }
+            }
+
+            // Update dispute status
             $dispute->status = 'resolved';
             $dispute->resolution_notes = $request->resolution_notes;
             $dispute->won_by = $request->won_by;
             $dispute->resolved_at = now();
             $dispute->save();
 
-            Log::info("Dispute #{$disputeId} resolved in favor of {$request->won_by}");
+            // Update store order status based on resolution
+            // If order was disputed, change it to completed or delivered based on normal flow
+            if ($storeOrder->status === 'disputed') {
+                // Determine the appropriate status after resolution
+                // If seller wins, order is completed (fulfilled)
+                // If buyer wins, order is also completed (closed/refunded)
+                // We can also check if it was previously delivered, but completed is safer
+                $newOrderStatus = 'completed';
+
+                // If the order was previously delivered or out_for_delivery, keep it as delivered
+                // Otherwise set to completed
+                // Note: We don't have previous status stored, so we'll use completed as default
+                // which is appropriate for resolved disputes
+                $storeOrder->update(['status' => $newOrderStatus]);
+            }
+
+            // Get buyer and seller for notifications
+            $buyer = $dispute->user;
+            $seller = $storeOrder->store->user ?? null;
+
+            // Send notifications
+            $winnerName = $request->won_by === 'buyer' ? 'You (Buyer)' : ($request->won_by === 'seller' ? 'Seller' : 'Admin');
+            $resolutionMessage = "Dispute #{$disputeId} has been resolved in favor of {$winnerName}.";
+
+            if ($isPaid && $escrowReleased) {
+                $resolutionMessage .= " Escrow amount of N" . number_format($escrowAmount, 2) . " has been " .
+                    ($request->won_by === 'buyer' ? 'refunded to your wallet' : 'released to seller') . ".";
+            }
+
+            if ($buyer) {
+                UserNotificationHelper::notify(
+                    $buyer->id,
+                    'Dispute Resolved',
+                    $resolutionMessage . ($request->resolution_notes ? "\n\nResolution Notes: {$request->resolution_notes}" : ''),
+                    [
+                        'type' => 'dispute_resolved',
+                        'dispute_id' => $dispute->id,
+                        'won_by' => $request->won_by,
+                        'escrow_released' => $escrowReleased,
+                        'escrow_amount' => $escrowAmount
+                    ]
+                );
+            }
+
+            if ($seller) {
+                UserNotificationHelper::notify(
+                    $seller->id,
+                    'Dispute Resolved',
+                    $resolutionMessage . ($request->resolution_notes ? "\n\nResolution Notes: {$request->resolution_notes}" : ''),
+                    [
+                        'type' => 'dispute_resolved',
+                        'dispute_id' => $dispute->id,
+                        'won_by' => $request->won_by,
+                        'escrow_released' => $escrowReleased,
+                        'escrow_amount' => $escrowAmount
+                    ]
+                );
+            }
+
+            Log::info("Dispute #{$disputeId} resolved in favor of {$request->won_by}", [
+                'escrow_released' => $escrowReleased,
+                'escrow_amount' => $escrowAmount,
+                'is_paid' => $isPaid
+            ]);
 
             return ResponseHelper::success([
-                'dispute' => $this->formatDisputeData($dispute)
-            ], 'Dispute resolved successfully.');
+                'dispute' => $this->formatDisputeData($dispute),
+                'escrow_released' => $escrowReleased,
+                'escrow_amount' => $escrowAmount
+            ], 'Dispute resolved successfully.' . ($escrowReleased ? ' Escrow has been processed.' : ''));
 
         } catch (\Exception $e) {
-            Log::error("Error resolving dispute: " . $e->getMessage());
-            return ResponseHelper::error('Failed to resolve dispute.', 500);
+            Log::error("Error resolving dispute: " . $e->getMessage(), [
+                'dispute_id' => $disputeId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return ResponseHelper::error('Failed to resolve dispute: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Refund escrow amount to buyer's wallet
+     */
+    private function refundEscrowToBuyer(Escrow $escrowRecord, StoreOrder $storeOrder, User $buyer, ?int $adminId = null, ?string $reason = null): bool
+    {
+        try {
+            return DB::transaction(function () use ($escrowRecord, $storeOrder, $buyer, $adminId, $reason) {
+                $refundAmount = $escrowRecord->amount;
+
+                // Update escrow status to 'refunded'
+                $escrowRecord->update(['status' => 'refunded']);
+
+                // Create or update buyer's wallet
+                $buyerWallet = Wallet::firstOrCreate(
+                    ['user_id' => $buyer->id],
+                    [
+                        'shopping_balance' => 0,
+                        'reward_balance' => 0,
+                        'referral_balance' => 0,
+                        'loyality_points' => 0,
+                    ]
+                );
+
+                // Add funds to buyer's shopping balance
+                $buyerWallet->increment('shopping_balance', $refundAmount);
+
+                // Create transaction record for buyer
+                $txId = 'REFUND-' . now()->format('YmdHis') . '-' . str_pad((string) random_int(1, 999999), 6, '0', STR_PAD_LEFT);
+                Transaction::create([
+                    'tx_id' => $txId,
+                    'amount' => $refundAmount,
+                    'status' => 'successful',
+                    'type' => 'dispute_refund',
+                    'order_id' => $storeOrder->order_id,
+                    'user_id' => $buyer->id,
+                ]);
+
+                Log::info('Escrow refunded to buyer', [
+                    'store_order_id' => $storeOrder->id,
+                    'order_id' => $storeOrder->order_id,
+                    'buyer_id' => $buyer->id,
+                    'amount' => $refundAmount,
+                    'performed_by_admin_id' => $adminId,
+                    'reason' => $reason,
+                ]);
+
+                return true;
+            });
+        } catch (\Exception $e) {
+            Log::error('Failed to refund escrow to buyer', [
+                'error' => $e->getMessage(),
+                'store_order_id' => $storeOrder->id ?? null,
+                'order_id' => $storeOrder->order_id ?? null,
+                'buyer_id' => $buyer->id ?? null,
+                'performed_by_admin_id' => $adminId,
+                'reason' => $reason,
+            ]);
+
+            return false;
         }
     }
 
@@ -312,11 +507,11 @@ class AdminDisputeController extends Controller
 
             $dispute = Dispute::findOrFail($disputeId);
             $dispute->status = 'closed';
-            
+
             if ($request->has('resolution_notes')) {
                 $dispute->resolution_notes = $request->resolution_notes;
             }
-            
+
             $dispute->closed_at = now();
             $dispute->save();
 

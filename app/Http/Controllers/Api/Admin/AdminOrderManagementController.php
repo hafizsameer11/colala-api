@@ -11,14 +11,28 @@ use App\Models\OrderItem;
 use App\Models\OrderTracking;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Seller\OrderAcceptanceService;
 use App\Traits\PeriodFilterTrait;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AdminOrderManagementController extends Controller
 {
     use PeriodFilterTrait;
+
+    /**
+     * @var OrderAcceptanceService
+     */
+    protected $acceptanceService;
+
+    public function __construct(OrderAcceptanceService $acceptanceService)
+    {
+        $this->acceptanceService = $acceptanceService;
+    }
     /**
      * Get all orders with filtering and pagination
      */
@@ -33,6 +47,13 @@ class AdminOrderManagementController extends Controller
                 'orderTracking',
                 'deliveryPricing'
             ]);
+
+            // Account Officer sees only orders from assigned stores
+            if (Auth::user()->role === 'account_officer') {
+                $query->whereHas('store', function ($storeQuery) {
+                    $storeQuery->where('account_officer_id', Auth::id());
+                });
+            }
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -81,7 +102,30 @@ class AdminOrderManagementController extends Controller
             $outForDeliveryQuery = StoreOrder::where('status', 'out_for_delivery');
             $deliveredQuery = StoreOrder::where('status', 'delivered');
             $disputedQuery = StoreOrder::where('status', 'disputed');
-            
+
+            // Account Officer sees only stats from assigned stores
+            if (Auth::user()->role === 'account_officer') {
+                $accountOfficerId = Auth::id();
+                $totalOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $pendingOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $completedOrdersQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $outForDeliveryQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $deliveredQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+                $disputedQuery->whereHas('store', function ($q) use ($accountOfficerId) {
+                    $q->where('account_officer_id', $accountOfficerId);
+                });
+            }
+
             if ($period) {
                 $this->applyPeriodFilter($totalOrdersQuery, $period);
                 $this->applyPeriodFilter($pendingOrdersQuery, $period);
@@ -90,7 +134,7 @@ class AdminOrderManagementController extends Controller
                 $this->applyPeriodFilter($deliveredQuery, $period);
                 $this->applyPeriodFilter($disputedQuery, $period);
             }
-            
+
             $stats = [
                 'total_orders' => $totalOrdersQuery->count(),
                 'pending_orders' => $pendingOrdersQuery->count(),
@@ -136,11 +180,22 @@ class AdminOrderManagementController extends Controller
                 'chat.dispute'
             ])->findOrFail($storeOrderId);
 
+            $order = $storeOrder->order;
+
+            // Derive status for admin view: if parent order is soft-deleted, show as "deleted"
+            $status = $storeOrder->status;
+            $isDeletedOrder = false;
+            if ($order && method_exists($order, 'trashed') && $order->trashed()) {
+                $status = 'deleted';
+                $isDeletedOrder = true;
+            }
+
             $orderData = [
                 'id' => $storeOrder->id,
-                'order_no' => $storeOrder->order->order_no,
-                'status' => $storeOrder->status,
-                'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                'order_no' => $order?->order_no ?? null,
+                'status' => $status,
+                'is_deleted' => $isDeletedOrder,
+                'status_color' => $this->getOrderStatusColor($status),
                 'store' => [
                     'id' => $storeOrder->store->id,
                     'name' => $storeOrder->store->store_name,
@@ -148,20 +203,20 @@ class AdminOrderManagementController extends Controller
                     'phone' => $storeOrder->store->store_phone,
                     'location' => $storeOrder->store->addresses->first()?->full_address
                 ],
-                'customer' => $storeOrder->order->user ? [
-                    'id' => $storeOrder->order->user->id,
-                    'name' => $storeOrder->order->user ? $storeOrder->order->user->full_name : 'Unknown Customer',
-                    'email' => $storeOrder->order->user->email,
-                    'phone' => $storeOrder->order->user->phone,
-                    'profile_picture' => $storeOrder->order->user->profile_picture ? asset('storage/' . $storeOrder->order->user->profile_picture) : null
+                'customer' => $order && $order->user ? [
+                    'id' => $order->user->id,
+                    'name' => $order->user->full_name ?? 'Unknown Customer',
+                    'email' => $order->user->email,
+                    'phone' => $order->user->phone,
+                    'profile_picture' => $order->user->profile_picture ? asset('storage/' . $order->user->profile_picture) : null
                 ] : null,
-                'delivery_address' => $storeOrder->order->deliveryAddress ? [
-                    'id' => $storeOrder->order->deliveryAddress->id,
-                    'full_address' => $storeOrder->order->deliveryAddress->full_address,
-                    'state' => $storeOrder->order->deliveryAddress->state,
-                    'local_government' => $storeOrder->order->deliveryAddress->local_government,
-                    'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
-                    'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
+                'delivery_address' => $order && $order->deliveryAddress ? [
+                    'id' => $order->deliveryAddress->id,
+                    'full_address' => $order->deliveryAddress->full_address,
+                    'state' => $order->deliveryAddress->state,
+                    'local_government' => $order->deliveryAddress->local_government,
+                    'contact_name' => $order->deliveryAddress->contact_name,
+                    'contact_phone' => $order->deliveryAddress->contact_phone
                 ] : null,
                 'items' => $storeOrder->items->map(function ($item) use ($storeOrder) {
                     return [
@@ -317,6 +372,52 @@ class AdminOrderManagementController extends Controller
     }
 
     /**
+     * Admin: Accept a store order on behalf of the seller (including delivery fee & details)
+     *
+     * This mirrors the seller flow:
+     * - status must be `pending_acceptance`
+     * - sets delivery_fee (shipping_fee), estimated_delivery_date, delivery_method, delivery_notes
+     * - recalculates subtotal_with_shipping and parent Order totals
+     * - updates tracking and sends notification to buyer
+     */
+    public function acceptOrderOnBehalf(Request $request, $storeOrderId)
+    {
+        try {
+            $request->validate([
+                'delivery_fee' => 'required|numeric|min:0',
+                'estimated_delivery_date' => 'nullable|date|after:today',
+                'delivery_method' => 'nullable|string|max:255',
+                'delivery_notes' => 'nullable|string|max:500',
+            ]);
+
+            $storeOrder = StoreOrder::with(['order', 'items', 'store'])->find($storeOrderId);
+
+            if (!$storeOrder) {
+                return ResponseHelper::error('Store order not found', 404);
+            }
+
+            // Reuse core seller acceptance logic (no ownership check for admin)
+            $storeOrder = $this->acceptanceService->acceptOrder($storeOrder, $request->all());
+
+            return ResponseHelper::success(
+                $this->formatSingleStoreOrder($storeOrder),
+                'Order accepted successfully by admin on behalf of seller'
+            );
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Admin acceptOrderOnBehalf error: ' . $e->getMessage(), [
+                'store_order_id' => $storeOrderId ?? null,
+            ]);
+            return ResponseHelper::error('Failed to accept order: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Get order tracking history
      */
     public function getOrderTracking($storeOrderId)
@@ -368,11 +469,11 @@ class AdminOrderManagementController extends Controller
                 case 'update_status':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => $request->status]);
                     return ResponseHelper::success(null, "Orders status updated to {$request->status}");
-                
+
                 case 'mark_delivered':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => 'delivered']);
                     return ResponseHelper::success(null, 'Orders marked as delivered');
-                
+
                 case 'mark_completed':
                     StoreOrder::whereIn('id', $orderIds)->update(['status' => 'completed']);
                     return ResponseHelper::success(null, 'Orders marked as completed');
@@ -393,7 +494,7 @@ class AdminOrderManagementController extends Controller
             if ($period && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
-            
+
             $totalOrdersQuery = StoreOrder::query();
             $pendingOrdersQuery = StoreOrder::where('status', 'pending');
             $processingOrdersQuery = StoreOrder::where('status', 'processing');
@@ -403,7 +504,7 @@ class AdminOrderManagementController extends Controller
             $completedOrdersQuery = StoreOrder::where('status', 'completed');
             $disputedOrdersQuery = StoreOrder::where('status', 'disputed');
             $cancelledOrdersQuery = StoreOrder::where('status', 'cancelled');
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalOrdersQuery, $period);
                 $this->applyPeriodFilter($pendingOrdersQuery, $period);
@@ -415,7 +516,7 @@ class AdminOrderManagementController extends Controller
                 $this->applyPeriodFilter($disputedOrdersQuery, $period);
                 $this->applyPeriodFilter($cancelledOrdersQuery, $period);
             }
-            
+
             $stats = [
                 'total_orders' => $totalOrdersQuery->count(),
                 'pending_orders' => $pendingOrdersQuery->count(),
@@ -449,6 +550,45 @@ class AdminOrderManagementController extends Controller
     }
 
     /**
+     * Format a single store order for detailed response (mirrors seller acceptance response)
+     */
+    private function formatSingleStoreOrder(StoreOrder $storeOrder): array
+    {
+        return [
+            'id' => $storeOrder->id,
+            'order_no' => $storeOrder->order->order_no ?? null,
+            'status' => $storeOrder->status,
+            'items_subtotal' => $storeOrder->items_subtotal,
+            'delivery_fee' => $storeOrder->shipping_fee,
+            'shipping_fee' => $storeOrder->shipping_fee, // Backward compatibility
+            'subtotal_with_shipping' => $storeOrder->subtotal_with_shipping,
+            'estimated_delivery_date' => $storeOrder->estimated_delivery_date,
+            'delivery_method' => $storeOrder->delivery_method,
+            'delivery_notes' => $storeOrder->delivery_notes,
+            'rejection_reason' => $storeOrder->rejection_reason,
+            'accepted_at' => $storeOrder->accepted_at ? $storeOrder->accepted_at->format('Y-m-d H:i:s') : null,
+            'rejected_at' => $storeOrder->rejected_at ? $storeOrder->rejected_at->format('Y-m-d H:i:s') : null,
+            'created_at' => $storeOrder->created_at ? $storeOrder->created_at->format('Y-m-d H:i:s') : null,
+            'customer' => [
+                'id' => $storeOrder->order->user->id ?? null,
+                'name' => $storeOrder->order->user->full_name ?? null,
+                'email' => $storeOrder->order->user->email ?? null,
+                'phone' => $storeOrder->order->user->phone ?? null,
+            ],
+            'items' => $storeOrder->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'name' => $item->name,
+                    'qty' => $item->qty,
+                    'unit_price' => $item->unit_price,
+                    'line_total' => $item->line_total,
+                ];
+            }),
+        ];
+    }
+
+    /**
      * Get order status color
      */
     private function getOrderStatusColor($status)
@@ -473,13 +613,21 @@ class AdminOrderManagementController extends Controller
     private function formatOrdersData($orders)
     {
         return $orders->map(function ($order) {
+            $parentOrder = $order->order;
+
+            // Override status for soft-deleted parent orders
+            $status = $order->status;
+            if ($parentOrder && method_exists($parentOrder, 'trashed') && $parentOrder->trashed()) {
+                $status = 'deleted';
+            }
+
             return [
                 'store_order_id' => $order->id,
-                'order_number' => $order->order ? $order->order->order_no : null,
+                'order_number' => $parentOrder ? $parentOrder->order_no : null,
                 'store_name' => $order->store ? $order->store->store_name : null,
                 'seller_name' => $order->store ? $order->store->store_name : null,
-                'customer_name' => $order->order && $order->order->user ? $order->order->user->full_name : 'Unknown Customer',
-                'status' => $order->status,
+                'customer_name' => $parentOrder && $parentOrder->user ? $parentOrder->user->full_name : 'Unknown Customer',
+                'status' => $status,
                 'items_count' => $order->items ? $order->items->count() : 0,
                 'total_amount' => $order->subtotal_with_shipping,
                 'created_at' => $order->created_at,
@@ -495,7 +643,7 @@ class AdminOrderManagementController extends Controller
     {
         $order = $storeOrder->order;
         $store = $storeOrder->store;
-        
+
         $statusMessages = [
             'pending' => 'Your order is pending',
             'processing' => 'Your order is being processed',

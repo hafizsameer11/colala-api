@@ -164,6 +164,120 @@ class User extends Authenticatable
         return $this->hasMany(UserAddress::class);
     }
 
+    // ----------------- RBAC Relationships -----------------
+    /**
+     * Get all admin role assignments for this user
+     */
+    public function adminRoles()
+    {
+        return $this->hasMany(AdminRole::class);
+    }
+
+    /**
+     * Get all roles assigned to this user
+     */
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'admin_roles')
+            ->withPivot(['assigned_by', 'assigned_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->roles()
+            ->where('slug', $roleSlug)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Check if user has any of the given roles
+     */
+    public function hasAnyRole(array $roleSlugs): bool
+    {
+        return $this->roles()
+            ->whereIn('slug', $roleSlugs)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission(string $permissionSlug): bool
+    {
+        return $this->roles()
+            ->where('is_active', true)
+            ->whereHas('permissions', function ($query) use ($permissionSlug) {
+                $query->where('slug', $permissionSlug);
+            })
+            ->exists();
+    }
+
+    /**
+     * Check if user has any of the given permissions
+     */
+    public function hasAnyPermission(array $permissionSlugs): bool
+    {
+        return $this->roles()
+            ->where('is_active', true)
+            ->whereHas('permissions', function ($query) use ($permissionSlugs) {
+                $query->whereIn('slug', $permissionSlugs);
+            })
+            ->exists();
+    }
+
+    /**
+     * Get all permissions for this user (from all their roles)
+     */
+    public function getAllPermissions(): array
+    {
+        return $this->roles()
+            ->where('is_active', true)
+            ->with('permissions')
+            ->get()
+            ->flatMap(function ($role) {
+                return $role->permissions;
+            })
+            ->unique('id')
+            ->pluck('slug')
+            ->toArray();
+    }
+
+    /**
+     * Get all stores assigned to this user as Account Officer
+     */
+    public function assignedVendors()
+    {
+        return $this->hasMany(Store::class, 'account_officer_id');
+    }
+
+    /**
+     * Scope to get only admin users
+     */
+    public function scopeAdmins($query)
+    {
+        // Get all active admin role slugs from the roles table dynamically
+        $adminRoles = Role::active()->pluck('slug')->toArray();
+
+        return $query->whereIn('role', $adminRoles)
+            ->orWhereHas('roles');
+    }
+
+    /**
+     * Scope a query to only include users with account_officer role
+     */
+    public function scopeAccountOfficers($query)
+    {
+        return $query->whereHas('roles', function($q) {
+            $q->where('slug', 'account_officer');
+        });
+    }
+
     /**
      * Check if user is currently online
      * User is considered online if last_seen_at is within the last 5 minutes

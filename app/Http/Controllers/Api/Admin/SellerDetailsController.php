@@ -16,6 +16,7 @@ use App\Models\Chat;
 use App\Models\Post;
 use App\Models\Product;
 use App\Models\Announcement;
+use App\Models\StoreOnboardingStep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -38,8 +39,16 @@ class SellerDetailsController extends Controller
                 'stores.categories'
             ])->findOrFail($id);
 
+            // Check raw store visibility (ignore out-of-scope sellers)
+            $rawStore = Store::withoutGlobalScopes()->where('user_id', $user->id)->first();
+
+            if ($rawStore && (int) $rawStore->visibility === 0) {
+                // Seller/store is marked as out of scope (visibility = 0)
+                return ResponseHelper::error('Seller is out of scope', 404);
+            }
+
             $primaryStore = $user->store;
-            
+
             // Get wallet balances
             $wallet = $user->wallet;
             $escrowBalance = Escrow::where('user_id', $user->id)->sum('amount');
@@ -52,6 +61,32 @@ class SellerDetailsController extends Controller
 
             // Get store statistics
             $storeStats = $this->getStoreStatistics($user->id);
+
+            // Get onboarding progress/levels data if store exists
+            $onboarding = null;
+            if ($primaryStore) {
+                $steps = StoreOnboardingStep::where('store_id', $primaryStore->id)
+                    ->orderBy('level')
+                    ->get(['key', 'level', 'status', 'completed_at', 'rejection_reason'])
+                    ->map(function ($step) {
+                        return [
+                            'key' => $step->key,
+                            'level' => $step->level,
+                            'status' => $step->status,
+                            'completed_at' => $step->completed_at,
+                            'rejection_reason' => $step->rejection_reason,
+                            'is_rejected' => $step->status === 'rejected',
+                        ];
+                    });
+
+                $onboarding = [
+                    'store_id' => $primaryStore->id,
+                    'level' => $primaryStore->onboarding_level,
+                    'percent' => $primaryStore->onboarding_percent,
+                    'status' => $primaryStore->onboarding_status,
+                    'steps' => $steps,
+                ];
+            }
 
             $sellerDetails = [
                 'user_info' => [
@@ -106,6 +141,7 @@ class SellerDetailsController extends Controller
                     'loyalty_points' => $wallet ? $wallet->loyality_points : 0
                 ],
                 'statistics' => $storeStats,
+                'onboarding' => $onboarding,
                 'recent_activities' => $recentActivities->map(function ($activity) {
                     return [
                         'id' => $activity->id,
@@ -137,13 +173,16 @@ class SellerDetailsController extends Controller
             }
 
             // Treat each StoreOrder as a separate order for seller context
+            // Only include store orders that still have a parent Order record
             $query = StoreOrder::with([
                 'order.user',
                 'store',
                 'items.product.images',
                 'items.variant',
                 'orderTracking'
-            ])->where('store_id', $store->id);
+            ])
+                ->where('store_id', $store->id)
+                ->whereHas('order');
 
             // Filter by date range
             if ($request->has('date_from') && $request->date_from) {
@@ -161,13 +200,15 @@ class SellerDetailsController extends Controller
             $orders = $query->latest()->paginate(15);
 
             $orders->getCollection()->transform(function ($storeOrder) {
-                $firstItem = $storeOrder->items->first();
+                $order = $storeOrder->order;
+                $customer = $order?->user;
+
                 return [
                     'id' => $storeOrder->id,
-                    'order_no' => $storeOrder->order->order_no,
-                    'customer_name' => $storeOrder->order->user->full_name,
-                    'customer_email' => $storeOrder->order->user->email,
-                    'store_name' => $storeOrder->store->store_name,
+                    'order_no' => $order?->order_no ?? null,
+                    'customer_name' => $customer?->full_name ?? 'Unknown Customer',
+                    'customer_email' => $customer?->email ?? null,
+                    'store_name' => $storeOrder->store->store_name ?? null,
                     'subtotal' => 'N' . number_format($storeOrder->items_subtotal, 0),
                     'delivery_fee' => 'N' . number_format($storeOrder->shipping_fee, 0),
                     'discount' => 'N' . number_format($storeOrder->discount, 0),
@@ -175,19 +216,22 @@ class SellerDetailsController extends Controller
                     'status' => ucfirst($storeOrder->status),
                     'status_color' => $this->getOrderStatusColor($storeOrder->status),
                     'items_count' => $storeOrder->items->count(),
-                    'created_at' => $storeOrder->created_at->format('d-m-Y H:i:s'),
+                    'created_at' => $storeOrder->created_at ? $storeOrder->created_at->format('d-m-Y H:i:s') : null,
                     'items' => $storeOrder->items->map(function ($item) {
+                        $quantity = $item->qty ?? $item->quantity ?? 0;
+                        $lineTotal = $item->price * $quantity;
+
                         return [
                             'id' => $item->id,
                             'product_name' => $item->product->name ?? 'Unknown Product',
-                            'quantity' => $item->qty ?? $item->quantity,
+                            'quantity' => $quantity,
                             'price' => 'N' . number_format($item->price, 0),
-                            'total' => 'N' . number_format(($item->price * ($item->qty ?? $item->quantity)), 0)
+                            'total' => 'N' . number_format($lineTotal, 0),
                         ];
                     }),
                     'tracking' => $storeOrder->orderTracking->isNotEmpty() ? [
                         'status' => $storeOrder->orderTracking->first()->status,
-                        'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
+                        'updated_at' => $storeOrder->orderTracking->first()->updated_at?->format('d-m-Y H:i:s'),
                     ] : null,
                 ];
             });
@@ -650,7 +694,7 @@ class SellerDetailsController extends Controller
             }
 
             $user = User::where('role', 'seller')->findOrFail($id);
-            
+
             if ($request->action === 'block') {
                 $user->update(['is_active' => false]);
                 $message = 'Seller blocked successfully';
@@ -699,7 +743,7 @@ class SellerDetailsController extends Controller
     private function getStoreStatistics($userId)
     {
         $store = Store::where('user_id', $userId)->first();
-        
+
         if (!$store) {
             return [
                 'total_products' => 0,

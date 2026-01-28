@@ -62,6 +62,9 @@ class DisputeController extends Controller
             // Update dispute_id in dispute_chat
             $disputeChat->update(['dispute_id' => $dispute->id]);
 
+            // Update store order status to 'disputed'
+            $storeOrder->update(['status' => 'disputed']);
+
             // Create initial system message in dispute chat
             DisputeChatMessage::create([
                 'dispute_chat_id' => $disputeChat->id,
