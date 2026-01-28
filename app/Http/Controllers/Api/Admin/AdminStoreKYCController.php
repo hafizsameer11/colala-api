@@ -487,12 +487,21 @@ class AdminStoreKYCController extends Controller
                     ProductEmbedding::whereIn('product_id', $productIds)->delete();
                     BoostProduct::whereIn('product_id', $productIds)->delete();
 
+                    // Order items for these products
+                    $orderItemIds = OrderItem::whereIn('product_id', $productIds)
+                        ->pluck('id')
+                        ->all();
+
                     // Reviews & saved items
-                    ProductReview::whereIn('product_id', $productIds)->delete();
+                    if (!empty($orderItemIds)) {
+                        ProductReview::whereIn('order_item_id', $orderItemIds)->delete();
+                    }
                     SavedItem::whereIn('product_id', $productIds)->delete();
 
-                    // Order items for these products
-                    OrderItem::whereIn('product_id', $productIds)->delete();
+                    // Now delete order items
+                    if (!empty($orderItemIds)) {
+                        OrderItem::whereIn('id', $orderItemIds)->delete();
+                    }
 
                     Product::withoutGlobalScopes()
                         ->whereIn('id', $productIds)
