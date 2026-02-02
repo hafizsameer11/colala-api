@@ -60,6 +60,12 @@ class AdminNotificationController extends Controller
                 $this->applyPeriodFilter($query, $period);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $notifications = $query->get();
+                return ResponseHelper::success($this->formatNotificationsData($notifications), 'Notifications exported successfully');
+            }
+
             $notifications = $query->paginate($request->get('per_page', 20));
 
             // Get statistics with period filtering

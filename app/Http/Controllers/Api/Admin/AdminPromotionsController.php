@@ -71,6 +71,12 @@ class AdminPromotionsController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $promotions = $query->latest()->get();
+                return ResponseHelper::success($promotions, 'Promotions exported successfully');
+            }
+
             $promotions = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

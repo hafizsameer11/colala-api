@@ -61,6 +61,12 @@ class AdminBannerController extends Controller
                 $this->applyPeriodFilter($query, $period);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $banners = $query->get();
+                return ResponseHelper::success($banners, 'Banners exported successfully');
+            }
+
             $banners = $query->paginate($request->get('per_page', 20));
 
             // Get statistics with period filtering

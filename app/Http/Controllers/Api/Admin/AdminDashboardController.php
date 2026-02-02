@@ -121,7 +121,13 @@ class AdminDashboardController extends Controller
             $status = $request->get('status', 'all');
             $search = $request->get('search', '');
             
-            $orders = $this->getFilteredOrders($status, $search);
+            $orders = $this->getFilteredOrders($status, $search, $request);
+            
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                return ResponseHelper::success($orders, 'Filtered orders exported successfully');
+            }
+            
             return ResponseHelper::success($orders, 'Filtered orders retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -634,6 +640,24 @@ class AdminDashboardController extends Controller
             }
         }
 
+        // Check if export is requested
+        if ($request && $request->has('export') && $request->export == 'true') {
+            return $query->get()->map(function ($storeOrder) {
+                $firstItem = $storeOrder->items->first();
+                $totalPrice = $storeOrder->subtotal_with_shipping ?? ($storeOrder->items_subtotal + $storeOrder->shipping_fee) ?? 0;
+                return [
+                    'id' => $storeOrder->id,
+                    'store_name' => $storeOrder->store ? $storeOrder->store->store_name : 'Unknown Store',
+                    'buyer_name' => $storeOrder->order && $storeOrder->order->user ? $storeOrder->order->user->full_name : 'Unknown Buyer',
+                    'product_name' => $firstItem && $firstItem->product ? $firstItem->product->name : 'Unknown Product',
+                    'price' => number_format($totalPrice, 2),
+                    'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
+                    'status' => $storeOrder->status,
+                    'status_color' => $this->getStatusColor($storeOrder->status)
+                ];
+            });
+        }
+
         return $query->limit(10)->get()->map(function ($storeOrder) {
             $firstItem = $storeOrder->items->first();
             $totalPrice = $storeOrder->subtotal_with_shipping ?? ($storeOrder->items_subtotal + $storeOrder->shipping_fee) ?? 0;
@@ -653,7 +677,7 @@ class AdminDashboardController extends Controller
     /**
      * Get filtered orders
      */
-    private function getFilteredOrders($status, $search)
+    private function getFilteredOrders($status, $search, Request $request = null)
     {
         $query = StoreOrder::with(['store.user', 'order.user', 'items.product']);
 
@@ -666,6 +690,22 @@ class AdminDashboardController extends Controller
                 $q->where('store_name', 'like', "%{$search}%");
             })->orWhereHas('order.user', function ($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Check if export is requested
+        if ($request && $request->has('export') && $request->export == 'true') {
+            return $query->latest()->get()->map(function ($storeOrder) {
+                return [
+                    'id' => $storeOrder->id,
+                    'store_name' => $storeOrder->store->store_name ?? 'Unknown Store',
+                    'buyer_name' => $storeOrder->order->user->full_name ?? 'Unknown Buyer',
+                    'product_name' => $storeOrder->items->first()->product->name ?? 'Unknown Product',
+                    'price' => number_format($storeOrder->total_amount, 2),
+                    'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
+                    'status' => $storeOrder->status,
+                    'status_color' => $this->getStatusColor($storeOrder->status)
+                ];
             });
         }
 

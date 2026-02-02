@@ -87,6 +87,12 @@ class AdminServicesController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $services = $query->latest()->get();
+                return ResponseHelper::success($services, 'Services exported successfully');
+            }
+
             $services = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering
@@ -95,7 +101,7 @@ class AdminServicesController extends Controller
             $inactiveServicesQuery = Service::where('status', 'inactive');
             $soldServicesQuery = Service::where('is_sold', true);
             $unavailableServicesQuery = Service::where('is_unavailable', true);
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalServicesQuery, $period);
                 $this->applyPeriodFilter($activeServicesQuery, $period);
@@ -103,7 +109,7 @@ class AdminServicesController extends Controller
                 $this->applyPeriodFilter($soldServicesQuery, $period);
                 $this->applyPeriodFilter($unavailableServicesQuery, $period);
             }
-            
+
             $stats = [
                 'total_services' => $totalServicesQuery->count(),
                 'active_services' => $activeServicesQuery->count(),
@@ -206,7 +212,7 @@ class AdminServicesController extends Controller
             ]);
 
             $service = Service::with(['store.user'])->findOrFail($serviceId);
-            
+
             $updateData = [
                 'status' => $request->status,
                 'is_sold' => $request->get('is_sold', $service->is_sold),
@@ -226,45 +232,51 @@ class AdminServicesController extends Controller
             // Send notification to seller if service is marked as inactive
             if ($request->status === 'inactive' && $service->store && $service->store->user) {
                 $seller = $service->store->user;
-                $rejectionReason = $request->rejection_reason ?? 'No reason provided';
-                
-                $title = 'Service Rejected';
-                $message = "Your service '{$service->name}' has been marked as inactive.";
-                
-                if ($request->rejection_reason) {
-                    $message .= "\n\nReason: {$rejectionReason}";
-                }
 
-                try {
-                    UserNotificationHelper::notify(
-                        $seller->id,
-                        $title,
-                        $message,
-                        [
-                            'type' => 'service_rejected',
+                // Refresh seller to ensure expo_push_token is loaded (bypass global scopes)
+                $seller = User::withoutGlobalScopes()->find($seller->id);
+
+                if ($seller) {
+                    $rejectionReason = $request->rejection_reason ?? 'No reason provided';
+
+                    $title = 'Service Rejected';
+                    $message = "Your service '{$service->name}' has been marked as inactive.";
+
+                    if ($request->rejection_reason) {
+                        $message .= "\n\nReason: {$rejectionReason}";
+                    }
+
+                    try {
+                        UserNotificationHelper::notify(
+                            $seller->id,
+                            $title,
+                            $message,
+                            [
+                                'type' => 'service_rejected',
+                                'service_id' => $service->id,
+                                'service_name' => $service->name,
+                                'rejection_reason' => $rejectionReason,
+                            ]
+                        );
+
+                        Log::info('Service rejection notification sent to seller', [
                             'service_id' => $service->id,
-                            'service_name' => $service->name,
-                            'rejection_reason' => $rejectionReason,
-                        ]
-                    );
-
-                    Log::info('Service rejection notification sent to seller', [
-                        'service_id' => $service->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                        'rejection_reason' => $rejectionReason
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send service rejection notification', [
-                        'service_id' => $service->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    // Don't fail the request if notification fails
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                            'rejection_reason' => $rejectionReason
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send service rejection notification', [
+                            'service_id' => $service->id,
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        // Don't fail the request if notification fails
+                    }
                 }
             }
 
@@ -288,7 +300,7 @@ class AdminServicesController extends Controller
     {
         try {
             $service = Service::with(['store.user'])->findOrFail($serviceId);
-            
+
             $service->update([
                 'status' => 'active',
                 'rejection_reason' => null, // Clear any previous rejection reason
@@ -297,35 +309,40 @@ class AdminServicesController extends Controller
             // Send notification to seller when service is approved
             if ($service->store && $service->store->user) {
                 $seller = $service->store->user;
-                
-                $title = 'Service Approved';
-                $message = "Your service '{$service->name}' has been approved and is now active.";
 
-                try {
-                    UserNotificationHelper::notify(
-                        $seller->id,
-                        $title,
-                        $message,
-                        [
-                            'type' => 'service_approved',
+                // Refresh seller to ensure expo_push_token is loaded (bypass global scopes)
+                $seller = User::withoutGlobalScopes()->find($seller->id);
+
+                if ($seller) {
+                    $title = 'Service Approved';
+                    $message = "Your service '{$service->name}' has been approved and is now active.";
+
+                    try {
+                        UserNotificationHelper::notify(
+                            $seller->id,
+                            $title,
+                            $message,
+                            [
+                                'type' => 'service_approved',
+                                'service_id' => $service->id,
+                                'service_name' => $service->name,
+                            ]
+                        );
+
+                        Log::info('Service approval notification sent to seller', [
                             'service_id' => $service->id,
-                            'service_name' => $service->name,
-                        ]
-                    );
-
-                    Log::info('Service approval notification sent to seller', [
-                        'service_id' => $service->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send service approval notification', [
-                        'service_id' => $service->id,
-                        'seller_id' => $seller->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Don't fail the request if notification fails
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send service approval notification', [
+                            'service_id' => $service->id,
+                            'seller_id' => $seller->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        // Don't fail the request if notification fails
+                    }
                 }
             }
 
@@ -360,17 +377,17 @@ class AdminServicesController extends Controller
                 'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,webm|max:10240', // 10MB max
                 'video' => 'nullable|file|mimes:mp4,mov,avi,webm|max:10240',
             ]);
-            
+
             // Handle category_id - if provided, treat it as service_category_id
             if ($request->has('category_id') && !$request->has('service_category_id')) {
                 $request->merge(['service_category_id' => $request->category_id]);
             }
 
             $service = Service::findOrFail($serviceId);
-            
+
             // Build update data only with provided fields
             $updateData = [];
-            
+
             if ($request->has('name')) {
                 $updateData['name'] = $request->name;
             }
@@ -410,13 +427,13 @@ class AdminServicesController extends Controller
             if ($request->has('is_unavailable')) {
                 $updateData['is_unavailable'] = $request->is_unavailable;
             }
-            
+
             // Handle video upload
             if ($request->hasFile('video')) {
                 $videoPath = $request->file('video')->store('services/videos', 'public');
                 $updateData['video'] = $videoPath;
             }
-            
+
             $service->update($updateData);
 
             // Handle media uploads (images/videos)
@@ -424,7 +441,7 @@ class AdminServicesController extends Controller
                 foreach ($request->file('media') as $file) {
                     $path = $file->store('services', 'public');
                     $type = str_contains($file->getClientMimeType(), 'video') ? 'video' : 'image';
-                    
+
                     ServiceMedia::create([
                         'service_id' => $service->id,
                         'type' => $type,
@@ -470,7 +487,7 @@ class AdminServicesController extends Controller
     {
         try {
             $service = Service::findOrFail($serviceId);
-            
+
             // Delete related data
             // $service->media()->delete();
             // $service->subServices()->delete();
@@ -491,7 +508,7 @@ class AdminServicesController extends Controller
     private function getServiceStatistics($service)
     {
         $stats = $service->statsSummary();
-        
+
         return [
             'views' => $stats['view'],
             'impressions' => $stats['impression'],
@@ -671,7 +688,7 @@ class AdminServicesController extends Controller
             }
 
             $service = Service::where('store_id', $store->id)->findOrFail($serviceId);
-            
+
             // Delete related data
             $service->media()->delete();
             $service->subServices()->delete();
@@ -714,7 +731,7 @@ class AdminServicesController extends Controller
                 'media_count' => $service->media->count(),
                 'created_at' => $service->created_at,
                 'formatted_date' => $service->created_at->format('d-m-Y H:i A'),
-                'primary_media' => $service->media->first() ? 
+                'primary_media' => $service->media->first() ?
                     asset('storage/' . $service->media->first()->path) : null,
             ];
         });

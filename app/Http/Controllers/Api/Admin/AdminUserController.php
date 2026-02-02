@@ -61,6 +61,25 @@ class AdminUserController extends Controller
                 $query->where('is_active', $request->status === 'active');
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                $users->transform(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'full_name' => $user->full_name,
+                        'email' => $user->email,
+                        'phone' => $user->phone,
+                        'profile_picture' => $user->profile_picture,
+                        'role' => $user->role,
+                        'is_active' => $user->is_active,
+                        'wallet_balance' => $user->wallet ? number_format($user->wallet->shopping_balance + $user->wallet->reward_balance, 2) : '0.00',
+                        'created_at' => $user->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($users, 'Users exported successfully');
+            }
+
             $users = $query->latest()->paginate(15);
 
             $users->getCollection()->transform(function ($user) {
@@ -320,6 +339,20 @@ class AdminUserController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
+            
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $activities = $query->latest()->get();
+                $activities->transform(function ($activity) {
+                    return [
+                        'id' => $activity->id,
+                        'description' => $activity->message,
+                        'created_at' => $activity->created_at->format('d/m/y - h:i A'),
+                    ];
+                });
+                return ResponseHelper::success($activities, 'User activities exported successfully');
+            }
+
             $activities = $query->latest()->paginate($perPage);
 
             $activities->getCollection()->transform(function ($activity) {
@@ -389,6 +422,24 @@ class AdminUserController extends Controller
                         $orderQuery->where('order_no', 'like', "%{$search}%");
                     });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $storeOrders = $query->latest()->get();
+                $storeOrders->transform(function ($storeOrder) {
+                    $product = $storeOrder->items->first();
+                    return [
+                        'id' => $storeOrder->id,
+                        'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
+                        'store_name' => $storeOrder->store ? $storeOrder->store->store_name : 'Deleted Store',
+                        'product_name' => $product && $product->product ? $product->product->name : 'Unknown Product',
+                        'status' => ucfirst(str_replace('_', ' ', $storeOrder->status)),
+                        'total' => 'N' . number_format($storeOrder->subtotal_with_shipping ?? 0, 0),
+                        'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($storeOrders, 'User orders exported successfully');
             }
 
             $storeOrders = $query->latest()->paginate(15);
@@ -472,6 +523,23 @@ class AdminUserController extends Controller
                         $orderQuery->where('order_no', 'like', "%{$search}%");
                     });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $storeOrders = $query->latest()->get()->map(function ($storeOrder) {
+                    $product = $storeOrder->items->first();
+                    return [
+                        'id' => $storeOrder->id,
+                        'order_no' => $storeOrder->order ? $storeOrder->order->order_no : 'N/A',
+                        'store_name' => $storeOrder->store ? $storeOrder->store->store_name : 'Deleted Store',
+                        'product_name' => $product && $product->product ? $product->product->name : 'Unknown Product',
+                        'status' => ucfirst(str_replace('_', ' ', $storeOrder->status)),
+                        'total' => 'N' . number_format($storeOrder->subtotal_with_shipping ?? 0, 0),
+                        'order_date' => $storeOrder->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($storeOrders, 'Filtered user orders exported successfully');
             }
 
             $storeOrders = $query->latest()->get()->map(function ($storeOrder) {
@@ -1014,6 +1082,24 @@ class AdminUserController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $chats = $query->latest()->get();
+                $chats->transform(function ($chat) {
+                    $lastMessage = $chat->messages->first();
+                    return [
+                        'id' => $chat->id,
+                        'store_name' => $chat->store->store_name ?? 'Unknown Store',
+                        'store_image' => $chat->store->profile_image ?? null,
+                        'last_message' => $lastMessage ? $lastMessage->message : null,
+                        'last_message_time' => $lastMessage ? $lastMessage->created_at->format('d-m-Y H:i:s') : null,
+                        'is_dispute' => $chat->dispute ? true : false,
+                        'created_at' => $chat->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($chats, 'User chats exported successfully');
+            }
+
             $chats = $query->latest()->paginate(15);
 
             $chats->getCollection()->transform(function ($chat) {
@@ -1094,6 +1180,21 @@ class AdminUserController extends Controller
                 $query->whereHas('store', function ($q) use ($search) {
                     $q->where('store_name', 'like', "%{$search}%");
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $chats = $query->latest()->get()->map(function ($chat) {
+                    $lastMessage = $chat->messages->first();
+                    return [
+                        'id' => $chat->id,
+                        'store_name' => $chat->store->store_name ?? 'Unknown Store',
+                        'user_name' => $chat->user->full_name ?? 'Unknown User',
+                        'last_message' => $lastMessage ? $lastMessage->message : null,
+                        'created_at' => $chat->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($chats, 'Filtered user chats exported successfully');
             }
 
             $chats = $query->latest()->get()->map(function ($chat) {
@@ -1366,6 +1467,25 @@ class AdminUserController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                $transactions->transform(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'tx_id' => $transaction->tx_id,
+                        'amount' => 'N' . number_format($transaction->amount, 0),
+                        'amount_formatted' => 'N' . number_format($transaction->amount, 2),
+                        'type' => ucfirst($transaction->type),
+                        'status' => ucfirst($transaction->status),
+                        'status_color' => $this->getTransactionStatusColor($transaction->status),
+                        'tx_date' => $transaction->created_at->format('d-m-Y/h:iA'),
+                        'created_at' => $transaction->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($transactions, 'User transactions exported successfully');
+            }
+
             $transactions = $query->latest()->paginate(15);
 
             // Get summary stats with period filtering
@@ -1508,6 +1628,22 @@ class AdminUserController extends Controller
                     $q->where('tx_id', 'like', "%{$search}%")
                       ->orWhere('amount', 'like', "%{$search}%");
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get()->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'tx_id' => $transaction->tx_id,
+                        'amount' => 'N' . number_format($transaction->amount, 0),
+                        'amount_formatted' => 'N' . number_format($transaction->amount, 2),
+                        'type' => ucfirst($transaction->type),
+                        'status' => ucfirst($transaction->status),
+                        'created_at' => $transaction->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($transactions, 'Filtered user transactions exported successfully');
             }
 
             $transactions = $query->latest()->get()->map(function ($transaction) {
@@ -1677,6 +1813,24 @@ class AdminUserController extends Controller
                     $q->where('content', 'like', "%{$search}%")
                       ->orWhere('title', 'like', "%{$search}%");
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $posts = $query->with(['user', 'media', 'likes', 'comments', 'shares'])
+                    ->latest()
+                    ->get();
+                $posts->transform(function ($post) {
+                    return [
+                        'id' => $post->id,
+                        'content' => $post->body,
+                        'likes_count' => $post->likes->count(),
+                        'comments_count' => $post->comments->count(),
+                        'shares_count' => $post->shares->count(),
+                        'created_at' => $post->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($posts, 'User posts exported successfully');
             }
 
             $posts = $query->with(['user', 'media', 'likes', 'comments', 'shares'])
@@ -1868,6 +2022,11 @@ class AdminUserController extends Controller
                     ];
                 });
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                return ResponseHelper::success($posts, 'Filtered posts exported successfully');
+            }
+
             return ResponseHelper::success($posts, 'Filtered posts retrieved successfully');
         } catch (\Exception $e) {
             Log::error($e->getMessage());
@@ -2004,6 +2163,24 @@ class AdminUserController extends Controller
             $user = User::withoutGlobalScopes()->findOrFail($id);
             $post = \App\Models\Post::where('user_id', $id)->findOrFail($postId);
             
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $comments = \App\Models\PostComment::where('post_id', $postId)
+                    ->with('user')
+                    ->latest()
+                    ->get();
+                $comments->transform(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'user_name' => $comment->user->full_name ?? 'Unknown User',
+                        'content' => $comment->body,
+                        'time_ago' => $comment->created_at->diffForHumans(),
+                        'created_at' => $comment->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($comments, 'Post comments exported successfully');
+            }
+
             $comments = \App\Models\PostComment::where('post_id', $postId)
                 ->with('user')
                 ->latest()
@@ -2277,6 +2454,12 @@ class AdminUserController extends Controller
                 $query->where('is_read', true);
             } elseif ($status === 'unread') {
                 $query->where('is_read', false);
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $notifications = $query->get();
+                return ResponseHelper::success($notifications, 'User notifications exported successfully');
             }
 
             $notifications = $query->paginate($perPage);

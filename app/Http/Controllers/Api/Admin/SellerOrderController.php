@@ -67,6 +67,45 @@ class SellerOrderController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $orders = $query->latest()->get();
+                $orders->transform(function ($storeOrder) {
+                    return [
+                        'id' => $storeOrder->id,
+                        'order_id' => $storeOrder->order_id,
+                        'store_name' => $storeOrder->store->store_name,
+                        'customer_name' => $storeOrder->order->user->full_name,
+                        'customer_email' => $storeOrder->order->user->email,
+                        'customer_phone' => $storeOrder->order->user->phone,
+                        'product_name' => $storeOrder->items->first()?->product?->name ?? 'Multiple Products',
+                        'product_count' => $storeOrder->items->count(),
+                        'items_subtotal' => 'N' . number_format($storeOrder->items_subtotal, 0),
+                        'shipping_fee' => 'N' . number_format($storeOrder->shipping_fee, 0),
+                        'discount' => 'N' . number_format($storeOrder->discount, 0),
+                        'total' => 'N' . number_format($storeOrder->subtotal_with_shipping, 0),
+                        'status' => ucfirst(str_replace('_', ' ', $storeOrder->status)),
+                        'status_color' => $this->getOrderStatusColor($storeOrder->status),
+                        'order_date' => $storeOrder->created_at->format('d-m-Y/H:iA'),
+                        'delivery_address' => $storeOrder->order->deliveryAddress ? [
+                            'full_address' => $storeOrder->order->deliveryAddress->full_address,
+                            'state' => $storeOrder->order->deliveryAddress->state,
+                            'local_government' => $storeOrder->order->deliveryAddress->local_government,
+                            'contact_name' => $storeOrder->order->deliveryAddress->contact_name,
+                            'contact_phone' => $storeOrder->order->deliveryAddress->contact_phone
+                        ] : null,
+                        'tracking' => $storeOrder->orderTracking && $storeOrder->orderTracking->isNotEmpty() ? [
+                            'delivery_code' => $storeOrder->orderTracking->first()->delivery_code,
+                            'status' => $storeOrder->orderTracking->first()->status,
+                            'updated_at' => $storeOrder->orderTracking->first()->updated_at->format('d-m-Y H:i:s')
+                        ] : null,
+                        'chat_available' => $storeOrder->chat ? true : false,
+                        'chat_id' => $storeOrder->chat?->id
+                    ];
+                });
+                return ResponseHelper::success($orders, 'Seller orders exported successfully');
+            }
+
             $orders = $query->latest()->paginate(20);
 
             // Get summary statistics

@@ -67,6 +67,12 @@ class AdminSocialFeedController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $posts = $query->latest()->get();
+                return ResponseHelper::success($posts, 'Social feed posts exported successfully');
+            }
+
             $posts = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering
@@ -230,6 +236,15 @@ class AdminSocialFeedController extends Controller
         try {
             $post = Post::findOrFail($postId);
             
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $comments = $post->comments()
+                    ->with('user')
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success($comments, 'Post comments exported successfully');
+            }
+
             $comments = $post->comments()
                 ->with('user')
                 ->latest()

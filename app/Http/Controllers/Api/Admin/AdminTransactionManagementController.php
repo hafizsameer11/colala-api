@@ -77,6 +77,12 @@ class AdminTransactionManagementController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                return ResponseHelper::success($transactions, 'Transactions exported successfully');
+            }
+
             $transactions = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

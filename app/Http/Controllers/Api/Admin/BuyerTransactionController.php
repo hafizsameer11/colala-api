@@ -69,6 +69,40 @@ class BuyerTransactionController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                $transactions->transform(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'tx_id' => $transaction->tx_id,
+                        'user_name' => $transaction->user->full_name ?? 'Unknown',
+                        'amount' => 'N' . number_format($transaction->amount, 0),
+                        'type' => ucfirst($transaction->type),
+                        'status' => ucfirst($transaction->status),
+                        'created_at' => $transaction->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($transactions, 'Buyer transactions exported successfully');
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                $transactions->transform(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'tx_id' => $transaction->tx_id,
+                        'user_name' => $transaction->user->full_name ?? 'Unknown',
+                        'amount' => 'N' . number_format($transaction->amount, 0),
+                        'type' => ucfirst($transaction->type),
+                        'status' => ucfirst($transaction->status),
+                        'created_at' => $transaction->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($transactions, 'Buyer transactions exported successfully');
+            }
+
             $transactions = $query->latest()->paginate(15);
 
             // Get summary stats (only for buyers) with period filtering
@@ -209,6 +243,22 @@ class BuyerTransactionController extends Controller
                                    ->orWhere('email', 'like', "%{$search}%");
                       });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get()->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'tx_id' => $transaction->tx_id,
+                        'user_name' => $transaction->user->full_name ?? 'Unknown',
+                        'amount' => 'N' . number_format($transaction->amount, 0),
+                        'type' => ucfirst($transaction->type),
+                        'status' => ucfirst($transaction->status),
+                        'created_at' => $transaction->created_at->format('d-m-Y H:i:s')
+                    ];
+                });
+                return ResponseHelper::success($transactions, 'Filtered buyer transactions exported successfully');
             }
 
             $transactions = $query->latest()->get()->map(function ($transaction) {

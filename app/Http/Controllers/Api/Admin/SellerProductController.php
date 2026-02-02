@@ -114,6 +114,12 @@ class SellerProductController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $products = $query->latest()->get();
+                return ResponseHelper::success($products, 'Seller products exported successfully');
+            }
+
             $products = $query->latest()->paginate(20);
 
             // Get summary statistics

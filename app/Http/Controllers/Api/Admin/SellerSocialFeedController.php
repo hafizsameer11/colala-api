@@ -59,6 +59,12 @@ class SellerSocialFeedController extends Controller
                 $query->where('body', 'like', "%{$search}%");
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $posts = $query->latest()->get();
+                return ResponseHelper::success($posts, 'Seller posts exported successfully');
+            }
+
             $posts = $query->latest()->paginate(20);
 
             // Get summary statistics
@@ -251,6 +257,12 @@ class SellerSocialFeedController extends Controller
             $query = PostComment::with(['user:id,full_name,profile_picture', 'replies.user:id,full_name,profile_picture'])
                 ->where('post_id', $postId)
                 ->whereNull('parent_id'); // Only top-level comments
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $comments = $query->latest()->get();
+                return ResponseHelper::success($comments, 'Post comments exported successfully');
+            }
 
             $comments = $query->latest()->paginate(20);
 

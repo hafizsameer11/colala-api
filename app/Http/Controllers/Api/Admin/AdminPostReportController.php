@@ -52,6 +52,12 @@ class AdminPostReportController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $reports = $query->get();
+                return ResponseHelper::success($reports, 'Post reports exported successfully');
+            }
+
             $reports = $query->paginate($perPage);
 
             // Format the response

@@ -49,6 +49,12 @@ class AdminProductServiceController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $stores = $query->latest()->get();
+                return ResponseHelper::success($stores, 'Stores exported successfully');
+            }
+
             $stores = $query->latest()->paginate($request->get('per_page', 20));
 
             $stores->getCollection()->transform(function ($store) {

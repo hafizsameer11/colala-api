@@ -98,6 +98,12 @@ class AdminDisputeController extends Controller
             $query->orderBy($sortBy, $sortOrder);
 
             $perPage = $request->get('per_page', 20);
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $disputes = $query->get();
+                return ResponseHelper::success($disputes, 'Disputes exported successfully');
+            }
+
             $disputes = $query->paginate($perPage);
 
             // Format the response

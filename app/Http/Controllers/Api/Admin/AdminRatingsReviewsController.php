@@ -92,6 +92,22 @@ class AdminRatingsReviewsController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $reviews = $query->latest()->get();
+                return ResponseHelper::success($reviews->map(function (ProductReview $review) {
+                    return [
+                        'id' => $review->id,
+                        'product_name' => $review->orderItem->product->name ?? 'Unknown',
+                        'store_name' => $review->orderItem->product->store->store_name ?? 'Unknown',
+                        'user_name' => $review->user->full_name ?? 'Unknown',
+                        'rating' => $review->rating,
+                        'comment' => $review->comment,
+                        'created_at' => $review->created_at->format('d-m-Y H:i:s')
+                    ];
+                }), 'Product reviews exported successfully');
+            }
+
             $reviews = $query->latest()->paginate($request->get('per_page', 20));
 
             return ResponseHelper::success([
@@ -219,6 +235,21 @@ class AdminRatingsReviewsController extends Controller
             // Apply period filter
             if ($period) {
                 $this->applyPeriodFilter($query, $period);
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $reviews = $query->latest()->get();
+                return ResponseHelper::success($reviews->map(function (StoreReview $review) {
+                    return [
+                        'id' => $review->id,
+                        'store_name' => $review->store->store_name ?? 'Unknown',
+                        'user_name' => $review->user->full_name ?? 'Unknown',
+                        'rating' => $review->rating,
+                        'comment' => $review->comment,
+                        'created_at' => $review->created_at->format('d-m-Y H:i:s')
+                    ];
+                }), 'Store reviews exported successfully');
             }
 
             $reviews = $query->latest()->paginate($request->get('per_page', 20));

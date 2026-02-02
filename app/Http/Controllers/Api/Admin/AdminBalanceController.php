@@ -62,6 +62,12 @@ class AdminBalanceController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($users, 'User balances exported successfully');
+            }
+
             $users = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

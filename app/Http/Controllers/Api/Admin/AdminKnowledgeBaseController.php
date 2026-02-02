@@ -41,6 +41,12 @@ class AdminKnowledgeBaseController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $knowledgeBase = $query->get();
+                return ResponseHelper::success($knowledgeBase, 'Knowledge base exported successfully');
+            }
+
             $knowledgeBase = $query->paginate($request->get('per_page', 20));
 
             // Get statistics

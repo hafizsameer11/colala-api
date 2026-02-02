@@ -74,6 +74,12 @@ class SellerUserController extends Controller
                 $this->applyPeriodFilter($query, $period);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($users, 'Seller users exported successfully');
+            }
+
             $users = $query->latest()->paginate(15);
 
             // Get summary stats (only for sellers with stores) with period filtering
@@ -437,6 +443,15 @@ class SellerUserController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = Transaction::where('user_id', $id)
+                    ->with(['order'])
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success($transactions, 'Seller transactions exported successfully');
+            }
 
             $transactions = Transaction::where('user_id', $id)
                 ->with(['order'])

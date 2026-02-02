@@ -69,6 +69,12 @@ class AdminSubscriptionController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $subscriptions = $query->latest()->get();
+                return ResponseHelper::success($subscriptions, 'Subscriptions exported successfully');
+            }
+
             $subscriptions = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

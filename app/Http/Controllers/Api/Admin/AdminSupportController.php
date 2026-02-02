@@ -85,6 +85,12 @@ class AdminSupportController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $tickets = $query->latest()->get();
+                return ResponseHelper::success($tickets, 'Support tickets exported successfully');
+            }
+
             $tickets = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

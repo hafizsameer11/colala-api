@@ -86,6 +86,12 @@ class AdminChatsController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $chats = $query->latest()->get();
+                return ResponseHelper::success($chats, 'Chats exported successfully');
+            }
+
             $chats = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

@@ -85,6 +85,12 @@ class AdminUserManagementController extends Controller
                 $query->where('is_active', $request->status === 'active');
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($users, 'Admin users exported successfully');
+            }
+
             $users = $query->latest()->paginate(15);
 
             $users->getCollection()->transform(function ($user) {

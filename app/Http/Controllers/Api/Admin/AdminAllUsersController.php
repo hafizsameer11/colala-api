@@ -74,6 +74,12 @@ class AdminAllUsersController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($this->formatUsersData($users), 'Users exported successfully');
+            }
+
             $users = $query->latest()->paginate($request->get('per_page', 20));
 
             // Get summary statistics with period filtering

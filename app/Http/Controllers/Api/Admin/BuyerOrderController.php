@@ -118,6 +118,12 @@ class BuyerOrderController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $storeOrders = $query->latest()->get();
+                return ResponseHelper::success($storeOrders, 'Buyer orders exported successfully');
+            }
+
             $storeOrders = $query->latest()->paginate(15);
 
             // Get comprehensive summary stats with period filtering
@@ -348,6 +354,25 @@ class BuyerOrderController extends Controller
                                      ->where('store_name', 'like', "%{$search}%");
                       });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $orders = $query->latest()->get()->map(function ($order) {
+                    $storeOrder = $order->storeOrders->first();
+                    return [
+                        'id' => $order->id,
+                        'order_no' => $order->order_no,
+                        'store_name' => $storeOrder ? $storeOrder->store->store_name : 'Unknown Store',
+                        'buyer_name' => $order->user->full_name ?? 'Unknown Buyer',
+                        'product_name' => $storeOrder && $storeOrder->items->first() ? $storeOrder->items->first()->product->name : 'Unknown Product',
+                        'price' => number_format($order->grand_total, 2),
+                        'order_date' => $order->created_at->format('d-m-Y/H:iA'),
+                        'status' => $storeOrder ? $storeOrder->status : 'unknown',
+                        'status_color' => $this->getStatusColor($storeOrder ? $storeOrder->status : 'unknown')
+                    ];
+                });
+                return ResponseHelper::success($orders, 'Filtered buyer orders exported successfully');
             }
 
             $orders = $query->latest()->get()->map(function ($order) {
