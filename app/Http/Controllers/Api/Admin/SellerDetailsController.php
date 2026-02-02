@@ -197,6 +197,23 @@ class SellerDetailsController extends Controller
                 $query->where('status', $request->status);
             }
 
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%")
+                            ->orWhereHas('user', function ($userQuery) use ($search) {
+                                $userQuery->where('full_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                            });
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+                });
+            }
+
             $orders = $query->latest()->paginate(15);
 
             $orders->getCollection()->transform(function ($storeOrder) {
@@ -506,6 +523,16 @@ class SellerDetailsController extends Controller
             // Filter by category
             if ($request->has('category_id') && $request->category_id) {
                 $query->where('category_id', $request->category_id);
+            }
+
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('brand', 'like', "%{$search}%");
+                });
             }
 
             $products = $query->latest()->paginate(15);

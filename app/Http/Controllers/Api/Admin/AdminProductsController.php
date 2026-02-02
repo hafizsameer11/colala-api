@@ -77,13 +77,16 @@ class AdminProductsController extends Controller
                 }
             }
 
+            // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('brand', 'like', "%{$search}%")
                       ->orWhereHas('store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('name', 'like', "%{$search}%");
+                          $storeQuery->withoutGlobalScopes()
+                                     ->where('store_name', 'like', "%{$search}%");
                       });
                 });
             }

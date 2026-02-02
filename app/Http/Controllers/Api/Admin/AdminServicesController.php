@@ -73,13 +73,16 @@ class AdminServicesController extends Controller
                 }
             }
 
+            // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('short_description', 'like', "%{$search}%")
+                      ->orWhere('full_description', 'like', "%{$search}%")
                       ->orWhereHas('store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('name', 'like', "%{$search}%");
+                          $storeQuery->withoutGlobalScopes()
+                                     ->where('store_name', 'like', "%{$search}%");
                       });
                 });
             }
@@ -549,7 +552,7 @@ class AdminServicesController extends Controller
     /**
      * Get seller services (for seller-specific management)
      */
-    public function getSellerServices($sellerId)
+    public function getSellerServices(Request $request, $sellerId)
     {
         try {
             $seller = User::with('store')->findOrFail($sellerId);
@@ -559,10 +562,25 @@ class AdminServicesController extends Controller
                 return ResponseHelper::error('Seller does not have a store', 404);
             }
 
-            $services = Service::with(['media', 'serviceCategory', 'stats'])
-                ->where('store_id', $store->id)
-                ->latest()
-                ->paginate(20);
+            $query = Service::with(['media', 'serviceCategory', 'stats'])
+                ->where('store_id', $store->id);
+
+            // Filter by status
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('short_description', 'like', "%{$search}%")
+                      ->orWhere('full_description', 'like', "%{$search}%");
+                });
+            }
+
+            $services = $query->latest()->paginate(20);
 
             $stats = [
                 'total_services' => Service::where('store_id', $store->id)->count(),

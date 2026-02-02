@@ -97,12 +97,28 @@ class AdminOrderManagementController extends Controller
                 }
             }
 
+            // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
-                $query->whereHas('order', function ($q) use ($search) {
-                    $q->where('order_no', 'like', "%{$search}%");
-                })->orWhereHas('store', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->whereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->withoutGlobalScopes()
+                                     ->where('full_name', 'like', "%{$search}%")
+                                     ->orWhere('email', 'like', "%{$search}%");
+                        });
+                    })
+                    ->orWhereHas('store', function ($storeQuery) use ($search) {
+                        $storeQuery->withoutGlobalScopes()
+                                   ->where('store_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->withoutGlobalScopes()
+                                     ->where('name', 'like', "%{$search}%");
+                    });
                 });
             }
 
