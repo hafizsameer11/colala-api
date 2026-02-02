@@ -1420,6 +1420,7 @@ class AdminUserController extends Controller
                     'id' => $transaction->id,
                     'tx_id' => $transaction->tx_id,
                     'amount' => 'N' . number_format($transaction->amount, 0),
+                    'amount_formatted' => 'N' . number_format($transaction->amount, 2),
                     'type' => ucfirst($transaction->type),
                     'status' => ucfirst($transaction->status),
                     'status_color' => $this->getTransactionStatusColor($transaction->status),
