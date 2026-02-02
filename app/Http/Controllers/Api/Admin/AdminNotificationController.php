@@ -164,7 +164,7 @@ class AdminNotificationController extends Controller
                     'delay_seconds' => $delay
                 ]);
             } else {
-                // If not scheduled, send immediately
+            // If not scheduled, send immediately
                 $this->sendNotification($notification);
             }
 

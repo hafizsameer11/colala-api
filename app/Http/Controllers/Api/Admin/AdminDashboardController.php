@@ -273,8 +273,8 @@ class AdminDashboardController extends Controller
                   ->orWhere('role', '');
             })
             ->whereDoesntHave('store')
-            ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
-            ->count();
+                ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
+                ->count();
             
             $previousOrders = Order::whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
                 ->count();
@@ -397,7 +397,7 @@ class AdminDashboardController extends Controller
                 $q->where('role', 'seller');
             })
             ->whereBetween('created_at', [$dateRange['previous_start'], $dateRange['previous_end']])
-            ->count();
+                ->count();
             
             // Include both 'delivered' and 'completed' as completed orders for previous period
             // Only count StoreOrders from stores owned by sellers

@@ -48,19 +48,19 @@ public function productDetails($productId)
         $product = Product::where('status', 'active')
             ->where('is_unavailable', false)
             ->with([
-                'store' => function ($q) {
-                    $q->withCount('followers')
-                      ->withSum('soldItems', 'qty');
-                },
-                'store.soldItems',
-                'store.socialLinks',
-                'store.categories',
-                'category',
-                'images',
-                'variations',
-                'reviews',
-                'boost', // include relation
-            ])->find($productId);
+            'store' => function ($q) {
+                $q->withCount('followers')
+                  ->withSum('soldItems', 'qty');
+            },
+            'store.soldItems',
+            'store.socialLinks',
+            'store.categories',
+            'category',
+            'images',
+            'variations',
+            'reviews',
+            'boost', // include relation
+        ])->find($productId);
 
         if (!$product) {
             return ResponseHelper::error('Product not found or not available', 404);
@@ -79,6 +79,13 @@ public function productDetails($productId)
         //get the quantity of product from variants which have stock
         $data['qty'] = $product->variations->where('stock', '>', 0)->sum('stock');
         $data['is_boosted'] = $product->isBoosted(); // ✅ boolean value
+
+        // Include tag information
+        $data['tags'] = [
+            'tag1' => $product->tag1,
+            'tag2' => $product->tag2,
+            'tag3' => $product->tag3,
+        ];
 
         return ResponseHelper::success($data);
     } catch (\Exception $e) {

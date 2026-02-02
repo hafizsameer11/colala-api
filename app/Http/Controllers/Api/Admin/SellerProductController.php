@@ -603,9 +603,9 @@ class SellerProductController extends Controller
             $data = $request->validated();
             $data['store_id'] = $store->id;
 
-            // Set status to draft by default when creating product
+            // Set status to active by default when creating product
             if (!isset($data['status'])) {
-                $data['status'] = 'draft';
+                $data['status'] = 'active';
             }
 
             return DB::transaction(function () use ($data) {

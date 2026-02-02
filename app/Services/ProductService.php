@@ -41,7 +41,7 @@ class ProductService
     }
     public function myproducts()
     {
-        
+
         $storeId = Store::where('user_id', Auth::user()->id)->pluck('id')->first();
         //if cannot find store id it can bbe the other user not the owner so lets check in the store user table
         if(!$storeId){
@@ -154,19 +154,19 @@ class ProductService
 
 
             $data['store_id'] = $store->id;
-            
-            // Set status to draft by default when seller creates product
+
+            // Set status to active by default when seller creates product
             if (!isset($data['status'])) {
-                $data['status'] = 'draft';
+                $data['status'] = 'active';
             }
 
             /** Create main product */
             // Handle quantity: if provided directly, use it; otherwise calculate from variants
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll set it after variant processing
-            
+
             $product = Product::create($data);
-            
+
             // Set initial quantity based on variants or use provided quantity
             $initialQuantity = $quantityFromRequest ?? 0;
               if (!empty($data['video']) && $data['video'] instanceof \Illuminate\Http\UploadedFile) {
@@ -201,7 +201,7 @@ class ProductService
                             'discount_price'  => $variantData['discount_price'] ?? null,
                             'stock'           => $variantData['stock'] ?? 0,
                         ]);
-                        
+
                         // Add to total quantity
                         $initialQuantity += $variantData['stock'] ?? 0;
 
@@ -245,7 +245,7 @@ class ProductService
                     }
                 }
             }
-            
+
             // Update product quantity
             $product->update(['quantity' => $initialQuantity]);
 
@@ -286,11 +286,11 @@ class ProductService
                 throw new Exception('Store not found');
             }
             $product = Product::where('store_id', $storeId)->findOrFail($id);
-            
+
             // Handle quantity: if provided directly, use it; otherwise recalculate from variants
             $quantityFromRequest = $data['quantity'] ?? null;
             unset($data['quantity']); // Remove from data as we'll handle it separately
-            
+
             $product->update($data);
 
             /** Replace or append new product images */
@@ -349,7 +349,7 @@ class ProductService
                     }
                 }
             }
-            
+
             // Update product quantity: use provided quantity or recalculate from variants
             if ($quantityFromRequest !== null) {
                 $product->update(['quantity' => $quantityFromRequest]);
@@ -392,13 +392,13 @@ class ProductService
         }
         if(!$storeId){
             throw new Exception('Store not found');
-        }        
+        }
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => true,
             'is_unavailable' => false, // Reset unavailable when marking as sold
         ]);
-        
+
         return $product->fresh();
     }
 
@@ -415,13 +415,13 @@ class ProductService
         if(!$storeId){
             throw new Exception('Store not found');
         }
-        
+
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_unavailable' => true,
             'is_sold' => false, // Reset sold when marking as unavailable
         ]);
-        
+
         return $product->fresh();
     }
 
@@ -437,13 +437,13 @@ class ProductService
             }
             if(!$storeId){
                 throw new Exception('Store not found');
-        }        
+        }
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update([
             'is_sold' => false, // Reset sold when marking as available
             'is_unavailable' => false, // Reset unavailable when marking as available
         ]);
-        
+
         return $product->fresh();
     }
 
@@ -458,10 +458,10 @@ class ProductService
         }
         if(!$storeId){
             throw new Exception('Store not found');
-        }        
+        }
         $product = Product::where('store_id', $storeId)->findOrFail($id);
         $product->update(['quantity' => $quantity]);
-        
+
         return $product->fresh();
     }
 
@@ -469,16 +469,16 @@ class ProductService
     {
         return DB::transaction(function () use ($productId, $videoFile) {
             $user = Auth::user();
-            
+
             // Find product and verify ownership
             $product = Product::findOrFail($productId);
             $store = Store::where('id', $product->store_id)->first();
-            
+
             // Verify user has access to this store (same logic as create method)
             if (!$store) {
                 throw new Exception('Store not found');
             }
-            
+
             // Check if user owns the store
             if ($store->user_id !== $user->id) {
                 // Check if user is a store user with access
@@ -486,7 +486,7 @@ class ProductService
                     ->where('store_id', $store->id)
                     ->where('is_active', true)
                     ->first();
-                
+
                 if (!$storeUser) {
                     throw new Exception('You do not have permission to update this product');
                 }
@@ -530,16 +530,16 @@ class ProductService
     {
         return DB::transaction(function () use ($productId) {
             $user = Auth::user();
-            
+
             // Find product and verify ownership
             $product = Product::findOrFail($productId);
             $store = Store::where('id', $product->store_id)->first();
-            
+
             // Verify user has access to this store (same logic as create method)
             if (!$store) {
                 throw new Exception('Store not found');
             }
-            
+
             // Check if user owns the store
             if ($store->user_id !== $user->id) {
                 // Check if user is a store user with access
@@ -547,7 +547,7 @@ class ProductService
                     ->where('store_id', $store->id)
                     ->where('is_active', true)
                     ->first();
-                
+
                 if (!$storeUser) {
                     throw new Exception('You do not have permission to update this product');
                 }

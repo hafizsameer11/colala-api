@@ -168,6 +168,11 @@ class AdminProductServiceController extends Controller
 
             $data = $request->all();
             $data['store_id'] = $request->store_id; // Admin can specify store_id
+            
+            // Set status to active by default when admin creates product
+            if (!isset($data['status'])) {
+                $data['status'] = 'active';
+            }
 
             $product = DB::transaction(function () use ($data, $request) {
                 // Create main product
@@ -181,6 +186,7 @@ class AdminProductServiceController extends Controller
                     'quantity' => $data['quantity'] ?? 0,
                     'referral_fee' => $data['referral_fee'] ?? null,
                     'referral_person_limit' => $data['referral_person_limit'] ?? null,
+                    'status' => $data['status'] ?? 'active',
                 ]);
 
                 // Handle video upload

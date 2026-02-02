@@ -48,7 +48,7 @@ class EscrowService
                     if (!empty($orderItemIds)) {
                         $escrowRecords = Escrow::where('order_id', $storeOrder->order_id)
                             ->whereIn('order_item_id', $orderItemIds)
-                            ->where('status', 'locked')
+                        ->where('status', 'locked')
                             ->get();
                     }
                 }
