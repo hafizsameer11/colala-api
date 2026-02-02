@@ -529,6 +529,7 @@ class BuyerOrderController extends Controller
     {
         try {
             // Use withoutGlobalScopes to include soft-deleted records and visibility=0 records
+            // For details endpoint, admins should be able to view any order by ID regardless of buyer status
             $storeOrder = StoreOrder::withoutGlobalScopes()
                 ->with([
                     'order' => function ($q) {
@@ -556,19 +557,6 @@ class BuyerOrderController extends Controller
                     'orderTracking',
                     'chat.messages'
                 ])
-                ->whereHas('order', function ($orderQuery) {
-                    $orderQuery->withoutGlobalScopes()
-                        ->withTrashed()
-                        ->whereHas('user', function ($userQuery) {
-                            $userQuery->withoutGlobalScopes()
-                                ->where(function ($q) {
-                                    $q->where('role', 'buyer')
-                                      ->orWhereNull('role')
-                                      ->orWhere('role', '');
-                                })
-                                ->whereDoesntHave('store'); // Exclude sellers
-                        });
-                })
                 ->findOrFail($storeOrderId);
             
             $orderDetails = [
