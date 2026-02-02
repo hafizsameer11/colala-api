@@ -528,39 +528,48 @@ class BuyerOrderController extends Controller
     public function orderDetails($storeOrderId)
     {
         try {
-            $storeOrder = StoreOrder::with([
-                'order.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'order.deliveryAddress',
-                'store' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'store.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.product' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.product.images',
-                'items.product.variants',
-                'items.product.reviews.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.variant',
-                'orderTracking',
-                'chat.messages'
-            ])->whereHas('order', function ($orderQuery) {
-                $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()
-                        ->where(function ($q) {
-                            $q->where('role', 'buyer')
-                              ->orWhereNull('role')
-                              ->orWhere('role', '');
-                        })
-                        ->whereDoesntHave('store'); // Exclude sellers
-                });
-            })->findOrFail($storeOrderId);
+            // Use withoutGlobalScopes to include soft-deleted records and visibility=0 records
+            $storeOrder = StoreOrder::withoutGlobalScopes()
+                ->with([
+                    'order' => function ($q) {
+                        $q->withoutGlobalScopes()->withTrashed();
+                    },
+                    'order.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'order.deliveryAddress',
+                    'store' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'store.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.product' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.product.images',
+                    'items.product.variants',
+                    'items.product.reviews.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.variant',
+                    'orderTracking',
+                    'chat.messages'
+                ])
+                ->whereHas('order', function ($orderQuery) {
+                    $orderQuery->withoutGlobalScopes()
+                        ->withTrashed()
+                        ->whereHas('user', function ($userQuery) {
+                            $userQuery->withoutGlobalScopes()
+                                ->where(function ($q) {
+                                    $q->where('role', 'buyer')
+                                      ->orWhereNull('role')
+                                      ->orWhere('role', '');
+                                })
+                                ->whereDoesntHave('store'); // Exclude sellers
+                        });
+                })
+                ->findOrFail($storeOrderId);
             
             $orderDetails = [
                 'id' => $storeOrder->id,
