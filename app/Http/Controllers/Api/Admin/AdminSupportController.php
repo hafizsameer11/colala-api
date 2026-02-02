@@ -29,7 +29,9 @@ class AdminSupportController extends Controller
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 switch ($request->status) {
+                    case 'open':
                     case 'pending':
+                        // Both 'open' and 'pending' filter query for 'pending' in database
                         $query->where('status', 'pending');
                         break;
                     case 'resolved':
@@ -142,12 +144,15 @@ class AdminSupportController extends Controller
                 'messages.sender'
             ])->findOrFail($ticketId);
 
+            // Map pending status to open for API response
+            $status = $ticket->status === 'pending' ? 'open' : $ticket->status;
+
             $ticketData = [
                 'ticket_info' => [
                     'id' => $ticket->id,
                     'subject' => $ticket->subject,
                     'description' => $ticket->description,
-                    'status' => $ticket->status,
+                    'status' => $status,
                     'category' => $ticket->category,
                     'created_at' => $ticket->created_at,
                     'updated_at' => $ticket->updated_at,
@@ -424,11 +429,14 @@ class AdminSupportController extends Controller
                 $profilePicture = asset('storage/' . $ticket->user->profile_picture);
             }
 
+            // Map pending status to open for API response
+            $status = $ticket->status === 'pending' ? 'open' : $ticket->status;
+
             return [
                 'id' => $ticket->id,
                 'subject' => $ticket->subject,
                 'description' => $ticket->description,
-                'status' => $ticket->status,
+                'status' => $status,
                 'category' => $ticket->category,
                 'user_name' => $ticket->user->full_name,
                 'user_email' => $ticket->user->email,

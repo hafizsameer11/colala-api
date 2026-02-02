@@ -90,7 +90,7 @@ class AdminTransactionManagementController extends Controller
             $pendingTransactionsQuery = Transaction::where('status', 'pending');
             $successfulTransactionsQuery = Transaction::where('status', 'successful');
             $failedTransactionsQuery = Transaction::where('status', 'failed');
-            
+
             // Account Officer sees only stats from assigned stores
             if (Auth::user()->role === 'account_officer') {
                 $accountOfficerId = Auth::id();
@@ -115,14 +115,14 @@ class AdminTransactionManagementController extends Controller
                     $q->where('role', 'seller');
                 });
             }
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalTransactionsQuery, $period);
                 $this->applyPeriodFilter($pendingTransactionsQuery, $period);
                 $this->applyPeriodFilter($successfulTransactionsQuery, $period);
                 $this->applyPeriodFilter($failedTransactionsQuery, $period);
             }
-            
+
             $stats = [
                 'total_transactions' => $totalTransactionsQuery->count(),
                 'pending_transactions' => $pendingTransactionsQuery->count(),
@@ -210,7 +210,7 @@ class AdminTransactionManagementController extends Controller
 
             $transaction = Transaction::findOrFail($transactionId);
             $oldStatus = $transaction->status;
-            
+
             $transaction->update([
                 'status' => $request->status,
             ]);
@@ -246,11 +246,11 @@ class AdminTransactionManagementController extends Controller
                 case 'update_status':
                     Transaction::whereIn('id', $transactionIds)->update(['status' => $request->status]);
                     return ResponseHelper::success(null, "Transactions status updated to {$request->status}");
-                
+
                 case 'mark_successful':
                     Transaction::whereIn('id', $transactionIds)->update(['status' => 'successful']);
                     return ResponseHelper::success(null, 'Transactions marked as successful');
-                
+
                 case 'mark_failed':
                     Transaction::whereIn('id', $transactionIds)->update(['status' => 'failed']);
                     return ResponseHelper::success(null, 'Transactions marked as failed');
@@ -271,13 +271,13 @@ class AdminTransactionManagementController extends Controller
             if ($period && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
-            
+
             $totalTransactionsQuery = Transaction::query();
             $pendingTransactionsQuery = Transaction::where('status', 'pending');
             $successfulTransactionsQuery = Transaction::where('status', 'successful');
             $failedTransactionsQuery = Transaction::where('status', 'failed');
             $cancelledTransactionsQuery = Transaction::where('status', 'cancelled');
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalTransactionsQuery, $period);
                 $this->applyPeriodFilter($pendingTransactionsQuery, $period);
@@ -285,7 +285,7 @@ class AdminTransactionManagementController extends Controller
                 $this->applyPeriodFilter($failedTransactionsQuery, $period);
                 $this->applyPeriodFilter($cancelledTransactionsQuery, $period);
             }
-            
+
             $stats = [
                 'total_transactions' => $totalTransactionsQuery->count(),
                 'pending_transactions' => $pendingTransactionsQuery->count(),
@@ -334,9 +334,9 @@ class AdminTransactionManagementController extends Controller
             if ($period && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
-            
+
             $dateRange = $this->getDateRange($period);
-            
+
             // Use period if provided, otherwise fall back to date_from/date_to
             if ($dateRange) {
                 $dateFrom = $dateRange['start']->format('Y-m-d');
