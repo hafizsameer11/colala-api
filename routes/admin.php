@@ -484,6 +484,8 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/stores', [AdminStoreKYCController::class, 'getAllStores']);
     // Get detailed store information with all levels (Level 1, 2, 3 data)
     Route::get('/stores/{storeId}/details', [AdminStoreKYCController::class, 'getStoreDetails']);
+    // Hard delete a store and its major related data (orders, products, services, chats, etc.)
+    Route::delete('/stores/{storeId}/hard-delete', [AdminStoreKYCController::class, 'hardDeleteStore']);
     // Update store KYC status (pending, approved, rejected) and send notification
     Route::put('/stores/{storeId}/kyc-status', [AdminStoreKYCController::class, 'updateStoreStatus']);
     // Update store onboarding level (1, 2, 3) and send notification

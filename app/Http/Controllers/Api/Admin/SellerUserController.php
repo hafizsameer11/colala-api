@@ -136,6 +136,7 @@ class SellerUserController extends Controller
                     'phone' => $user->phone,
                     'full_name' => $user->full_name,
                     'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
+                    'store_visibility' => $primaryStore ? $primaryStore->visibility : null,
                     'is_active' => $user->is_active,
                     'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null,
                     'store_count' => $user->store ? 1 : 0,
@@ -304,7 +305,8 @@ class SellerUserController extends Controller
                         'phone' => $user->phone,
                         'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
                         'is_active' => $user->is_active,
-                        'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null
+                        'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null,
+                        'store_visibility' => $primaryStore ? $primaryStore->visibility : null,
                     ];
                 });
 

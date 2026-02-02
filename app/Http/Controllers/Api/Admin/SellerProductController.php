@@ -227,7 +227,6 @@ class SellerProductController extends Controller
                 'productStats as orders' => fn($q) => $q->where('event_type', 'order'),
                 'productStats as chats' => fn($q) => $q->where('event_type', 'chat'),
             ])
-            ->where('store_id', $store->id)
             ->findOrFail($productId);
 
             $productDetails = [

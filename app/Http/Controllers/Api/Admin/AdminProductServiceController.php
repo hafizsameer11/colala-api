@@ -134,7 +134,7 @@ class AdminProductServiceController extends Controller
         }
     }
 
-   
+
     public function createProduct(Request $request)
     {
         try {
@@ -168,7 +168,7 @@ class AdminProductServiceController extends Controller
 
             $data = $request->all();
             $data['store_id'] = $request->store_id; // Admin can specify store_id
-            
+
             // Set status to active by default when admin creates product
             if (!isset($data['status'])) {
                 $data['status'] = 'active';
@@ -309,7 +309,7 @@ class AdminProductServiceController extends Controller
                     foreach ($request->file('media') as $file) {
                         $path = $file->store('services', 'public');
                         $type = str_contains($file->getClientMimeType(), 'video') ? 'video' : 'image';
-                        
+
                         ServiceMedia::create([
                             'service_id' => $service->id,
                             'type' => $type,
