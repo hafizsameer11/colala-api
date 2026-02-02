@@ -51,14 +51,12 @@ class AdminNotificationController extends Controller
 
             // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
             // Check if export is requested
             if ($request->has('export') && $request->export == 'true') {

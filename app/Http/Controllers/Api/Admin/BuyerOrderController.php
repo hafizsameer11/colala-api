@@ -69,29 +69,16 @@ class BuyerOrderController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // Validate and apply period parameter
+            // Validate period parameter
             $period = $request->get('period');
-            if ($period && $period !== 'all_time' && $period !== 'null') {
-                if (!$this->isValidPeriod($period)) {
-                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
-                }
-                // Apply period filter to the main query
-                $dateRange = $this->getDateRange($period);
-                if ($dateRange) {
-                    $tableName = (new StoreOrder())->getTable();
-                    $query->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
-                }
-            } elseif ($request->has('date') && $request->date !== 'all') {
-                // Legacy support for date parameter
-                $tableName = (new StoreOrder())->getTable();
-                if ($request->date === 'today') {
-                    $query->whereDate($tableName . '.created_at', today());
-                } elseif ($request->date === 'week') {
-                    $query->whereBetween($tableName . '.created_at', [now()->subWeek(), now()]);
-                } elseif ($request->date === 'month') {
-                    $query->whereMonth($tableName . '.created_at', now()->month);
-                }
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
+
+            // Apply date filter (period > date_from/date_to > date_range)
+            // For StoreOrder, we need to use the table name
+            $tableName = (new StoreOrder())->getTable();
+            $this->applyDateFilter($query, $request, $tableName . '.created_at');
 
             // Search filter
             if ($request->has('search') && $request->search) {

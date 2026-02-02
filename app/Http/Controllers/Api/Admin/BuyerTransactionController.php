@@ -36,24 +36,14 @@ class BuyerTransactionController extends Controller
                 $query->where('type', $request->type);
             }
 
-            // Period filter (priority over date for backward compatibility)
+            // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
-            
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date') && $request->date !== 'all') {
-                // Legacy support for date parameter
-                if ($request->date === 'today') {
-                    $query->whereDate('created_at', today());
-                } elseif ($request->date === 'week') {
-                    $query->whereBetween('created_at', [now()->subWeek(), now()]);
-                } elseif ($request->date === 'month') {
-                    $query->whereMonth('created_at', now()->month);
-                }
-            }
+
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
             // Search filter
             if ($request->has('search') && $request->search) {

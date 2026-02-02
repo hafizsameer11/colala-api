@@ -50,10 +50,8 @@ class AdminReferralController extends Controller
                 ->with(['wallet'])
                 ->select('id', 'full_name', 'email', 'user_code', 'referral_code', 'role', 'created_at');
             
-            // Apply period filter
-            if ($period) {
-                $this->applyPeriodFilter($referrersQuery, $period);
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($referrersQuery, $request);
             
             // Check if export is requested
             if ($request->has('export') && $request->export == 'true') {
