@@ -648,7 +648,7 @@ Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     Route::get('/all-users/{userId}/details', [AdminAllUsersController::class, 'getUserDetails']);
     // Get user saved addresses
     Route::get('/all-users/{userId}/addresses', [AdminAllUsersController::class, 'getUserAddresses']);
-    // Update user status (active, inactive)
+    // Update user status (active, inactive) and disabled flag
     Route::put('/all-users/{userId}/status', [AdminAllUsersController::class, 'updateUserStatus']);
     // Get user analytics and trends
     Route::get('/all-users/analytics', [AdminAllUsersController::class, 'getUserAnalytics']);

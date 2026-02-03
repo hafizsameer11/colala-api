@@ -112,6 +112,7 @@ class AdminAllUsersController extends Controller
                     'state' => $user->state,
                     'role' => $user->role,
                     'status' => $user->status,
+                    'is_disabled' => (bool) $user->is_disabled,
                     'profile_picture' => $user->profile_picture,
                     'user_code' => $user->user_code,
                     'created_at' => $user->created_at,
@@ -239,17 +240,25 @@ class AdminAllUsersController extends Controller
         try {
             $request->validate([
                 'status' => 'required|in:active,inactive',
+                'is_disabled' => 'nullable|boolean',
             ]);
 
             $user = User::findOrFail($userId);
 
-            $user->update([
+            $update = [
                 'status' => $request->status,
-            ]);
+            ];
+
+            if ($request->has('is_disabled')) {
+                $update['is_disabled'] = (bool) $request->is_disabled;
+            }
+
+            $user->update($update);
 
             return ResponseHelper::success([
                 'user_id' => $user->id,
                 'status' => $user->status,
+                'is_disabled' => (bool) $user->is_disabled,
                 'updated_at' => $user->updated_at,
             ], 'User status updated successfully');
         } catch (Exception $e) {
@@ -363,6 +372,7 @@ class AdminAllUsersController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'is_disabled' => (bool) $user->is_disabled,
                 'profile_picture' => $user->profile_picture,
                 'shopping_balance' => $user->wallet ? $user->wallet->shopping_balance : 0,
                 'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,

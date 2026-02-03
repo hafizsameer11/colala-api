@@ -61,6 +61,11 @@ class AdminUserController extends Controller
                 $query->where('is_active', $request->status === 'active');
             }
 
+            // Optional disabled filter
+            if ($request->has('is_disabled')) {
+                $query->where('is_disabled', filter_var($request->is_disabled, FILTER_VALIDATE_BOOLEAN));
+            }
+
             // Check if export is requested
             if ($request->has('export') && $request->export == 'true') {
                 $users = $query->latest()->get();
@@ -73,6 +78,7 @@ class AdminUserController extends Controller
                         'profile_picture' => $user->profile_picture,
                         'role' => $user->role,
                         'is_active' => $user->is_active,
+                        'is_disabled' => (bool) $user->is_disabled,
                         'wallet_balance' => $user->wallet ? number_format($user->wallet->shopping_balance + $user->wallet->reward_balance, 2) : '0.00',
                         'created_at' => $user->created_at->format('d-m-Y H:i:s')
                     ];
@@ -91,6 +97,7 @@ class AdminUserController extends Controller
                     'profile_picture' => $user->profile_picture,
                     'role' => $user->role,
                     'is_active' => $user->is_active,
+                    'is_disabled' => (bool) $user->is_disabled,
                     'wallet_balance' => $user->wallet ? number_format($user->wallet->shopping_balance + $user->wallet->reward_balance, 2) : '0.00',
                     'created_at' => $user->created_at->format('d-m-Y H:i:s')
                 ];
