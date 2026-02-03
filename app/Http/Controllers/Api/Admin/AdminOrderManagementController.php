@@ -45,7 +45,8 @@ class AdminOrderManagementController extends Controller
                 'items.product',
                 'items.variant',
                 'orderTracking',
-                'deliveryPricing'
+                'deliveryPricing',
+                'chat', // Needed for seller chat button on orders management
             ]);
 
             // Filter to only buyer orders (users with role='buyer' and no store)
@@ -667,6 +668,10 @@ class AdminOrderManagementController extends Controller
                 'store_name' => $order->store ? $order->store->store_name : null,
                 'seller_name' => $order->store ? $order->store->store_name : null,
                 'customer_name' => $parentOrder && $parentOrder->user ? $parentOrder->user->full_name : 'Unknown Customer',
+                // For frontend chat integration on seller orders page
+                'chat_id' => $order->chat ? $order->chat->id : null,
+                // Buyer/user id aliases so frontend normalizer can find a user id
+                'buyer_id' => $parentOrder ? $parentOrder->user_id : null,
                 'status' => $status,
                 'items_count' => $order->items ? $order->items->count() : 0,
                 'total_amount' => $order->subtotal_with_shipping,
