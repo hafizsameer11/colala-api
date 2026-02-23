@@ -45,7 +45,8 @@ class AdminOrderManagementController extends Controller
                 'items.product',
                 'items.variant',
                 'orderTracking',
-                'deliveryPricing'
+                'deliveryPricing',
+                'chat', // Needed for seller chat button on orders management
             ]);
 
             // Filter to only buyer orders (users with role='buyer' and no store)
@@ -75,35 +76,42 @@ class AdminOrderManagementController extends Controller
 
             // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter (priority over date_range for backward compatibility)
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date_range')) {
-                // Legacy support for date_range parameter
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('created_at', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-                        break;
-                }
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
+            // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
-                $query->whereHas('order', function ($q) use ($search) {
-                    $q->where('order_no', 'like', "%{$search}%");
-                })->orWhereHas('store', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->whereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->withoutGlobalScopes()
+                                     ->where('full_name', 'like', "%{$search}%")
+                                     ->orWhere('email', 'like', "%{$search}%");
+                        });
+                    })
+                    ->orWhereHas('store', function ($storeQuery) use ($search) {
+                        $storeQuery->withoutGlobalScopes()
+                                   ->where('store_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->withoutGlobalScopes()
+                                     ->where('name', 'like', "%{$search}%");
+                    });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $orders = $query->latest()->get();
+                return ResponseHelper::success($orders, 'Orders exported successfully');
             }
 
             $orders = $query->latest()->paginate($request->get('per_page', 20));
@@ -660,6 +668,10 @@ class AdminOrderManagementController extends Controller
                 'store_name' => $order->store ? $order->store->store_name : null,
                 'seller_name' => $order->store ? $order->store->store_name : null,
                 'customer_name' => $parentOrder && $parentOrder->user ? $parentOrder->user->full_name : 'Unknown Customer',
+                // For frontend chat integration on seller orders page
+                'chat_id' => $order->chat ? $order->chat->id : null,
+                // Buyer/user id aliases so frontend normalizer can find a user id
+                'buyer_id' => $parentOrder ? $parentOrder->user_id : null,
                 'status' => $status,
                 'items_count' => $order->items ? $order->items->count() : 0,
                 'total_amount' => $order->subtotal_with_shipping,

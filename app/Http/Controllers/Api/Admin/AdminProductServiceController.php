@@ -49,6 +49,12 @@ class AdminProductServiceController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $stores = $query->latest()->get();
+                return ResponseHelper::success($stores, 'Stores exported successfully');
+            }
+
             $stores = $query->latest()->paginate($request->get('per_page', 20));
 
             $stores->getCollection()->transform(function ($store) {
@@ -134,7 +140,7 @@ class AdminProductServiceController extends Controller
         }
     }
 
-   
+
     public function createProduct(Request $request)
     {
         try {
@@ -169,6 +175,11 @@ class AdminProductServiceController extends Controller
             $data = $request->all();
             $data['store_id'] = $request->store_id; // Admin can specify store_id
 
+            // Set status to active by default when admin creates product
+            if (!isset($data['status'])) {
+                $data['status'] = 'active';
+            }
+
             $product = DB::transaction(function () use ($data, $request) {
                 // Create main product
                 $product = Product::create([
@@ -181,6 +192,7 @@ class AdminProductServiceController extends Controller
                     'quantity' => $data['quantity'] ?? 0,
                     'referral_fee' => $data['referral_fee'] ?? null,
                     'referral_person_limit' => $data['referral_person_limit'] ?? null,
+                    'status' => $data['status'] ?? 'active',
                 ]);
 
                 // Handle video upload
@@ -303,7 +315,7 @@ class AdminProductServiceController extends Controller
                     foreach ($request->file('media') as $file) {
                         $path = $file->store('services', 'public');
                         $type = str_contains($file->getClientMimeType(), 'video') ? 'video' : 'image';
-                        
+
                         ServiceMedia::create([
                             'service_id' => $service->id,
                             'type' => $type,

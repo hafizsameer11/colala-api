@@ -38,6 +38,15 @@ class SellerCouponLoyaltyController extends Controller
                 return ResponseHelper::error('Store not found for this seller', 404);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $coupons = Coupon::where('store_id', $store->id)
+                    ->with('store')
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success(CouponResource::collection($coupons), 'Coupons exported successfully');
+            }
+
             $coupons = Coupon::where('store_id', $store->id)
                 ->with('store')
                 ->latest()

@@ -35,23 +35,8 @@ class AdminBalanceController extends Controller
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter (priority over date_range for backward compatibility)
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date_range')) {
-                // Legacy support for date_range parameter
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('created_at', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-                        break;
-                }
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -60,6 +45,12 @@ class AdminBalanceController extends Controller
                       ->orWhere('email', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%");
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($users, 'User balances exported successfully');
             }
 
             $users = $query->latest()->paginate($request->get('per_page', 20));

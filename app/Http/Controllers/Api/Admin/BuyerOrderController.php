@@ -69,29 +69,16 @@ class BuyerOrderController extends Controller
                 $query->where('status', $request->status);
             }
 
-            // Validate and apply period parameter
+            // Validate period parameter
             $period = $request->get('period');
-            if ($period && $period !== 'all_time' && $period !== 'null') {
-                if (!$this->isValidPeriod($period)) {
-                    return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
-                }
-                // Apply period filter to the main query
-                $dateRange = $this->getDateRange($period);
-                if ($dateRange) {
-                    $tableName = (new StoreOrder())->getTable();
-                    $query->whereBetween($tableName . '.created_at', [$dateRange['start'], $dateRange['end']]);
-                }
-            } elseif ($request->has('date') && $request->date !== 'all') {
-                // Legacy support for date parameter
-                $tableName = (new StoreOrder())->getTable();
-                if ($request->date === 'today') {
-                    $query->whereDate($tableName . '.created_at', today());
-                } elseif ($request->date === 'week') {
-                    $query->whereBetween($tableName . '.created_at', [now()->subWeek(), now()]);
-                } elseif ($request->date === 'month') {
-                    $query->whereMonth($tableName . '.created_at', now()->month);
-                }
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
+                return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
+
+            // Apply date filter (period > date_from/date_to > date_range)
+            // For StoreOrder, we need to use the table name
+            $tableName = (new StoreOrder())->getTable();
+            $this->applyDateFilter($query, $request, $tableName . '.created_at');
 
             // Search filter
             if ($request->has('search') && $request->search) {
@@ -116,6 +103,12 @@ class BuyerOrderController extends Controller
                                      ->where('name', 'like', "%{$search}%");
                     });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $storeOrders = $query->latest()->get();
+                return ResponseHelper::success($storeOrders, 'Buyer orders exported successfully');
             }
 
             $storeOrders = $query->latest()->paginate(15);
@@ -350,6 +343,25 @@ class BuyerOrderController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $orders = $query->latest()->get()->map(function ($order) {
+                    $storeOrder = $order->storeOrders->first();
+                    return [
+                        'id' => $order->id,
+                        'order_no' => $order->order_no,
+                        'store_name' => $storeOrder ? $storeOrder->store->store_name : 'Unknown Store',
+                        'buyer_name' => $order->user->full_name ?? 'Unknown Buyer',
+                        'product_name' => $storeOrder && $storeOrder->items->first() ? $storeOrder->items->first()->product->name : 'Unknown Product',
+                        'price' => number_format($order->grand_total, 2),
+                        'order_date' => $order->created_at->format('d-m-Y/H:iA'),
+                        'status' => $storeOrder ? $storeOrder->status : 'unknown',
+                        'status_color' => $this->getStatusColor($storeOrder ? $storeOrder->status : 'unknown')
+                    ];
+                });
+                return ResponseHelper::success($orders, 'Filtered buyer orders exported successfully');
+            }
+
             $orders = $query->latest()->get()->map(function ($order) {
                 $storeOrder = $order->storeOrders->first();
                 return [
@@ -528,39 +540,36 @@ class BuyerOrderController extends Controller
     public function orderDetails($storeOrderId)
     {
         try {
-            $storeOrder = StoreOrder::with([
-                'order.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'order.deliveryAddress',
-                'store' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'store.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.product' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.product.images',
-                'items.product.variants',
-                'items.product.reviews.user' => function ($q) {
-                    $q->withoutGlobalScopes();
-                },
-                'items.variant',
-                'orderTracking',
-                'chat.messages'
-            ])->whereHas('order', function ($orderQuery) {
-                $orderQuery->whereHas('user', function ($userQuery) {
-                    $userQuery->withoutGlobalScopes()
-                        ->where(function ($q) {
-                            $q->where('role', 'buyer')
-                              ->orWhereNull('role')
-                              ->orWhere('role', '');
-                        })
-                        ->whereDoesntHave('store'); // Exclude sellers
-                });
-            })->findOrFail($storeOrderId);
+            // Use withoutGlobalScopes to include soft-deleted records and visibility=0 records
+            // For details endpoint, admins should be able to view any order by ID regardless of buyer status
+            $storeOrder = StoreOrder::withoutGlobalScopes()
+                ->with([
+                    'order' => function ($q) {
+                        $q->withoutGlobalScopes()->withTrashed();
+                    },
+                    'order.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'order.deliveryAddress',
+                    'store' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'store.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.product' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.product.images',
+                    'items.product.variants',
+                    'items.product.reviews.user' => function ($q) {
+                        $q->withoutGlobalScopes();
+                    },
+                    'items.variant',
+                    'orderTracking',
+                    'chat.messages'
+                ])
+                ->findOrFail($storeOrderId);
             
             $orderDetails = [
                 'id' => $storeOrder->id,

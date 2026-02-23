@@ -197,6 +197,29 @@ class SellerDetailsController extends Controller
                 $query->where('status', $request->status);
             }
 
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('order', function ($orderQuery) use ($search) {
+                        $orderQuery->where('order_no', 'like', "%{$search}%")
+                            ->orWhereHas('user', function ($userQuery) use ($search) {
+                                $userQuery->where('full_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                            });
+                    })
+                    ->orWhereHas('items.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+                });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $orders = $query->latest()->get();
+                return ResponseHelper::success($orders, 'Seller orders exported successfully');
+            }
+
             $orders = $query->latest()->paginate(15);
 
             $orders->getCollection()->transform(function ($storeOrder) {
@@ -306,6 +329,12 @@ class SellerDetailsController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $chats = $query->latest()->get();
+                return ResponseHelper::success($chats, 'Seller chats exported successfully');
+            }
+
             $chats = $query->latest()->paginate(15);
 
             // Build chat statistics for cards
@@ -400,6 +429,12 @@ class SellerDetailsController extends Controller
                 $query->where('status', $request->status);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                return ResponseHelper::success($transactions, 'Seller transactions exported successfully');
+            }
+
             $transactions = $query->latest()->paginate(15);
 
             $transactions->getCollection()->transform(function ($transaction) {
@@ -445,6 +480,12 @@ class SellerDetailsController extends Controller
             }
             if ($request->has('date_to') && $request->date_to) {
                 $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $posts = $query->latest()->get();
+                return ResponseHelper::success($posts, 'Seller posts exported successfully');
             }
 
             $posts = $query->latest()->paginate(15);
@@ -508,6 +549,22 @@ class SellerDetailsController extends Controller
                 $query->where('category_id', $request->category_id);
             }
 
+            // Search filter
+            if ($request->has('search') && $request->search) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('brand', 'like', "%{$search}%");
+                });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $products = $query->latest()->get();
+                return ResponseHelper::success($products, 'Seller products exported successfully');
+            }
+
             $products = $query->latest()->paginate(15);
 
             $products->getCollection()->transform(function ($product) {
@@ -567,6 +624,12 @@ class SellerDetailsController extends Controller
                 $query->whereDate('created_at', '<=', $request->date_to);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $announcements = $query->latest()->get();
+                return ResponseHelper::success($announcements, 'Seller announcements exported successfully');
+            }
+
             $announcements = $query->latest()->paginate(15);
 
             $announcements->getCollection()->transform(function ($announcement) {
@@ -602,6 +665,12 @@ class SellerDetailsController extends Controller
             }
             if ($request->has('date_to') && $request->date_to) {
                 $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $activities = $query->latest()->get();
+                return ResponseHelper::success($activities, 'Seller activities exported successfully');
             }
 
             $activities = $query->latest()->paginate(15);

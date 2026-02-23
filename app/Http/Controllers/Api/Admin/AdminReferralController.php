@@ -50,11 +50,15 @@ class AdminReferralController extends Controller
                 ->with(['wallet'])
                 ->select('id', 'full_name', 'email', 'user_code', 'referral_code', 'role', 'created_at');
             
-            // Apply period filter
-            if ($period) {
-                $this->applyPeriodFilter($referrersQuery, $period);
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($referrersQuery, $request);
             
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $referrers = $referrersQuery->get();
+                return ResponseHelper::success($referrers, 'Referrers exported successfully');
+            }
+
             $referrers = $referrersQuery->paginate($request->get('per_page', 20));
 
             // Calculate amount earned for each referrer from wallet
@@ -127,6 +131,14 @@ class AdminReferralController extends Controller
         try {
             $referrer = User::findOrFail($userId);
             
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $referredUsers = User::where('referral_code', $referrer->user_code)
+                    ->select('id', 'full_name', 'email', 'user_code', 'role', 'created_at')
+                    ->get();
+                return ResponseHelper::success($referredUsers, 'Referred users exported successfully');
+            }
+
             $referredUsers = User::where('referral_code', $referrer->user_code)
                 ->select('id', 'full_name', 'email', 'user_code', 'role', 'created_at')
                 ->paginate($request->get('per_page', 20));

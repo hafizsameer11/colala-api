@@ -42,6 +42,15 @@ class SellerAnnouncementBannerController extends Controller
                 return ResponseHelper::error('Store not found for this seller', 404);
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $announcements = Announcement::where('store_id', $store->id)
+                    ->with('store')
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success(AnnouncementResource::collection($announcements), 'Announcements exported successfully');
+            }
+
             $announcements = Announcement::where('store_id', $store->id)
                 ->with('store')
                 ->latest()
@@ -72,6 +81,15 @@ class SellerAnnouncementBannerController extends Controller
             
             if (!$store) {
                 return ResponseHelper::error('Store not found for this seller', 404);
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $banners = Banner::where('store_id', $store->id)
+                    ->with('store')
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success(BannerResource::collection($banners), 'Banners exported successfully');
             }
 
             $banners = Banner::where('store_id', $store->id)

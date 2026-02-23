@@ -114,6 +114,12 @@ class SellerProductController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $products = $query->latest()->get();
+                return ResponseHelper::success($products, 'Seller products exported successfully');
+            }
+
             $products = $query->latest()->paginate(20);
 
             // Get summary statistics
@@ -602,9 +608,9 @@ class SellerProductController extends Controller
             $data = $request->validated();
             $data['store_id'] = $store->id;
 
-            // Set status to draft by default when creating product
+            // Set status to active by default when creating product
             if (!isset($data['status'])) {
-                $data['status'] = 'draft';
+                $data['status'] = 'active';
             }
 
             return DB::transaction(function () use ($data) {

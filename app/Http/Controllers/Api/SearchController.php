@@ -22,11 +22,11 @@ class SearchController extends Controller
 
         $type = $request->input('type');
         $q    = $request->input('q', '');
-        
+
         // Get authenticated user
         $user = Auth::user();
         $isSeller = $user && $user->role === 'seller';
-        
+
         // Get store IDs for seller
         $storeIds = [];
         if ($isSeller) {
@@ -34,25 +34,25 @@ class SearchController extends Controller
             if ($user->store) {
                 $storeIds[] = $user->store->id;
             }
-            
+
             // Get stores user has access to via StoreUser
             $storeUserStores = StoreUser::where('user_id', $user->id)
                 ->where('is_active', true)
                 ->pluck('store_id')
                 ->toArray();
-            
+
             $storeIds = array_unique(array_merge($storeIds, $storeUserStores));
         }
 
         switch ($type) {
             case 'product':
                 $query = Product::with(['store', 'category:id,title','images']);
-                
+
                 // If seller, filter by their store(s)
                 if ($isSeller && !empty($storeIds)) {
                     $query->whereIn('store_id', $storeIds);
                 }
-                
+
                 // Apply search query
                 $query->when($q, fn($qBuilder) =>
                     $qBuilder->where('name', 'LIKE', "%$q%")

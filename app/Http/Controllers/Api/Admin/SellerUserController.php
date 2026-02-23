@@ -69,16 +69,23 @@ class SellerUserController extends Controller
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($users, 'Seller users exported successfully');
             }
 
             $users = $query->latest()->paginate(15);
 
             // Get summary stats (only for sellers with stores) with period filtering
             $totalStoresQuery = User::where('role', 'seller')->whereHas('store');
-            $activeStoresQuery = User::where('role', 'seller')->whereHas('store')->where('is_active', true);
+            $activeStoresQuery = User::where('role', 'seller')
+                ->whereHas('store')
+                ->where('is_active', true)
+                ->where('is_disabled', false);
             $newStoresQuery = User::where('role', 'seller')->whereHas('store');
             
             // Account Officer sees only stats from assigned stores
@@ -138,6 +145,7 @@ class SellerUserController extends Controller
                     'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
                     'store_visibility' => $primaryStore ? $primaryStore->visibility : null,
                     'is_active' => $user->is_active,
+                    'is_disabled' => (bool) $user->is_disabled,
                     'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null,
                     'store_count' => $user->store ? 1 : 0,
                     'total_orders' => $this->getUserOrderCount($user->id),
@@ -199,7 +207,10 @@ class SellerUserController extends Controller
             }
             
             $totalStoresQuery = User::where('role', 'seller')->whereHas('store');
-            $activeStoresQuery = User::where('role', 'seller')->whereHas('store')->where('is_active', true);
+            $activeStoresQuery = User::where('role', 'seller')
+                ->whereHas('store')
+                ->where('is_active', true)
+                ->where('is_disabled', false);
             $newStoresQuery = User::where('role', 'seller')->whereHas('store');
             
             if ($period) {
@@ -235,6 +246,7 @@ class SellerUserController extends Controller
                 $previousActiveStores = User::where('role', 'seller')
                     ->whereHas('store')
                     ->where('is_active', true)
+                    ->where('is_disabled', false)
                     ->where('created_at', '<=', $dateRange['previous_end'])
                     ->count();
                 $previousNewStores = User::where('role', 'seller')
@@ -305,6 +317,7 @@ class SellerUserController extends Controller
                         'phone' => $user->phone,
                         'level' => $primaryStore ? $primaryStore->onboarding_level : 1,
                         'is_active' => $user->is_active,
+                        'is_disabled' => (bool) $user->is_disabled,
                         'profile_picture' => $primaryStore && $primaryStore->profile_image ? asset('storage/' . $primaryStore->profile_image) : null,
                         'store_visibility' => $primaryStore ? $primaryStore->visibility : null,
                     ];
@@ -332,7 +345,7 @@ class SellerUserController extends Controller
             $action = $request->action;
 
             if ($action === 'activate') {
-                User::where('role', 'seller')->whereIn('id', $userIds)->update(['is_active' => true]);
+                User::where('role', 'seller')->whereIn('id', $userIds)->update(['is_active' => true, 'is_disabled' => false]);
                 $message = "Sellers activated successfully";
             } elseif ($action === 'deactivate') {
                 User::where('role', 'seller')->whereIn('id', $userIds)->update(['is_active' => false]);
@@ -382,6 +395,7 @@ class SellerUserController extends Controller
                     'phone' => $user->phone,
                     'level' => $user->level ?? 1,
                     'is_active' => $user->is_active,
+                    'is_disabled' => (bool) $user->is_disabled,
                     'profile_picture' => $user->profile_picture ? asset('storage/' . $user->profile_picture) : null,
                     'user_code' => $user->user_code,
                     'created_at' => $user->created_at->format('d-m-Y H:i:s'),
@@ -437,6 +451,15 @@ class SellerUserController extends Controller
     {
         try {
             $user = User::where('role', 'seller')->findOrFail($id);
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = Transaction::where('user_id', $id)
+                    ->with(['order'])
+                    ->latest()
+                    ->get();
+                return ResponseHelper::success($transactions, 'Seller transactions exported successfully');
+            }
 
             $transactions = Transaction::where('user_id', $id)
                 ->with(['order'])

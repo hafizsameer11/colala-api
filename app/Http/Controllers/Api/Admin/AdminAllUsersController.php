@@ -38,7 +38,7 @@ class AdminAllUsersController extends Controller
 
             // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
@@ -47,23 +47,8 @@ class AdminAllUsersController extends Controller
                 $query->where('role', $request->user_type);
             }
 
-            // Apply period filter (priority over date_range for backward compatibility)
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date_range')) {
-                // Legacy support for date_range parameter
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('created_at', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-                        break;
-                }
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -72,6 +57,12 @@ class AdminAllUsersController extends Controller
                       ->orWhere('email', 'like', "%{$search}%")
                       ->orWhere('phone', 'like', "%{$search}%");
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $users = $query->latest()->get();
+                return ResponseHelper::success($this->formatUsersData($users), 'Users exported successfully');
             }
 
             $users = $query->latest()->paginate($request->get('per_page', 20));
@@ -121,6 +112,7 @@ class AdminAllUsersController extends Controller
                     'state' => $user->state,
                     'role' => $user->role,
                     'status' => $user->status,
+                    'is_disabled' => (bool) $user->is_disabled,
                     'profile_picture' => $user->profile_picture,
                     'user_code' => $user->user_code,
                     'created_at' => $user->created_at,
@@ -248,17 +240,25 @@ class AdminAllUsersController extends Controller
         try {
             $request->validate([
                 'status' => 'required|in:active,inactive',
+                'is_disabled' => 'nullable|boolean',
             ]);
 
             $user = User::findOrFail($userId);
 
-            $user->update([
+            $update = [
                 'status' => $request->status,
-            ]);
+            ];
+
+            if ($request->has('is_disabled')) {
+                $update['is_disabled'] = (bool) $request->is_disabled;
+            }
+
+            $user->update($update);
 
             return ResponseHelper::success([
                 'user_id' => $user->id,
                 'status' => $user->status,
+                'is_disabled' => (bool) $user->is_disabled,
                 'updated_at' => $user->updated_at,
             ], 'User status updated successfully');
         } catch (Exception $e) {
@@ -372,6 +372,7 @@ class AdminAllUsersController extends Controller
                 'phone' => $user->phone,
                 'role' => $user->role,
                 'status' => $user->status,
+                'is_disabled' => (bool) $user->is_disabled,
                 'profile_picture' => $user->profile_picture,
                 'shopping_balance' => $user->wallet ? $user->wallet->shopping_balance : 0,
                 'reward_balance' => $user->wallet ? $user->wallet->reward_balance : 0,

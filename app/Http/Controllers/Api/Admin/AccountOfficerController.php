@@ -78,6 +78,12 @@ class AccountOfficerController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $stores = $query->latest()->get();
+                return ResponseHelper::success($stores, 'Stores exported successfully');
+            }
+
             $stores = $query->latest()->paginate($perPage);
 
             $formattedStores = $stores->map(function($store) {
@@ -227,6 +233,12 @@ class AccountOfficerController extends Controller
                 if ($dateFilter) {
                     $query->whereBetween('created_at', $dateFilter);
                 }
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $stores = $query->latest()->get();
+                return ResponseHelper::success($stores, 'Stores exported successfully');
             }
 
             $stores = $query->latest()->paginate($perPage);

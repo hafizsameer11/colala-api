@@ -46,6 +46,12 @@ class AdminSellerHelpRequestController extends Controller
             }
 
             $perPage = (int) $request->get('per_page', 20);
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $requests = $query->get();
+                return ResponseHelper::success($requests, 'Seller help requests exported successfully');
+            }
+
             $requests = $query->paginate($perPage);
 
             return ResponseHelper::success($requests);

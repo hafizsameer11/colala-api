@@ -70,6 +70,12 @@ class AdminFaqController extends Controller
                 $query->where('is_active', $request->status === 'active');
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $faqs = $query->latest()->get();
+                return ResponseHelper::success($faqs, 'FAQs exported successfully');
+            }
+
             $faqs = $query->latest()->paginate(15);
 
             $faqs->getCollection()->transform(function ($faq) {

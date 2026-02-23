@@ -104,12 +104,12 @@ Route::prefix('brands')->group(function () {
 
 // Products (Buyer) - Only accessible to buyers, returns only active products
 Route::middleware(['buyer.only'])->group(function () {
-    Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
-    Route::get('buyer/product/referral-products', [ProductController::class, 'getReferralProducts']);
-    Route::get('buyer/product/vip-products', [ProductController::class, 'getVipProducts']);
-    Route::get('buyer/categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
-    Route::get('buyer/product-details/{id}', [ProductBrowseController::class, 'productDetails']);
-    Route::get('buyer/products/top-selling', [ProductBrowseController::class, 'topSelling']);
+Route::get('buyer/product/get-all', [ProductController::class, 'getAllforBuyer']);
+Route::get('buyer/product/referral-products', [ProductController::class, 'getReferralProducts']);
+Route::get('buyer/product/vip-products', [ProductController::class, 'getVipProducts']);
+Route::get('buyer/categories/{category}/products', [ProductBrowseController::class, 'byCategory']);
+Route::get('buyer/product-details/{id}', [ProductBrowseController::class, 'productDetails']);
+Route::get('buyer/products/top-selling', [ProductBrowseController::class, 'topSelling']);
 });
 
 // Stores

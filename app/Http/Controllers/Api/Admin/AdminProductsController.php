@@ -55,37 +55,31 @@ class AdminProductsController extends Controller
 
             // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter (priority over date_range for backward compatibility)
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date_range')) {
-                // Legacy support for date_range parameter
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('created_at', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-                        break;
-                }
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
+            // Search filter
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                       ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhere('brand', 'like', "%{$search}%")
                       ->orWhereHas('store', function ($storeQuery) use ($search) {
-                          $storeQuery->where('name', 'like', "%{$search}%");
+                          $storeQuery->withoutGlobalScopes()
+                                     ->where('store_name', 'like', "%{$search}%");
                       });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $products = $query->latest()->get();
+                return ResponseHelper::success($products, 'Products exported successfully');
             }
 
             $products = $query->latest()->paginate($request->get('per_page', 20));
@@ -100,7 +94,7 @@ class AdminProductsController extends Controller
             });
             $activeProductsQuery = Product::where('status', 'active');
             $inactiveProductsQuery = Product::where('status', 'inactive');
-            
+
             if ($period) {
                 $this->applyPeriodFilter($totalProductsQuery, $period);
                 $this->applyPeriodFilter($generalProductsQuery, $period);
@@ -108,7 +102,7 @@ class AdminProductsController extends Controller
                 $this->applyPeriodFilter($activeProductsQuery, $period);
                 $this->applyPeriodFilter($inactiveProductsQuery, $period);
             }
-            
+
             $stats = [
                 'total_products' => $totalProductsQuery->count(),
                 'general_products' => $generalProductsQuery->count(),
@@ -158,7 +152,7 @@ class AdminProductsController extends Controller
                     'productStats',
                     'category'
                 ])->first();
-            
+
             if (!$product) {
                 return ResponseHelper::error('Product not found', 404);
             }
@@ -258,7 +252,7 @@ class AdminProductsController extends Controller
             $product = Product::withoutGlobalScopes()
                 ->with(['store.user'])
                 ->findOrFail($productId);
-            
+
             $updateData = [
                 'status' => $request->status,
                 'is_sold' => $request->get('is_sold', $product->is_sold),
@@ -278,55 +272,66 @@ class AdminProductsController extends Controller
             // Send notification to seller if product is marked as inactive
             if ($request->status === 'inactive' && $product->store && $product->store->user) {
                 $seller = $product->store->user;
-                $rejectionReason = $request->rejection_reason ?? 'No reason provided';
-                
-                $title = 'Product Rejected';
-                $message = "Your product '{$product->name}' has been marked as inactive.";
-                
-                if ($request->rejection_reason) {
-                    $message .= "\n\nReason: {$rejectionReason}";
-                }
 
-                try {
-                    // Log seller info for debugging
-                    Log::info('Attempting to send product rejection notification', [
+                // Refresh seller to ensure expo_push_token is loaded (bypass global scopes)
+                $seller = User::withoutGlobalScopes()->find($seller->id);
+
+                if (!$seller) {
+                    Log::error('Seller not found for product rejection notification', [
                         'product_id' => $product->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                        'expo_token_length' => $seller->expo_push_token ? strlen($seller->expo_push_token) : 0,
-                        'rejection_reason' => $rejectionReason
+                        'store_id' => $product->store->id,
                     ]);
+                } else {
+                    $rejectionReason = $request->rejection_reason ?? 'No reason provided';
 
-                    UserNotificationHelper::notify(
-                        $seller->id,
-                        $title,
-                        $message,
-                        [
-                            'type' => 'product_rejected',
+                    $title = 'Product Rejected';
+                    $message = "Your product '{$product->name}' has been marked as inactive.";
+
+                    if ($request->rejection_reason) {
+                        $message .= "\n\nReason: {$rejectionReason}";
+                    }
+
+                    try {
+                        // Log seller info for debugging
+                        Log::info('Attempting to send product rejection notification', [
                             'product_id' => $product->id,
-                            'product_name' => $product->name,
-                            'rejection_reason' => $rejectionReason,
-                        ]
-                    );
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                            'expo_token_length' => $seller->expo_push_token ? strlen($seller->expo_push_token) : 0,
+                            'rejection_reason' => $rejectionReason
+                        ]);
 
-                    Log::info('Product rejection notification sent to seller', [
-                        'product_id' => $product->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                        'rejection_reason' => $rejectionReason
-                    ]);
-                } catch (\Exception $e) {
-                    Log::error('Failed to send product rejection notification', [
-                        'product_id' => $product->id,
-                        'seller_id' => $seller->id,
-                        'seller_email' => $seller->email,
-                        'has_expo_token' => !empty($seller->expo_push_token),
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                    // Don't fail the request if notification fails
+                        UserNotificationHelper::notify(
+                            $seller->id,
+                            $title,
+                            $message,
+                            [
+                                'type' => 'product_rejected',
+                                'product_id' => $product->id,
+                                'product_name' => $product->name,
+                                'rejection_reason' => $rejectionReason,
+                            ]
+                        );
+
+                        Log::info('Product rejection notification sent to seller', [
+                            'product_id' => $product->id,
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                            'rejection_reason' => $rejectionReason
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to send product rejection notification', [
+                            'product_id' => $product->id,
+                            'seller_id' => $seller->id,
+                            'seller_email' => $seller->email,
+                            'has_expo_token' => !empty($seller->expo_push_token),
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+                        // Don't fail the request if notification fails
+                    }
                 }
             }
 
@@ -415,7 +420,7 @@ class AdminProductsController extends Controller
             ]);
 
             $product = Product::withoutGlobalScopes()->findOrFail($productId);
-            
+
             $product->update([
                 'name' => $request->name,
                 'description' => $request->description,
@@ -443,7 +448,7 @@ class AdminProductsController extends Controller
     {
         try {
             $product = Product::withoutGlobalScopes()->findOrFail($productId);
-            
+
             // Delete related data
             $product->images()->delete();
             $product->variants()->delete();
@@ -464,7 +469,7 @@ class AdminProductsController extends Controller
     private function getProductStatistics($product)
     {
         $stats = $product->statsSummary();
-        
+
         return [
             'views' => $stats['view'] ?? 0,
             'impressions' => $stats['impression'] ?? 0,
@@ -531,7 +536,7 @@ class AdminProductsController extends Controller
     {
         return $products->map(function ($product) {
             $isSponsored = $product->boost && $product->boost->status === 'active';
-            
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -555,7 +560,7 @@ class AdminProductsController extends Controller
                 ] : null,
                 'created_at' => $product->created_at,
                 'formatted_date' => $product->created_at ? $product->created_at->format('d-m-Y H:i A') : null,
-                'primary_image' => $product->images->first() ? 
+                'primary_image' => $product->images->first() ?
                     asset('storage/' . $product->images->first()->path) : null,
             ];
         });

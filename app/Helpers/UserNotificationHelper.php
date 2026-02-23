@@ -27,7 +27,8 @@ class UserNotificationHelper{
 
         // Send push notification if user has expo token
         try {
-            $user = User::find($user_id);
+            // Use withoutGlobalScopes to ensure we can find the user even if visibility is 0
+            $user = User::withoutGlobalScopes()->find($user_id);
             if ($user && !empty($user->expo_push_token)) {
                 $expoService = new ExpoNotificationService();
                 

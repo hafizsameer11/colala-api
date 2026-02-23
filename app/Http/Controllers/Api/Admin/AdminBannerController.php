@@ -56,9 +56,13 @@ class AdminBannerController extends Controller
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $banners = $query->get();
+                return ResponseHelper::success($banners, 'Banners exported successfully');
             }
 
             $banners = $query->paginate($request->get('per_page', 20));

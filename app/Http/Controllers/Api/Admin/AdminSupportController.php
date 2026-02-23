@@ -29,7 +29,9 @@ class AdminSupportController extends Controller
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
                 switch ($request->status) {
+                    case 'open':
                     case 'pending':
+                        // Both 'open' and 'pending' filter query for 'pending' in database
                         $query->where('status', 'pending');
                         break;
                     case 'resolved':
@@ -51,27 +53,12 @@ class AdminSupportController extends Controller
 
             // Validate period parameter
             $period = $request->get('period');
-            if ($period && !$this->isValidPeriod($period)) {
+            if ($period && $period !== 'all_time' && $period !== 'null' && !$this->isValidPeriod($period)) {
                 return ResponseHelper::error('Invalid period parameter. Valid values: today, this_week, this_month, last_month, this_year, all_time', 422);
             }
 
-            // Apply period filter (priority over date_range for backward compatibility)
-            if ($period) {
-                $this->applyPeriodFilter($query, $period);
-            } elseif ($request->has('date_range')) {
-                // Legacy support for date_range parameter
-                switch ($request->date_range) {
-                    case 'today':
-                        $query->whereDate('created_at', today());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
-                        break;
-                    case 'this_month':
-                        $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-                        break;
-                }
-            }
+            // Apply date filter (period > date_from/date_to > date_range)
+            $this->applyDateFilter($query, $request);
 
             if ($request->has('search') && $request->search) {
                 $search = $request->search;
@@ -83,6 +70,12 @@ class AdminSupportController extends Controller
                                    ->orWhere('email', 'like', "%{$search}%");
                       });
                 });
+            }
+
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $tickets = $query->latest()->get();
+                return ResponseHelper::success($tickets, 'Support tickets exported successfully');
             }
 
             $tickets = $query->latest()->paginate($request->get('per_page', 20));
@@ -136,12 +129,15 @@ class AdminSupportController extends Controller
                 'messages.sender'
             ])->findOrFail($ticketId);
 
+            // Map pending status to open for API response
+            $status = $ticket->status === 'pending' ? 'open' : $ticket->status;
+
             $ticketData = [
                 'ticket_info' => [
                     'id' => $ticket->id,
                     'subject' => $ticket->subject,
                     'description' => $ticket->description,
-                    'status' => $ticket->status,
+                    'status' => $status,
                     'category' => $ticket->category,
                     'created_at' => $ticket->created_at,
                     'updated_at' => $ticket->updated_at,
@@ -418,11 +414,14 @@ class AdminSupportController extends Controller
                 $profilePicture = asset('storage/' . $ticket->user->profile_picture);
             }
 
+            // Map pending status to open for API response
+            $status = $ticket->status === 'pending' ? 'open' : $ticket->status;
+
             return [
                 'id' => $ticket->id,
                 'subject' => $ticket->subject,
                 'description' => $ticket->description,
-                'status' => $ticket->status,
+                'status' => $status,
                 'category' => $ticket->category,
                 'user_name' => $ticket->user->full_name,
                 'user_email' => $ticket->user->email,

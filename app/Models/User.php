@@ -27,6 +27,7 @@ class User extends Authenticatable
         'otp_verified',
         'role',
         'is_active',
+        'is_disabled',
         'store_id',
         'plan',
         'is_free_trial_claimed',
@@ -53,6 +54,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'password' => 'hashed',
+            'is_disabled' => 'boolean',
         ];
     }
 

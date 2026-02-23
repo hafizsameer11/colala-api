@@ -60,6 +60,12 @@ class SellerTransactionController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $transactions = $query->latest()->get();
+                return ResponseHelper::success($transactions, 'Seller transactions exported successfully');
+            }
+
             $transactions = $query->latest()->paginate(20);
 
             // Get summary statistics

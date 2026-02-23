@@ -59,6 +59,12 @@ class SellerChatController extends Controller
                 });
             }
 
+            // Check if export is requested
+            if ($request->has('export') && $request->export == 'true') {
+                $chats = $query->latest()->get();
+                return ResponseHelper::success($chats, 'Seller chats exported successfully');
+            }
+
             $chats = $query->latest()->paginate(20);
 
             $chats->getCollection()->transform(function ($chat) {
