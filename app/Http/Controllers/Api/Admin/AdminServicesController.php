@@ -25,7 +25,17 @@ class AdminServicesController extends Controller
     public function getAllServices(Request $request)
     {
         try {
-            $query = Service::with(['store.user', 'media', 'serviceCategory', 'stats']);
+            $query = Service::with([
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'media',
+                'serviceCategory',
+                'stats'
+            ]);
 
             // Apply filters
             if ($request->has('status') && $request->status !== 'all') {
@@ -131,7 +141,12 @@ class AdminServicesController extends Controller
     {
         try {
             $service = Service::with([
-                'store.user',
+                'store' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
+                'store.user' => function ($q) {
+                    $q->withoutGlobalScopes();
+                },
                 'media',
                 'serviceCategory',
                 'stats',
@@ -154,13 +169,13 @@ class AdminServicesController extends Controller
                     'created_at' => $service->created_at,
                     'updated_at' => $service->updated_at,
                 ],
-                'store_info' => [
+                'store_info' => $service->store ? [
                     'store_id' => $service->store->id,
                     'store_name' => $service->store->store_name,
-                    'seller_name' => $service->store->user->full_name,
-                    'seller_email' => $service->store->user->email,
+                    'seller_name' => $service->store->user ? $service->store->user->full_name : null,
+                    'seller_email' => $service->store->user ? $service->store->user->email : null,
                     'store_location' => $service->store->store_location,
-                ],
+                ] : null,
                 'category_info' => $service->serviceCategory ? [
                     'id' => $service->serviceCategory->id,
                     'title' => $service->serviceCategory->title,
@@ -679,8 +694,8 @@ class AdminServicesController extends Controller
                 'price_from' => $service->price_from,
                 'price_to' => $service->price_to,
                 'discount_price' => $service->discount_price,
-                'store_name' => $service->store->store_name,
-                'seller_name' => $service->store->user->full_name,
+                'store_name' => $service->store ? $service->store->store_name : 'Unknown Store',
+                'seller_name' => $service->store && $service->store->user ? $service->store->user->full_name : 'Unknown Seller',
                 'category' => $service->serviceCategory ? [
                     'id' => $service->serviceCategory->id,
                     'title' => $service->serviceCategory->title,
